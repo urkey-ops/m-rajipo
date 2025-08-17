@@ -2,6 +2,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,7 +12,22 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { padding-bottom: 100px; background-color: #f7fafc; }
-    audio#audioPlayer { width: 100%; margin-bottom: 1rem; height: 50px; }
+    audio#audioPlayer { width: 100%; margin-bottom: 1rem; height: 60px; } /* Increased audio player height */
+    /* New style for uniform button size */
+    .group-btn {
+      width: 80px; /* Fixed width */
+      height: 40px; /* Fixed height */
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      white-space: nowrap; /* Prevents text from wrapping */
+      font-size: 0.875rem; /* Small font size for longer ranges */
+    }
+    /* Added more padding for thumb-friendly controls */
+    .thumb-friendly-btn {
+      padding: 0.75rem 1.5rem;
+    }
   </style>
 </head>
 <body>
@@ -30,7 +46,7 @@
         class="px-3 py-2 bg-green-500 text-white rounded">Select Range</button>
     </div>
 
-        <div id="groups" class="mb-4"></div>
+        <div id="groups" class="mb-4 flex flex-wrap justify-center"></div>
 
         <div class="mt-4 space-y-2">
       <label>Repeat each track: 
@@ -43,13 +59,13 @@
       </div>
       <div>
         <label>Speed: 
-          <button onclick="changeSpeed(-0.1)" class="px-2 bg-gray-300 rounded">-</button>
+          <button onclick="changeSpeed(-0.1)" class="px-3 py-2 bg-gray-300 rounded">-</button>
           <span id="speedDisplay">1.0</span>x
-          <button onclick="changeSpeed(0.1)" class="px-2 bg-gray-300 rounded">+</button>
+          <button onclick="changeSpeed(0.1)" class="px-3 py-2 bg-gray-300 rounded">+</button>
         </label>
       </div>
       <button onclick="playSelected()"
-        class="w-full py-2 bg-blue-600 text-white rounded">▶ Play Selected</button>
+        class="w-full py-3 bg-blue-600 text-white rounded">▶ Play Selected</button>
     </div>
 
         <ul id="trackList" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4"></ul>
@@ -72,7 +88,6 @@
     let repeatCounter = 0;
     const totalTracks = 315;
     const trackListEl = document.getElementById("trackList");
-    // Store the current speed in a global variable
     let currentSpeed = 1.0; 
 
     function selectRange() {
@@ -87,11 +102,9 @@
     }
 
     function changeSpeed(delta) {
-      // Update the global speed variable
       currentSpeed += delta;
       if (currentSpeed < 0.5) currentSpeed = 0.5;
       if (currentSpeed > 1.5) currentSpeed = 1.5;
-      // Apply the new speed to the audio player
       audioPlayer.playbackRate = currentSpeed;
       document.getElementById("speedDisplay").textContent = currentSpeed.toFixed(1);
     }
@@ -122,7 +135,6 @@
       }
       const trackNum = playlist[currentIndex];
       audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
-      // Apply the stored speed here before playing the track
       audioPlayer.playbackRate = currentSpeed;
       audioPlayer.play().catch(err => console.log("Play error:", err));
     }
@@ -186,7 +198,7 @@
         const end = Math.min(i + 9, totalTracks);
         const btn = document.createElement("button");
         btn.textContent = `${i}–${end}`;
-        btn.className = "px-3 py-1 m-1 bg-gray-200 rounded";
+        btn.className = "px-3 py-1 m-1 bg-gray-200 rounded group-btn"; /* Added new class */
         btn.onclick = () => selectGroup(i, end);
         groupDiv.appendChild(btn);
       }
@@ -202,7 +214,6 @@
         trackListEl.appendChild(li);
       }
     }
-
 
     document.addEventListener("DOMContentLoaded", function () {
       audioPlayer = document.getElementById("audioPlayer");
