@@ -1,213 +1,189 @@
+<script>
+  const totalTracks = 315;
+  const trackListEl = document.getElementById("trackList");
+  const audioPlayer = document.getElementById("audioPlayer");
 
+  let playlist = [];
+  let currentIndex = 0;
+  let repeatEach = 1;
+  let repeatCounter = 0;
 
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mission Rajipo</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { padding-bottom: 100px; } /* buffer below player */
-    audio#audioPlayer { width: 100%; margin-bottom: 1rem; }
-  </style>
-</head>
-<body class="bg-gray-100 text-gray-800">
-  <div class="max-w-3xl mx-auto p-4">
-    <h1 class="text-2xl font-bold text-center mb-4">🎵 Mission Rajipo</h1>
-
-    <!-- Search bar -->
-    <input id="search" type="text" placeholder="Search shlok number..."
-      class="w-full p-2 mb-4 border rounded">
-
-    <!-- Range selection -->
-    <div class="flex gap-2 mb-4">
-      <input id="rangeStart" type="number" min="1" max="315" placeholder="Start"
-        class="w-1/2 p-2 border rounded">
-      <input id="rangeEnd" type="number" min="1" max="315" placeholder="End"
-        class="w-1/2 p-2 border rounded">
-      <button onclick="selectRange()" 
-        class="px-3 py-2 bg-green-500 text-white rounded">Select Range</button>
-    </div>
-
-    <!-- Groups -->
-    <div id="groups" class="mb-4"></div>
-
-    <!-- Track list -->
-    <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></ul>
-
-    <!-- Controls -->
-    <div class="mt-4 space-y-2">
-      <label>Repeat each track: 
-        <input id="repeatCount" type="number" min="1" value="1"
-          class="w-16 p-1 border rounded">
-      </label>
-      <div>
-        <label><input type="checkbox" id="shuffle"> Shuffle</label>
-        <label class="ml-4"><input type="checkbox" id="repeatPlaylist"> Repeat Playlist</label>
-      </div>
-      <div>
-        <label>Speed: 
-          <button onclick="changeSpeed(-0.1)" class="px-2 bg-gray-300 rounded">-</button>
-          <span id="speedDisplay">1.0</span>x
-          <button onclick="changeSpeed(0.1)" class="px-2 bg-gray-300 rounded">+</button>
-        </label>
-      </div>
-      <button onclick="playSelected()"
-        class="w-full py-2 bg-blue-600 text-white rounded">▶ Play Selected</button>
-    </div>
-
-    <!-- Recently Played -->
-    <div id="recentlyPlayed" class="mt-6 hidden">
-      <h2 class="text-lg font-semibold mb-2">Recently Played</h2>
-      <ul id="recentList" class="space-y-1"></ul>
-    </div>
-  </div>
-
-  <!-- Audio player -->
-  <footer class="fixed bottom-0 left-0 right-0 bg-white shadow p-3">
-    <audio id="audioPlayer" controls></audio>
-  </footer>
-
-  <script>
-    const totalTracks = 315;
-    const trackListEl = document.getElementById("trackList");
-    const audioPlayer = document.getElementById("audioPlayer");
-
-    let playlist = [];
-    let currentIndex = 0;
-    let repeatEach = 1;
-    let repeatCounter = 0;
-
-    // Generate groups
-    function generateGroups() {
-      const groupDiv = document.getElementById("groups");
-      for (let i = 1; i <= totalTracks; i += 10) {
-        const end = Math.min(i + 9, totalTracks);
-        const btn = document.createElement("button");
-        btn.textContent = `${i}–${end}`;
-        btn.className = "px-3 py-1 m-1 bg-gray-200 rounded";
-        btn.onclick = () => selectGroup(i, end);
-        groupDiv.appendChild(btn);
-      }
+  // Generate groups
+  function generateGroups() {
+    const groupDiv = document.getElementById("groups");
+    for (let i = 1; i <= totalTracks; i += 10) {
+      const end = Math.min(i + 9, totalTracks);
+      const btn = document.createElement("button");
+      btn.textContent = `${i}–${end}`;
+      btn.className = "px-3 py-1 m-1 bg-gray-200 rounded";
+      btn.onclick = () => selectGroup(i, end);
+      groupDiv.appendChild(btn);
     }
+  }
 
-    // Generate tracks
-    function generateTracks() {
-      for (let i = 1; i <= totalTracks; i++) {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <label class="block p-2 bg-white rounded shadow-sm">
-            <input type="checkbox" value="${i}" class="trackBox mr-2"> Shlok ${i}
-          </label>`;
-        trackListEl.appendChild(li);
-      }
+  // Generate tracks
+  function generateTracks() {
+    for (let i = 1; i <= totalTracks; i++) {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <label class="block p-2 bg-white rounded shadow-sm">
+          <input type="checkbox" value="${i}" class="trackBox mr-2"> Shlok ${i}
+        </label>`;
+      trackListEl.appendChild(li);
     }
+  }
 
-    // Search filter
-    document.getElementById("search").addEventListener("input", function () {
-      const term = this.value.trim();
-      document.querySelectorAll(".trackBox").forEach(cb => {
-        const label = cb.parentElement.parentElement;
-        if (!term || cb.value === term) {
-          label.classList.remove("hidden");
-        } else {
-          label.classList.add("hidden");
-        }
-      });
+  // Reset search filter on load
+  function resetSearch() {
+    document.getElementById("search").value = "";
+    document.querySelectorAll(".trackBox").forEach(cb => {
+      cb.parentElement.parentElement.classList.remove("hidden");
     });
+  }
 
-    // Select group
-    function selectGroup(start, end) {
+  // Search filter
+  document.getElementById("search").addEventListener("input", function () {
+    const term = this.value.trim();
+    document.querySelectorAll(".trackBox").forEach(cb => {
+      const label = cb.parentElement.parentElement;
+      if (!term || cb.value === term) {
+        label.classList.remove("hidden");
+      } else {
+        label.classList.add("hidden");
+      }
+    });
+  });
+
+  // Select group
+  function selectGroup(start, end) {
+    document.querySelectorAll(".trackBox").forEach(cb => {
+      if (cb.value >= start && cb.value <= end) cb.checked = true;
+    });
+  }
+
+  // Select range
+  function selectRange() {
+    const start = parseInt(document.getElementById("rangeStart").value);
+    const end = parseInt(document.getElementById("rangeEnd").value);
+    if (!isNaN(start) && !isNaN(end) && start <= end) {
       document.querySelectorAll(".trackBox").forEach(cb => {
         if (cb.value >= start && cb.value <= end) cb.checked = true;
       });
     }
+  }
 
-    // Select range
-    function selectRange() {
-      const start = parseInt(document.getElementById("rangeStart").value);
-      const end = parseInt(document.getElementById("rangeEnd").value);
-      if (!isNaN(start) && !isNaN(end) && start <= end) {
-        document.querySelectorAll(".trackBox").forEach(cb => {
-          if (cb.value >= start && cb.value <= end) cb.checked = true;
-        });
-      }
+  // Playback speed
+  function changeSpeed(delta) {
+    let speed = parseFloat(audioPlayer.playbackRate) + delta;
+    if (speed < 0.5) speed = 0.5;
+    if (speed > 1.5) speed = 1.5;
+    audioPlayer.playbackRate = speed;
+    document.getElementById("speedDisplay").textContent = speed.toFixed(1);
+  }
+
+  // Play selected
+  function playSelected() {
+    const selected = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
+    if (selected.length === 0) return;
+
+    repeatEach = parseInt(document.getElementById("repeatCount").value) || 1;
+    playlist = [...selected];
+    if (document.getElementById("shuffle").checked) {
+      playlist = playlist.sort(() => Math.random() - 0.5);
     }
+    currentIndex = 0;
+    repeatCounter = 0;
+    saveSelection(selected);
+    playCurrent();
+  }
 
-    // Playback speed
-    function changeSpeed(delta) {
-      let speed = parseFloat(audioPlayer.playbackRate) + delta;
-      if (speed < 0.5) speed = 0.5;
-      if (speed > 1.5) speed = 1.5;
-      audioPlayer.playbackRate = speed;
-      document.getElementById("speedDisplay").textContent = speed.toFixed(1);
+  function playCurrent() {
+    if (currentIndex >= playlist.length) {
+      if (document.getElementById("repeatPlaylist").checked) {
+        currentIndex = 0;
+      } else return;
     }
+    const trackNum = playlist[currentIndex];
+    audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+    audioPlayer.play();
+  }
 
-    // Play selected
-    function playSelected() {
-      const selected = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
-      if (selected.length === 0) return;
-
-      repeatEach = parseInt(document.getElementById("repeatCount").value) || 1;
-      playlist = [...selected];
-      if (document.getElementById("shuffle").checked) {
-        playlist = playlist.sort(() => Math.random() - 0.5);
-      }
-      currentIndex = 0;
+  audioPlayer.addEventListener("ended", () => {
+    repeatCounter++;
+    if (repeatCounter < repeatEach) {
+      playCurrent();
+    } else {
       repeatCounter = 0;
-      saveSelection(selected);
+      currentIndex++;
       playCurrent();
     }
+  });
 
-    function playCurrent() {
-      if (currentIndex >= playlist.length) {
-        if (document.getElementById("repeatPlaylist").checked) {
-          currentIndex = 0;
-        } else return;
-      }
-      const trackNum = playlist[currentIndex];
-      audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
-      audioPlayer.play();
+  // Save & render history
+  function saveSelection(selection) {
+    let history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+    const selString = selection.join(",");
+    history = [selString, ...history.filter(h => h !== selString)].slice(0, 5);
+    localStorage.setItem("recentSelections", JSON.stringify(history));
+    renderRecentSelections();
+  }
+
+  function renderRecentSelections() {
+    const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+    const recentDiv = document.getElementById("recentlyPlayed");
+    const recentList = document.getElementById("recentList");
+    recentList.innerHTML = "";
+
+    if (history.length === 0) {
+      recentDiv.classList.add("hidden");
+      return;
     }
 
-    audioPlayer.addEventListener("ended", () => {
-      repeatCounter++;
-      if (repeatCounter < repeatEach) {
-        playCurrent();
+    recentDiv.classList.remove("hidden");
+    history.forEach(sel => {
+      const numbers = sel.split(",").map(n => parseInt(n.trim()));
+      const count = numbers.length;
+      let label = "";
+
+      if (count <= 6) {
+        label = "Shlok " + numbers.join(", ");
       } else {
-        repeatCounter = 0;
-        currentIndex++;
-        playCurrent();
+        label = `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${count} total)`;
       }
+
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.textContent = label;
+      btn.className = "px-2 py-1 bg-blue-500 text-white rounded text-xs";
+      btn.onclick = () => replaySelection(sel);
+      li.appendChild(btn);
+      recentList.appendChild(li);
     });
+  }
 
-    // Save & render history
-    function saveSelection(selection) {
-      let history = JSON.parse(localStorage.getItem("recentSelections")) || [];
-      const selString = selection.join(",");
-      history = [selString, ...history.filter(h => h !== selString)].slice(0, 5);
-      localStorage.setItem("recentSelections", JSON.stringify(history));
-      renderRecentSelections();
+  function replaySelection(sel) {
+    const selected = sel.split(",").map(n => parseInt(n.trim()));
+    document.querySelectorAll(".trackBox").forEach(cb => {
+      cb.checked = selected.includes(parseInt(cb.value));
+    });
+    playSelected();
+  }
+
+  // Restore last selection on load
+  function restoreLastSelection() {
+    const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+    if (history.length > 0) {
+      const lastSel = history[0].split(",").map(n => parseInt(n.trim()));
+      document.querySelectorAll(".trackBox").forEach(cb => {
+        cb.checked = lastSel.includes(parseInt(cb.value));
+      });
     }
+  }
 
-    function renderRecentSelections() {
-      const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
-      const recentDiv = document.getElementById("recentlyPlayed");
-      const recentList = document.getElementById("recentList");
-      recentList.innerHTML = "";
-
-      if (history.length === 0) {
-        recentDiv.classList.add("hidden");
-        return;
-      }
-
-      recentDiv.classList.remove("hidden");
-      history.forEach(sel => {
-        const numbers = sel.split(",").map(n => parseInt(n.trim()));
-        const count = numbers.length;
-        let label = "";
-
-        if (co
+  // Init
+  generateGroups();
+  generateTracks();
+  resetSearch();
+  renderRecentSelections();
+  restoreLastSelection();
+</script>
