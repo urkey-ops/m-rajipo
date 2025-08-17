@@ -21,30 +21,27 @@
   <p class="text-sm">Select tracks, set repeats, and play your mix</p>
 </header>
 
-<!-- Controls -->
 <div class="p-4 bg-white shadow flex flex-col md:flex-row items-center gap-2 flex-wrap">
   <input type="text" id="searchBar" placeholder="🔎 Search by track number or name..." 
     class="flex-1 p-2 border rounded-lg focus:ring focus:ring-blue-300">
-
   <input type="number" id="repeatCount" min="1" placeholder="Repeats" 
     class="w-24 p-2 border rounded-lg text-center">
-
   <select id="trackGroup" class="p-2 border rounded-lg">
     <option value="">Select Track Group</option>
-    <option value="1-10">Tracks 1–10</option>
-    <option value="11-20">Tracks 11–20</option>
-    <option value="21-30">Tracks 21–30</option>
+    <option value="1-50">Tracks 1–50</option>
+    <option value="51-100">Tracks 51–100</option>
+    <option value="101-150">Tracks 101–150</option>
+    <option value="151-200">Tracks 151–200</option>
+    <option value="201-250">Tracks 201–250</option>
+    <option value="251-315">Tracks 251–315</option>
   </select>
-
   <button id="toggleSelectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
     Select All
   </button>
 </div>
 
-<!-- Track List -->
 <main id="trackList" class="p-4 bg-white shadow rounded-lg"></main>
 
-<!-- Footer Controls -->
 <footer class="bg-white shadow p-4 sticky bottom-0">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <label class="flex items-center gap-2">
@@ -72,29 +69,11 @@
 </footer>
 
 <script>
-// Example for first 20 tracks from Internet Archive
-const audioFiles = [
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_001.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_002.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_003.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_004.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_005.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_006.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_007.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_008.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_009.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_010.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_011.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_012.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_013.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_014.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_015.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_016.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_017.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_018.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_019.mp3",
-  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_020.mp3"
-];
+const audioFiles = [];
+for(let i=1;i<=315;i++){
+  let num = i.toString().padStart(3,'0'); // 001,002,...
+  audioFiles.push(`https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${num}.mp3`);
+}
 
 const trackListDiv = document.getElementById("trackList");
 const searchBar = document.getElementById("searchBar");
@@ -118,7 +97,7 @@ audioFiles.forEach((file,i)=>{
   let div = document.createElement("div");
   div.className = "track-item flex items-center justify-between bg-white rounded-lg p-3 mb-2 shadow";
   div.dataset.trackNumber = i+1;
-  div.dataset.trackName = `Shloka ${i+1}`.toLowerCase();
+  div.dataset.trackName = `shloka ${i+1}`;
   div.innerHTML = `
     <div class="flex items-center gap-3">
       <input type="checkbox" value="${i}" class="track-checkbox w-5 h-5">
