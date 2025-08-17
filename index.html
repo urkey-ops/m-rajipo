@@ -5,12 +5,44 @@
 <title>Mission Rajipo - Custom Audio Player</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
+  /* Track list scrollable and bigger for mobile */
   #trackList {
-    height: 60vh;
+    height: 70vh;
     overflow-y: auto;
   }
+
+  /* Highlighted group */
   .highlight-group {
     background-color: #fef3c7; /* Tailwind yellow-100 */
+  }
+
+  /* Track item styles for mobile */
+  .track-item {
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .track-item input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Audio player bigger */
+  audio#audioPlayer {
+    width: 100%;
+    height: 50px;
+  }
+
+  /* Buttons bigger for touch */
+  button {
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+  }
+
+  /* Inputs bigger for touch */
+  input, select {
+    font-size: 1rem;
+    padding: 0.6rem;
   }
 </style>
 </head>
@@ -18,15 +50,16 @@
 
 <header class="bg-blue-600 text-white text-center p-4 shadow">
   <h1 class="text-xl font-bold">🎵 Mission Rajipo</h1>
-  <p class="text-sm">Select tracks, set repeats, and play your mix</p>
+  <p class="text-sm sm:text-base">Select tracks, set repeats, and play your mix</p>
 </header>
 
-<div class="p-4 bg-white shadow flex flex-col md:flex-row items-center gap-2 flex-wrap">
+<!-- Controls -->
+<div class="p-4 bg-white shadow flex flex-col sm:flex-row items-center gap-2 flex-wrap">
   <input type="text" id="searchBar" placeholder="🔎 Search by track number or name..." 
-    class="flex-1 p-2 border rounded-lg focus:ring focus:ring-blue-300">
+    class="flex-1 p-3 text-base border rounded-lg focus:ring focus:ring-blue-300">
   <input type="number" id="repeatCount" min="1" placeholder="Repeats" 
-    class="w-24 p-2 border rounded-lg text-center">
-  <select id="trackGroup" class="p-2 border rounded-lg">
+    class="w-28 p-3 text-center text-base border rounded-lg">
+  <select id="trackGroup" class="p-3 text-base border rounded-lg">
     <option value="">Select Track Group</option>
     <option value="1-50">Tracks 1–50</option>
     <option value="51-100">Tracks 51–100</option>
@@ -35,13 +68,15 @@
     <option value="201-250">Tracks 201–250</option>
     <option value="251-315">Tracks 251–315</option>
   </select>
-  <button id="toggleSelectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+  <button id="toggleSelectBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
     Select All
   </button>
 </div>
 
+<!-- Track List -->
 <main id="trackList" class="p-4 bg-white shadow rounded-lg"></main>
 
+<!-- Footer Controls -->
 <footer class="bg-white shadow p-4 sticky bottom-0">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <label class="flex items-center gap-2">
@@ -53,28 +88,30 @@
       <span class="text-sm">Repeat Playlist</span>
     </label>
     <button onclick="startPlaylist()" 
-      class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
+      class="bg-green-600 hover:bg-green-700 text-white rounded-lg shadow">
       ▶️ Play Selected
     </button>
   </div>
 
   <div class="flex items-center gap-2 mt-2">
     <span class="text-sm font-medium">Speed:</span>
-    <button onclick="changeSpeed(-0.1)" class="bg-gray-300 px-2 py-1 rounded">-</button>
+    <button onclick="changeSpeed(-0.1)" class="bg-gray-300 rounded">-</button>
     <span id="speedDisplay" class="w-10 text-center">1.0×</span>
-    <button onclick="changeSpeed(0.1)" class="bg-gray-300 px-2 py-1 rounded">+</button>
+    <button onclick="changeSpeed(0.1)" class="bg-gray-300 rounded">+</button>
   </div>
 
   <audio id="audioPlayer" controls class="w-full mt-2"></audio>
 </footer>
 
 <script>
+/* Generate 315 Sanskrit shloka URLs */
 const audioFiles = [];
 for(let i=1;i<=315;i++){
   let num = i.toString().padStart(3,'0'); // 001,002,...
   audioFiles.push(`https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${num}.mp3`);
 }
 
+/* DOM Elements */
 const trackListDiv = document.getElementById("trackList");
 const searchBar = document.getElementById("searchBar");
 const toggleSelectBtn = document.getElementById("toggleSelectBtn");
@@ -92,6 +129,7 @@ function changeSpeed(delta){
   speedDisplay.textContent = currentSpeed.toFixed(1)+"×";
 }
 
+/* Generate track list */
 let trackElements = [];
 audioFiles.forEach((file,i)=>{
   let div = document.createElement("div");
@@ -100,7 +138,7 @@ audioFiles.forEach((file,i)=>{
   div.dataset.trackName = `shloka ${i+1}`;
   div.innerHTML = `
     <div class="flex items-center gap-3">
-      <input type="checkbox" value="${i}" class="track-checkbox w-5 h-5">
+      <input type="checkbox" value="${i}" class="track-checkbox">
       <span class="text-gray-800 font-medium">Shloka ${i+1}</span>
     </div>
   `;
@@ -108,6 +146,7 @@ audioFiles.forEach((file,i)=>{
   trackElements.push(div);
 });
 
+/* Search filter */
 searchBar.addEventListener("input", ()=>{
   const query = searchBar.value.toLowerCase().trim();
   trackElements.forEach(el=>{
@@ -117,6 +156,7 @@ searchBar.addEventListener("input", ()=>{
   });
 });
 
+/* Toggle Select All */
 let allSelected = false;
 toggleSelectBtn.addEventListener("click", ()=>{
   allSelected = !allSelected;
@@ -126,6 +166,7 @@ toggleSelectBtn.addEventListener("click", ()=>{
   toggleSelectBtn.textContent = allSelected?"Clear All":"Select All";
 });
 
+/* Track group highlight */
 trackGroupSelect.addEventListener("change", ()=>{
   const value = trackGroupSelect.value;
   if(!value) {
@@ -148,6 +189,7 @@ trackGroupSelect.addEventListener("change", ()=>{
   if(firstTrack) firstTrack.scrollIntoView({behavior:"smooth"});
 });
 
+/* Playlist playback */
 let playQueue = [];
 let currentTrackIndex = 0;
 let currentRepeat = 0;
@@ -186,6 +228,7 @@ audioPlayer.addEventListener("ended", ()=>{
   }
 });
 
+/* Shuffle function */
 function shuffleArray(array){
   let shuffled=[...array];
   for(let i=shuffled.length-1;i>0;i--){
