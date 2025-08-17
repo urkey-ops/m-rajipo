@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,187 +6,240 @@
   <title>Mission Rajipo</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      padding-bottom: 100px; /* buffer so list not hidden under player */
-    }
-    footer {
-      padding-bottom: 1.5rem; /* extra breathing room below */
-    }
-    audio#audioPlayer {
-      width: 100%;
-      height: 55px;
-      margin-bottom: 1rem;
-    }
-    #trackList {
-      height: 70vh;
-      overflow-y: auto;
-    }
-    .track-item {
-      padding: 0.75rem;
-      font-size: 1rem;
-    }
-    .track-item input[type="checkbox"] {
-      width: 22px;
-      height: 22px;
-    }
+    body { padding-bottom: 100px; background-color: #f7fafc; }
+    audio#audioPlayer { width: 100%; margin-bottom: 1rem; height: 50px; }
   </style>
 </head>
-<body class="bg-gray-50 flex flex-col min-h-screen">
+<body>
+  <div class="max-w-3xl mx-auto p-4">
+    <h1 class="text-2xl font-bold text-center mb-4">🎵 Mission Rajipo</h1>
 
-  <!-- Header -->
-  <header class="p-4 bg-green-600 text-white text-center text-xl font-bold shadow">
-    Mission Rajipo – Shloka Player
-  </header>
-
-  <!-- Controls -->
-  <div class="p-4 bg-white shadow flex flex-col sm:flex-row items-center gap-2 flex-wrap">
     <!-- Search -->
-    <input type="text" id="searchBar" onkeyup="filterTracks()" placeholder="Search by number..." class="p-2 border rounded w-full sm:w-64">
-    
-    <!-- Range Selection -->
-    <div class="flex gap-2 items-center mt-2 sm:mt-0">
-      <label class="text-sm">Select range:</label>
-      <input type="number" id="rangeStart" class="w-20 p-2 border rounded text-center" placeholder="Start">
-      <input type="number" id="rangeEnd" class="w-20 p-2 border rounded text-center" placeholder="End">
-      <button onclick="selectRange()" class="px-3 py-2 bg-green-500 text-white rounded">Select</button>
+    <input id="search" type="text" placeholder="Search shlok number..."
+      class="w-full p-2 mb-4 border rounded">
+
+    <!-- Range -->
+    <div class="flex gap-2 mb-4">
+      <input id="rangeStart" type="number" min="1" max="315" placeholder="Start"
+        class="w-1/2 p-2 border rounded">
+      <input id="rangeEnd" type="number" min="1" max="315" placeholder="End"
+        class="w-1/2 p-2 border rounded">
+      <button onclick="selectRange()" 
+        class="px-3 py-2 bg-green-500 text-white rounded">Select Range</button>
     </div>
 
-    <!-- Repeat count -->
-    <div class="flex items-center gap-2">
-      <label for="repeatCount">Repeat each:</label>
-      <input type="number" id="repeatCount" value="1" min="1" class="w-20 p-2 border rounded text-center">
+    <!-- Groups -->
+    <div id="groups" class="mb-4"></div>
+
+    <!-- Controls -->
+    <div class="mt-4 space-y-2">
+      <label>Repeat each track: 
+        <input id="repeatCount" type="number" min="1" value="1"
+          class="w-16 p-1 border rounded">
+      </label>
+      <div>
+        <label><input type="checkbox" id="shuffle"> Shuffle</label>
+        <label class="ml-4"><input type="checkbox" id="repeatPlaylist"> Repeat Playlist</label>
+      </div>
+      <div>
+        <label>Speed: 
+          <button onclick="changeSpeed(-0.1)" class="px-2 bg-gray-300 rounded">-</button>
+          <span id="speedDisplay">1.0</span>x
+          <button onclick="changeSpeed(0.1)" class="px-2 bg-gray-300 rounded">+</button>
+        </label>
+      </div>
+      <button onclick="playSelected()"
+        class="w-full py-2 bg-blue-600 text-white rounded">▶ Play Selected</button>
     </div>
 
-    <!-- Playback speed -->
-    <div class="flex items-center gap-2">
-      <label for="speedControl">Speed:</label>
-      <button onclick="changeSpeed(-0.1)" class="px-2 py-1 bg-gray-300 rounded">-</button>
-      <span id="speedDisplay">1.0x</span>
-      <button onclick="changeSpeed(0.1)" class="px-2 py-1 bg-gray-300 rounded">+</button>
-    </div>
+    <!-- Track list -->
+    <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4"></ul>
 
-    <!-- Shuffle & Repeat -->
-    <div class="flex items-center gap-2">
-      <label><input type="checkbox" id="shuffle"> Shuffle</label>
-      <label><input type="checkbox" id="repeatPlaylist"> Repeat Playlist</label>
+    <!-- Recently Played -->
+    <div id="recentlyPlayed" class="mt-6 hidden">
+      <h2 class="text-lg font-semibold mb-2">Recently Played</h2>
+      <ul id="recentList" class="space-y-1"></ul>
     </div>
-
-    <button onclick="playSelected()" class="px-4 py-2 bg-blue-500 text-white rounded">Play Selected</button>
   </div>
 
-  <!-- Track List -->
-  <main class="flex-1 p-4">
-    <ul id="trackList" class="space-y-1">
-      <!-- Populated by JS -->
-    </ul>
-  </main>
-
-  <!-- Player -->
-  <footer class="bg-white shadow p-4 sticky bottom-0">
+  <!-- Audio player -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-white shadow p-3">
     <audio id="audioPlayer" controls></audio>
   </footer>
 
   <script>
-    const audioFiles = [];
-    for (let i = 1; i <= 315; i++) {
-      const num = String(i).padStart(3, '0');
-      audioFiles.push({
-        name: "Shloka " + i,
-        src: `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${num}.mp3`
-      });
+  document.addEventListener("DOMContentLoaded", function() {
+    const totalTracks = 315;
+    const trackListEl = document.getElementById("trackList");
+    const audioPlayer = document.getElementById("audioPlayer");
+    let playlist = [];
+    let currentIndex = 0;
+    let repeatEach = 1;
+    let repeatCounter = 0;
+
+    // Generate group buttons
+    function generateGroups() {
+      const groupDiv = document.getElementById("groups");
+      for (let i = 1; i <= totalTracks; i += 10) {
+        const end = Math.min(i + 9, totalTracks);
+        const btn = document.createElement("button");
+        btn.textContent = `${i}–${end}`;
+        btn.className = "px-3 py-1 m-1 bg-gray-200 rounded";
+        btn.onclick = () => selectGroup(i, end);
+        groupDiv.appendChild(btn);
+      }
     }
 
-    const trackList = document.getElementById("trackList");
-    const audioPlayer = document.getElementById("audioPlayer");
-    let playQueue = [];
-    let currentTrack = 0;
-    let repeatCount = 1;
-    let playbackSpeed = 1.0;
+    // Generate track list
+    function generateTracks() {
+      for (let i = 1; i <= totalTracks; i++) {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <label class="block p-2 bg-white rounded shadow-sm">
+            <input type="checkbox" value="${i}" class="trackBox mr-2"> Shlok ${i}
+          </label>`;
+        trackListEl.appendChild(li);
+      }
+    }
 
-    // Populate track list
-    audioFiles.forEach((track, index) => {
-      const li = document.createElement("li");
-      li.className = "track-item flex items-center gap-2";
-      li.innerHTML = `
-        <input type="checkbox" data-index="${index}">
-        <span>${track.name}</span>
-      `;
-      trackList.appendChild(li);
+    // Search/filter
+    document.getElementById("search").addEventListener("input", function () {
+      const term = this.value.trim();
+      document.querySelectorAll(".trackBox").forEach(cb => {
+        const label = cb.parentElement.parentElement;
+        if (!term || cb.value === term) {
+          label.classList.remove("hidden");
+        } else {
+          label.classList.add("hidden");
+        }
+      });
     });
 
-    // Filter tracks
-    function filterTracks() {
-      const search = document.getElementById("searchBar").value.toLowerCase();
-      document.querySelectorAll("#trackList .track-item").forEach((item, index) => {
-        const match = audioFiles[index].name.toLowerCase().includes(search);
-        item.style.display = match ? "" : "none";
+    // Select group
+    function selectGroup(start, end) {
+      document.querySelectorAll(".trackBox").forEach(cb => {
+        const val = parseInt(cb.value,10);
+        if (val >= start && val <= end) cb.checked = true;
       });
     }
 
     // Select range
     function selectRange() {
-      const start = parseInt(document.getElementById('rangeStart').value);
-      const end = parseInt(document.getElementById('rangeEnd').value);
-
-      if (isNaN(start) || isNaN(end) || start < 1 || end < start) {
-        alert("Please enter a valid range (e.g., 11 to 20).");
-        return;
+      const start = parseInt(document.getElementById("rangeStart").value);
+      const end = parseInt(document.getElementById("rangeEnd").value);
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        document.querySelectorAll(".trackBox").forEach(cb => {
+          const val = parseInt(cb.value,10);
+          if (val >= start && val <= end) cb.checked = true;
+        });
       }
-
-      document.querySelectorAll('#trackList .track-item input[type="checkbox"]').forEach((checkbox, index) => {
-        const trackNum = index + 1;
-        if (trackNum >= start && trackNum <= end) {
-          checkbox.checked = true;
-        }
-      });
     }
 
     // Change speed
     function changeSpeed(delta) {
-      playbackSpeed = Math.min(1.5, Math.max(0.5, playbackSpeed + delta));
-      audioPlayer.playbackRate = playbackSpeed;
-      document.getElementById("speedDisplay").textContent = playbackSpeed.toFixed(1) + "x";
+      let speed = parseFloat(audioPlayer.playbackRate) + delta;
+      if (speed < 0.5) speed = 0.5;
+      if (speed > 1.5) speed = 1.5;
+      audioPlayer.playbackRate = speed;
+      document.getElementById("speedDisplay").textContent = speed.toFixed(1);
     }
 
-    // Play selected
+    // Play selected tracks
     function playSelected() {
-      playQueue = [];
-      currentTrack = 0;
-      repeatCount = parseInt(document.getElementById("repeatCount").value) || 1;
-      const shuffle = document.getElementById("shuffle").checked;
-
-      document.querySelectorAll('#trackList input[type="checkbox"]:checked').forEach(cb => {
-        const track = audioFiles[cb.dataset.index];
-        for (let i = 0; i < repeatCount; i++) {
-          playQueue.push(track);
-        }
-      });
-
-      if (shuffle) {
-        playQueue = playQueue.sort(() => Math.random() - 0.5);
-      }
-
-      if (playQueue.length > 0) {
-        playTrack(0);
-      }
-    }
-
-    function playTrack(index) {
-      if (index >= playQueue.length) {
-        if (document.getElementById("repeatPlaylist").checked) {
-          playSelected();
-        }
+      const selected = Array.from(document.querySelectorAll(".trackBox:checked"))
+                           .map(cb => parseInt(cb.value,10));
+      if (selected.length === 0) {
+        alert("Please select at least one shlok to play.");
         return;
       }
-      currentTrack = index;
-      audioPlayer.src = playQueue[index].src;
-      audioPlayer.playbackRate = playbackSpeed;
-      audioPlayer.play();
+      repeatEach = parseInt(document.getElementById("repeatCount").value) || 1;
+      playlist = [...selected];
+      if (document.getElementById("shuffle").checked) {
+        playlist = playlist.sort(() => Math.random() - 0.5);
+      }
+      currentIndex = 0;
+      repeatCounter = 0;
+      saveSelection(selected);
+      playCurrent();
+    }
+
+    // Play current track
+    function playCurrent() {
+      if (currentIndex >= playlist.length) {
+        if (document.getElementById("repeatPlaylist").checked) {
+          currentIndex = 0;
+        } else return;
+      }
+      const trackNum = playlist[currentIndex];
+      audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3,'0')}.mp3`;
+      audioPlayer.play().catch(err => console.log("Play error:", err));
     }
 
     audioPlayer.addEventListener("ended", () => {
-      playTrack(currentTrack + 1);
+      repeatCounter++;
+      if (repeatCounter < repeatEach) {
+        playCurrent();
+      } else {
+        repeatCounter = 0;
+        currentIndex++;
+        playCurrent();
+      }
     });
+
+    // Recently played memory
+    function saveSelection(selection) {
+      let history = [];
+      try { history = JSON.parse(localStorage.getItem("recentSelections")) || []; } catch(e){ history = [];}
+      const selString = selection.join(",");
+      history = [selString, ...history.filter(h => h !== selString)].slice(0,5);
+      localStorage.setItem("recentSelections", JSON.stringify(history));
+      renderRecentSelections();
+    }
+
+    function renderRecentSelections() {
+      const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+      const recentDiv = document.getElementById("recentlyPlayed");
+      const recentList = document.getElementById("recentList");
+      recentList.innerHTML = "";
+      if (history.length === 0) { recentDiv.classList.add("hidden"); return; }
+      recentDiv.classList.remove("hidden");
+      history.forEach(sel => {
+        const numbers = sel.split(",").map(n => parseInt(n.trim()));
+        let label = numbers.length <= 6 ? "Shlok " + numbers.join(", ") : `Shlok ${numbers[0]}–${numbers[numbers.length-1]} (${numbers.length} total)`;
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.textContent = label;
+        btn.className = "px-2 py-1 bg-blue-500 text-white rounded text-xs";
+        btn.onclick = () => replaySelection(sel);
+        li.appendChild(btn);
+        recentList.appendChild(li);
+      });
+    }
+
+    function replaySelection(sel) {
+      const selected = sel.split(",").map(n => parseInt(n.trim()));
+      document.querySelectorAll(".trackBox").forEach(cb => {
+        cb.checked = selected.includes(parseInt(cb.value,10));
+      });
+      playSelected();
+    }
+
+    // Restore last selection
+    function restoreLastSelection() {
+      let history = [];
+      try { history = JSON.parse(localStorage.getItem("recentSelections")) || []; } catch(e){ history = [];}
+      if (history.length>0){
+        const lastSel = history[0].split(",").map(n=>parseInt(n.trim()));
+        document.querySelectorAll(".trackBox").forEach(cb=>{cb.checked=lastSel.includes(parseInt(cb.value,10));});
+      }
+    }
+
+    // Initialization
+    generateGroups();
+    generateTracks();
+    restoreLastSelection();
+    renderRecentSelections();
+  });
   </script>
 </body>
 </html>
