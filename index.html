@@ -31,9 +31,9 @@
 
   <select id="trackGroup" class="p-2 border rounded-lg">
     <option value="">Select Track Group</option>
-    <option value="1-2">Tracks 1–2</option>
-    <option value="3-4">Tracks 3–4</option>
-    <option value="5-5">Tracks 5</option>
+    <option value="1-10">Tracks 1–10</option>
+    <option value="11-20">Tracks 11–20</option>
+    <option value="21-30">Tracks 21–30</option>
   </select>
 
   <button id="toggleSelectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
@@ -72,12 +72,28 @@
 </footer>
 
 <script>
+// Example for first 20 tracks from Internet Archive
 const audioFiles = [
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_001.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_002.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_003.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_004.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_005.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_006.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_007.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_008.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_009.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_010.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_011.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_012.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_013.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_014.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_015.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_016.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_017.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_018.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_019.mp3",
+  "https://ia601703.us.archive.org/35/items/satsang_diksha/gujarati_020.mp3"
 ];
 
 const trackListDiv = document.getElementById("trackList");
@@ -97,24 +113,22 @@ function changeSpeed(delta){
   speedDisplay.textContent = currentSpeed.toFixed(1)+"×";
 }
 
-// Lazy load variables (small demo so all loaded at once)
 let trackElements = [];
 audioFiles.forEach((file,i)=>{
   let div = document.createElement("div");
   div.className = "track-item flex items-center justify-between bg-white rounded-lg p-3 mb-2 shadow";
   div.dataset.trackNumber = i+1;
-  div.dataset.trackName = `Track ${i+1}`.toLowerCase();
+  div.dataset.trackName = `Shloka ${i+1}`.toLowerCase();
   div.innerHTML = `
     <div class="flex items-center gap-3">
       <input type="checkbox" value="${i}" class="track-checkbox w-5 h-5">
-      <span class="text-gray-800 font-medium">Track ${i+1}</span>
+      <span class="text-gray-800 font-medium">Shloka ${i+1}</span>
     </div>
   `;
   trackListDiv.appendChild(div);
   trackElements.push(div);
 });
 
-// Search filter
 searchBar.addEventListener("input", ()=>{
   const query = searchBar.value.toLowerCase().trim();
   trackElements.forEach(el=>{
@@ -124,7 +138,6 @@ searchBar.addEventListener("input", ()=>{
   });
 });
 
-// Toggle Select All / Clear All
 let allSelected = false;
 toggleSelectBtn.addEventListener("click", ()=>{
   allSelected = !allSelected;
@@ -134,7 +147,6 @@ toggleSelectBtn.addEventListener("click", ()=>{
   toggleSelectBtn.textContent = allSelected?"Clear All":"Select All";
 });
 
-// Track group dropdown highlights
 trackGroupSelect.addEventListener("change", ()=>{
   const value = trackGroupSelect.value;
   if(!value) {
@@ -157,7 +169,6 @@ trackGroupSelect.addEventListener("change", ()=>{
   if(firstTrack) firstTrack.scrollIntoView({behavior:"smooth"});
 });
 
-// Playlist
 let playQueue = [];
 let currentTrackIndex = 0;
 let currentRepeat = 0;
