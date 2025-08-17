@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -265,6 +263,9 @@
         audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(
           trackNum
         ).padStart(3, "0")}.mp3`;
+
+        audioPlayer.load(); // Important fix to ensure source loads correctly
+
         audioPlayer
           .play()
           .catch((err) => console.log("Play error:", err));
