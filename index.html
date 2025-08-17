@@ -1,5 +1,9 @@
 
 
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,13 +12,24 @@
   <title>Mission Rajipo</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { padding-bottom: 120px; background-color: #f7fafc; } /* Increased padding for footer */
-    /* Larger, more thumb-friendly audio player */
+    /* General Styles & Spacing */
+    body { padding-bottom: 120px; background-color: #f7fafc; }
+    footer { padding: 0.75rem; }
+
+    /* Audio Player Styling */
     audio#audioPlayer {
       width: 100%;
-      height: 80px; /* Increased height for better tapability */
+      height: 80px;
       margin-bottom: 0;
     }
+    /* This rule fixes a bug on some browsers where the audio player can be too narrow */
+    @media (max-width: 640px) {
+      audio#audioPlayer {
+        min-width: 100%;
+      }
+    }
+
+    /* Uniform Group Buttons */
     .group-btn {
       width: 80px;
       height: 40px;
@@ -24,64 +39,84 @@
       text-align: center;
       white-space: nowrap;
       font-size: 0.875rem;
+      background-color: #e2e8f0; /* Light gray */
+      border: 1px solid #cbd5e1; /* Subtle border */
+      color: #1a202c; /* Dark text for contrast */
+      transition: background-color 0.2s, transform 0.1s;
     }
+    .group-btn:hover {
+      background-color: #cbd5e1;
+    }
+    .group-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Track list item hover effect */
+    .track-item:hover {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transform: translateY(-2px);
+      transition: all 0.2s ease-in-out;
+    }
+    
+    /* Visually confirmed selected item */
+    .track-item.checked {
+      border: 2px solid #3b82f6;
+    }
+
+    /* Thumb-friendly buttons */
     .thumb-friendly-btn {
       padding: 0.75rem 1.5rem;
     }
-    /* Adjusted footer padding for more space around the player */
-    footer {
-      padding: 0.75rem;
-    }
+
   </style>
 </head>
 <body>
   <div class="max-w-3xl mx-auto p-4">
-    <h1 class="text-2xl font-bold text-center mb-4">🎵 Mission Rajipo</h1>
+    <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">🎵 Mission Rajipo</h1>
 
         <input id="search" type="text" placeholder="Search shlok number..."
-      class="w-full p-2 mb-4 border rounded">
+      class="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
 
-        <div class="flex gap-2 mb-4">
+        <div class="flex gap-2 mb-6">
       <input id="rangeStart" type="number" min="1" max="315" placeholder="Start"
-        class="w-1/2 p-2 border rounded">
+        class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
       <input id="rangeEnd" type="number" min="1" max="315" placeholder="End"
-        class="w-1/2 p-2 border rounded">
+        class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
       <button onclick="selectRange()" 
-        class="px-3 py-2 bg-green-500 text-white rounded">Select Range</button>
+        class="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">Select Range</button>
     </div>
 
-        <div id="groups" class="mb-4 flex flex-wrap justify-center"></div>
+        <div id="groups" class="mb-6 flex flex-wrap justify-center"></div>
 
-        <div class="mt-4 space-y-2">
-      <label>Repeat each track: 
+        <div class="mt-4 space-y-3">
+      <label class="flex items-center">Repeat each track: 
         <input id="repeatCount" type="number" min="1" value="1"
-          class="w-16 p-1 border rounded">
+          class="w-16 p-1 border rounded ml-2 text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
       </label>
-      <div>
-        <label><input type="checkbox" id="shuffle"> Shuffle</label>
-        <label class="ml-4"><input type="checkbox" id="repeatPlaylist"> Repeat Playlist</label>
+      <div class="flex items-center space-x-4">
+        <label><input type="checkbox" id="shuffle" class="mr-1"> Shuffle</label>
+        <label><input type="checkbox" id="repeatPlaylist" class="mr-1"> Repeat Playlist</label>
       </div>
-      <div>
-        <label>Speed: 
-          <button onclick="changeSpeed(-0.1)" class="px-3 py-2 bg-gray-300 rounded">-</button>
-          <span id="speedDisplay">1.0</span>x
-          <button onclick="changeSpeed(0.1)" class="px-3 py-2 bg-gray-300 rounded">+</button>
-        </label>
+      <div class="flex items-center">
+        <label class="mr-2">Speed: </label>
+        <button onclick="changeSpeed(-0.1)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">-</button>
+        <span id="speedDisplay" class="mx-2 font-semibold">1.0</span>x
+        <button onclick="changeSpeed(0.1)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">+</button>
       </div>
       <button onclick="playSelected()"
-        class="w-full py-3 bg-blue-600 text-white rounded">▶ Play Selected</button>
+        class="w-full py-3 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors">▶ Play Selected</button>
     </div>
 
-        <ul id="trackList" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4"></ul>
+        <ul id="trackList" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6"></ul>
 
         <div id="recentlyPlayed" class="mt-6 hidden">
       <h2 class="text-lg font-semibold mb-2">Recently Played</h2>
-      <ul id="recentList" class="space-y-1"></ul>
+      <ul id="recentList" class="space-y-2"></ul>
     </div>
   </div>
 
     <footer class="fixed bottom-0 left-0 right-0 bg-white shadow p-3">
-    <audio id="audioPlayer" controls></audio>
+    <audio id="audioPlayer" controls aria-label="Audio Player"></audio>
   </footer>
 
   <script>
@@ -100,7 +135,14 @@
       if (!isNaN(start) && !isNaN(end) && start <= end) {
         document.querySelectorAll(".trackBox").forEach(cb => {
           const val = parseInt(cb.value, 10);
-          if (val >= start && val <= end) cb.checked = true;
+          const label = cb.closest("label");
+          if (val >= start && val <= end) {
+            cb.checked = true;
+            label.classList.add("checked");
+          } else {
+            cb.checked = false;
+            label.classList.remove("checked");
+          }
         });
       }
     }
@@ -165,7 +207,7 @@
         const li = document.createElement("li");
         const btn = document.createElement("button");
         btn.textContent = label;
-        btn.className = "px-2 py-1 bg-blue-500 text-white rounded text-xs";
+        btn.className = "px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors";
         btn.onclick = () => replaySelection(sel);
         li.appendChild(btn);
         recentList.appendChild(li);
@@ -175,7 +217,14 @@
     function replaySelection(sel) {
       const selected = sel.split(",").map(n => parseInt(n.trim()));
       document.querySelectorAll(".trackBox").forEach(cb => {
-        cb.checked = selected.includes(parseInt(cb.value, 10));
+        const label = cb.closest("label");
+        if (selected.includes(parseInt(cb.value, 10))) {
+          cb.checked = true;
+          label.classList.add("checked");
+        } else {
+          cb.checked = false;
+          label.classList.remove("checked");
+        }
       });
       playSelected();
     }
@@ -185,14 +234,30 @@
       try { history = JSON.parse(localStorage.getItem("recentSelections")) || []; } catch (e) { history = []; }
       if (history.length > 0) {
         const lastSel = history[0].split(",").map(n => parseInt(n.trim()));
-        document.querySelectorAll(".trackBox").forEach(cb => { cb.checked = lastSel.includes(parseInt(cb.value, 10)); });
+        document.querySelectorAll(".trackBox").forEach(cb => {
+          const label = cb.closest("label");
+          if (lastSel.includes(parseInt(cb.value, 10))) {
+            cb.checked = true;
+            label.classList.add("checked");
+          } else {
+            cb.checked = false;
+            label.classList.remove("checked");
+          }
+        });
       }
     }
     
     function selectGroup(start, end) {
       document.querySelectorAll(".trackBox").forEach(cb => {
         const val = parseInt(cb.value, 10);
-        if (val >= start && val <= end) cb.checked = true;
+        const label = cb.closest("label");
+        if (val >= start && val <= end) {
+          cb.checked = true;
+          label.classList.add("checked");
+        } else {
+          cb.checked = false;
+          label.classList.remove("checked");
+        }
       });
     }
 
@@ -202,7 +267,7 @@
         const end = Math.min(i + 9, totalTracks);
         const btn = document.createElement("button");
         btn.textContent = `${i}–${end}`;
-        btn.className = "px-3 py-1 m-1 bg-gray-200 rounded group-btn";
+        btn.className = "px-3 py-1 m-1 rounded group-btn";
         btn.onclick = () => selectGroup(i, end);
         groupDiv.appendChild(btn);
       }
@@ -212,7 +277,7 @@
       for (let i = 1; i <= totalTracks; i++) {
         const li = document.createElement("li");
         li.innerHTML = `
-          <label class="block p-3 bg-white rounded-lg shadow hover:shadow-lg transition cursor-pointer">
+          <label class="block p-3 bg-white rounded-lg shadow-sm hover:shadow-lg transition cursor-pointer track-item">
             <input type="checkbox" value="${i}" class="trackBox mr-2"> Shlok ${i}
           </label>`;
         trackListEl.appendChild(li);
@@ -225,13 +290,25 @@
       document.getElementById("search").addEventListener("input", function () {
         const term = this.value.trim();
         document.querySelectorAll(".trackBox").forEach(cb => {
-          const label = cb.closest("li");
+          const li = cb.closest("li");
           if (!term || cb.value === term) {
-            label.classList.remove("hidden");
+            li.classList.remove("hidden");
           } else {
-            label.classList.add("hidden");
+            li.classList.add("hidden");
           }
         });
+      });
+
+      // Update the `checked` class when a checkbox is clicked
+      document.getElementById("trackList").addEventListener("change", function(event) {
+        if (event.target.classList.contains("trackBox")) {
+          const label = event.target.closest("label");
+          if (event.target.checked) {
+            label.classList.add("checked");
+          } else {
+            label.classList.remove("checked");
+          }
+        }
       });
 
       audioPlayer.addEventListener("ended", () => {
