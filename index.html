@@ -1,8 +1,5 @@
 
 
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,22 +8,29 @@
   <title>Mission Rajipo</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { padding-bottom: 100px; background-color: #f7fafc; }
-    audio#audioPlayer { width: 100%; margin-bottom: 1rem; height: 60px; } /* Increased audio player height */
-    /* New style for uniform button size */
+    body { padding-bottom: 120px; background-color: #f7fafc; } /* Increased padding for footer */
+    /* Larger, more thumb-friendly audio player */
+    audio#audioPlayer {
+      width: 100%;
+      height: 80px; /* Increased height for better tapability */
+      margin-bottom: 0;
+    }
     .group-btn {
-      width: 80px; /* Fixed width */
-      height: 40px; /* Fixed height */
+      width: 80px;
+      height: 40px;
       display: inline-flex;
       justify-content: center;
       align-items: center;
       text-align: center;
-      white-space: nowrap; /* Prevents text from wrapping */
-      font-size: 0.875rem; /* Small font size for longer ranges */
+      white-space: nowrap;
+      font-size: 0.875rem;
     }
-    /* Added more padding for thumb-friendly controls */
     .thumb-friendly-btn {
       padding: 0.75rem 1.5rem;
+    }
+    /* Adjusted footer padding for more space around the player */
+    footer {
+      padding: 0.75rem;
     }
   </style>
 </head>
@@ -88,7 +92,7 @@
     let repeatCounter = 0;
     const totalTracks = 315;
     const trackListEl = document.getElementById("trackList");
-    let currentSpeed = 1.0; 
+    let currentSpeed = 1.0;
 
     function selectRange() {
       const start = parseInt(document.getElementById("rangeStart").value);
@@ -198,7 +202,7 @@
         const end = Math.min(i + 9, totalTracks);
         const btn = document.createElement("button");
         btn.textContent = `${i}–${end}`;
-        btn.className = "px-3 py-1 m-1 bg-gray-200 rounded group-btn"; /* Added new class */
+        btn.className = "px-3 py-1 m-1 bg-gray-200 rounded group-btn";
         btn.onclick = () => selectGroup(i, end);
         groupDiv.appendChild(btn);
       }
