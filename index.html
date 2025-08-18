@@ -179,6 +179,7 @@
   </div>
 
   <script>
+    // All global variables declared outside the listener
     let audioPlayer;
     let playlist = [];
     let currentIndex = 0;
@@ -188,6 +189,7 @@
     const trackListEl = document.getElementById("trackList");
     let currentSpeed = 1.0;
 
+    // All functions are defined outside the listener to be accessible globally
     function clearSelection() {
       document.querySelectorAll(".trackBox").forEach(cb => {
         cb.checked = false;
