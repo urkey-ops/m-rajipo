@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,6 +19,7 @@
       height: 80px;
       margin-bottom: 0;
     }
+
     /* This rule fixes a bug on some browsers where the audio player can be too narrow */
     @media (max-width: 640px) {
       audio#audioPlayer {
@@ -25,11 +27,48 @@
       }
     }
 
-    /* Uniform Group Buttons */
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0s, opacity 0.3s;
+    }
+    .modal-overlay.open {
+      visibility: visible;
+      opacity: 1;
+    }
+    .modal-content {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+    .close-modal {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #94a3b8;
+    }
     .group-btn {
-      width: 80px;
-      height: 40px;
-      display: inline-flex;
+      position: relative;
+      width: 100px;
+      height: 50px;
+      display: flex;
       justify-content: center;
       align-items: center;
       text-align: center;
@@ -46,46 +85,63 @@
     .group-btn:active {
       transform: scale(0.98);
     }
-
+    .group-btn.selected {
+      background-color: #3b82f6;
+      color: white;
+    }
+    .group-btn.selected .checkmark {
+      display: block;
+    }
+    .checkmark {
+      display: none;
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      color: white;
+      font-weight: bold;
+      font-size: 0.875rem;
+    }
     /* Track list item hover effect */
     .track-item:hover {
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       transform: translateY(-2px);
       transition: all 0.2s ease-in-out;
     }
-    
     /* Visually confirmed selected item */
     .track-item.checked {
       border: 2px solid #3b82f6;
     }
-
     /* Thumb-friendly buttons */
     .thumb-friendly-btn {
       padding: 0.75rem 1.5rem;
     }
-
   </style>
 </head>
 <body>
   <div class="max-w-3xl mx-auto p-4">
     <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">🎵 Mission Rajipo</h1>
 
-        <input id="search" type="text" placeholder="Search shlok number..."
-      class="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-        <div class="flex gap-2 mb-6">
-      <input id="rangeStart" type="number" min="1" max="315" placeholder="Start"
-        class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <input id="rangeEnd" type="number" min="1" max="315" placeholder="End"
-        class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <button onclick="selectRange()" 
-        class="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">Select Range</button>
+        <div class="mb-4">
+      <input id="search" type="text" placeholder="Search shlok number..."
+        class="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <div class="flex gap-2">
+        <input id="rangeStart" type="number" min="1" max="315" placeholder="Start"
+          class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input id="rangeEnd" type="number" min="1" max="315" placeholder="End"
+          class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
     </div>
 
-        <div id="groups" class="mb-6 grid grid-cols-3 gap-2 justify-items-center"></div>
+        <div class="flex justify-center mb-6">
+      <button onclick="openGroupModal()" class="w-16 h-16 p-2 rounded-full bg-blue-500 text-white flex justify-center items-center hover:bg-blue-600 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="5" r="3" /><circle cx="12" cy="5" r="3" /><circle cx="19" cy="5" r="3" /><circle cx="5" cy="12" r="3" /><circle cx="12" cy="12" r="3" /><circle cx="19" cy="12" r="3" /><circle cx="5" cy="19" r="3" /><circle cx="12" cy="19" r="3" /><circle cx="19" cy="19" r="3" />
+        </svg>
+      </button>
+    </div>
 
         <div class="mt-4 space-y-3">
-      <label class="flex items-center">Repeat each track: 
+      <label class="flex items-center">Repeat each track:
         <input id="repeatCount" type="number" min="1" value="1"
           class="w-16 p-1 border rounded ml-2 text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
       </label>
@@ -94,13 +150,15 @@
         <label><input type="checkbox" id="repeatPlaylist" class="mr-1"> Repeat Playlist</label>
       </div>
       <div class="flex items-center">
-        <label class="mr-2">Speed: </label>
+        <label class="mr-2">Speed: </label>
         <button onclick="changeSpeed(-0.1)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">-</button>
         <span id="speedDisplay" class="mx-2 font-semibold">1.0</span>x
         <button onclick="changeSpeed(0.1)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">+</button>
       </div>
       <button onclick="playSelected()"
         class="w-full py-3 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors">▶ Play Selected</button>
+      <button onclick="clearSelection()"
+        class="w-full py-3 bg-red-500 text-white rounded font-bold hover:bg-red-600 transition-colors">Clear Selection</button>
     </div>
 
         <ul id="trackList" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6"></ul>
@@ -115,6 +173,14 @@
     <audio id="audioPlayer" controls aria-label="Audio Player"></audio>
   </footer>
 
+    <div id="groupModal" class="modal-overlay">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeGroupModal()">&times;</span>
+      <h3 class="text-xl font-bold mb-4">Select Groups</h3>
+      <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center"></div>
+    </div>
+  </div>
+
   <script>
     let audioPlayer;
     let playlist = [];
@@ -125,22 +191,41 @@
     const trackListEl = document.getElementById("trackList");
     let currentSpeed = 1.0;
 
-    function selectRange() {
-      const start = parseInt(document.getElementById("rangeStart").value);
-      const end = parseInt(document.getElementById("rangeEnd").value);
-      if (!isNaN(start) && !isNaN(end) && start <= end) {
-        document.querySelectorAll(".trackBox").forEach(cb => {
-          const val = parseInt(cb.value, 10);
-          const label = cb.closest("label");
-          if (val >= start && val <= end) {
-            cb.checked = true;
+    function clearSelection() {
+      document.querySelectorAll(".trackBox").forEach(cb => {
+        cb.checked = false;
+        cb.closest("label").classList.remove("checked");
+      });
+      document.querySelectorAll(".group-btn").forEach(btn => {
+        btn.classList.remove("selected");
+      });
+      playlist = [];
+      currentIndex = 0;
+    }
+
+    function toggleGroup(start, end, element) {
+      const isSelected = element.classList.toggle('selected');
+      
+      for (let i = start; i <= end; i++) {
+        const checkbox = document.querySelector(`.trackBox[value="${i}"]`);
+        if (checkbox) {
+          checkbox.checked = isSelected;
+          const label = checkbox.closest("label");
+          if (isSelected) {
             label.classList.add("checked");
           } else {
-            cb.checked = false;
             label.classList.remove("checked");
           }
-        });
+        }
       }
+    }
+
+    function openGroupModal() {
+      document.getElementById("groupModal").classList.add("open");
+    }
+
+    function closeGroupModal() {
+      document.getElementById("groupModal").classList.remove("open");
     }
 
     function changeSpeed(delta) {
@@ -211,6 +296,7 @@
     }
 
     function replaySelection(sel) {
+      clearSelection();
       const selected = sel.split(",").map(n => parseInt(n.trim()));
       document.querySelectorAll(".trackBox").forEach(cb => {
         const label = cb.closest("label");
@@ -243,20 +329,6 @@
       }
     }
     
-    function selectGroup(start, end) {
-      document.querySelectorAll(".trackBox").forEach(cb => {
-        const val = parseInt(cb.value, 10);
-        const label = cb.closest("label");
-        if (val >= start && val <= end) {
-          cb.checked = true;
-          label.classList.add("checked");
-        } else {
-          cb.checked = false;
-          label.classList.remove("checked");
-        }
-      });
-    }
-
     function generateGroups() {
       const groupDiv = document.getElementById("groups");
       for (let i = 1; i <= totalTracks; i += 10) {
@@ -264,7 +336,8 @@
         const btn = document.createElement("button");
         btn.textContent = `${i}–${end}`;
         btn.className = "px-3 py-1 m-1 rounded group-btn";
-        btn.onclick = () => selectGroup(i, end);
+        btn.innerHTML = `${i}–${end}<span class="checkmark">✓</span>`;
+        btn.onclick = () => toggleGroup(i, end, btn);
         groupDiv.appendChild(btn);
       }
     }
@@ -295,7 +368,6 @@
         });
       });
 
-      // Update the `checked` class when a checkbox is clicked
       document.getElementById("trackList").addEventListener("change", function(event) {
         if (event.target.classList.contains("trackBox")) {
           const label = event.target.closest("label");
