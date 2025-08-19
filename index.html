@@ -1,3 +1,6 @@
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -245,7 +248,7 @@
             } else {
                 // Playlist has ended
                 audioPlayer.pause();
-                // Bug fix: do not set src to "" to prevent the "error" display
+                audioPlayer.src = "";
                 console.log("Playlist finished.");
                 releaseWakeLock();
             }
