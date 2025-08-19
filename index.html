@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -147,7 +146,7 @@
                 class="w-full py-4 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors">▶ Play Next</button>
         </div>
 
-        <div id="recentlyPlayed" class="mt-6 hidden">
+        <div id="recentlyPlayed" class="mt-6">
             <h2 class="text-lg font-semibold mb-2 text-gray-800">Recently Played</h2>
             <ul id="recentList" class="space-y-2"></ul>
             <button onclick="clearHistory()" class="mt-4 w-full py-2 bg-gray-400 text-white rounded font-bold hover:bg-gray-500 transition-colors">
@@ -200,7 +199,6 @@
             isQuizMode = !isQuizMode;
             document.getElementById('regularControls').classList.toggle('hidden', isQuizMode);
             document.getElementById('trackList').classList.toggle('hidden', isQuizMode);
-            document.getElementById('recentlyPlayed').classList.toggle('hidden', isQuizMode);
             document.getElementById('mainControls').classList.toggle('hidden', isQuizMode);
             document.getElementById('quizControls').classList.toggle('hidden', !isQuizMode);
             
@@ -364,7 +362,10 @@
             const recentDiv = document.getElementById("recentlyPlayed");
             const recentList = document.getElementById("recentList");
             recentList.innerHTML = "";
-            if (history.length === 0) { recentDiv.classList.add("hidden"); return; }
+            if (history.length === 0) { 
+                recentDiv.classList.add("hidden"); 
+                return; 
+            }
             recentDiv.classList.remove("hidden");
             history.forEach(sel => {
                 const numbers = sel.split(",").map(n => parseInt(n.trim()));
@@ -393,7 +394,10 @@
                 }
             });
             updateGroupButtonSelection();
-            playSelected();
+            // This is the key change: only auto-start playback if not in Quiz Mode
+            if (!isQuizMode) {
+                playSelected();
+            }
         }
 
         function restoreLastSelection() {
