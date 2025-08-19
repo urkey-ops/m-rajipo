@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* General Styles & Spacing */
-        body { padding-bottom: 120px; background-color: #f7fafc; font-family: sans-serif; }
+        body { padding-bottom: 120px; background-color: #f7fafc; }
         footer { padding: 0.75rem; }
 
         /* Audio Player Styling */
@@ -93,34 +93,28 @@
         .recent-item input[type="checkbox"] {
             margin-right: 0.5rem;
         }
-
-        /* Thumb-friendly button styles */
-        .thumb-btn {
-            min-height: 48px;
-            font-size: 1rem;
-        }
     </style>
 </head>
 <body>
-    <div class="max-w-3xl mx-auto p-4 pb-28">
+    <div class="max-w-3xl mx-auto p-4">
         <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">🎵 Mission Rajipo</h1>
 
         <div id="mainControls" class="space-y-4 mb-6">
             <input id="search" type="text" placeholder="Search shlok number..."
-                class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 thumb-btn">
+                class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
             <div class="flex items-center gap-2">
                 <input id="rangeStart" type="number" min="1" max="315" placeholder="Start"
-                    class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 thumb-btn">
+                    class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <input id="rangeEnd" type="number" min="1" max="315" placeholder="End"
-                    class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 thumb-btn">
-                <button onclick="selectRange()" aria-label="Select Range"
-                    class="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors thumb-btn">Select Range</button>
+                    class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="selectRange()"
+                    class="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">Select Range</button>
             </div>
         </div>
 
         <div class="flex justify-center mb-6">
-            <button onclick="toggleGroupDisplay()" aria-label="Toggle Groups"
-                class="w-full py-4 bg-blue-500 text-white rounded font-bold hover:bg-blue-600 transition-colors thumb-btn">Groups</button>
+            <button onclick="toggleGroupDisplay()"
+                class="w-full py-4 bg-blue-500 text-white rounded font-bold hover:bg-blue-600 transition-colors">Groups</button>
         </div>
 
         <div id="groups" class="mb-6 grid grid-cols-3 gap-2 justify-items-center hidden"></div>
@@ -128,7 +122,7 @@
         <div id="regularControls" class="mt-4 space-y-3">
             <label class="flex items-center">Repeat each track:
                 <input id="repeatCount" type="number" min="1" value="1"
-                    class="w-16 p-1 border rounded ml-2 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 thumb-btn">
+                    class="w-16 p-1 border rounded ml-2 text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
             </label>
             <div class="flex items-center space-x-4">
                 <label><input type="checkbox" id="shuffle" class="mr-1"> Shuffle</label>
@@ -136,21 +130,19 @@
             </div>
             <div class="flex items-center">
                 <label class="mr-2">Speed: </label>
-                <button onclick="changeSpeed(-0.1)" aria-label="Decrease Speed"
-                    class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors thumb-btn">-</button>
+                <button onclick="changeSpeed(-0.1)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">-</button>
                 <span id="speedDisplay" class="mx-2 font-semibold">1.0</span>x
-                <button onclick="changeSpeed(0.1)" aria-label="Increase Speed"
-                    class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors thumb-btn">+</button>
+                <button onclick="changeSpeed(0.1)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">+</button>
             </div>
-            <button onclick="playSelected()" aria-label="Play Selected"
-                class="w-full py-4 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors thumb-btn">▶ Play Selected</button>
-            <button onclick="clearSelection()" aria-label="Clear Selection"
-                class="w-full py-4 bg-red-500 text-white rounded font-bold hover:bg-red-600 transition-colors thumb-btn">Clear Selection</button>
+            <button onclick="playSelected()"
+                class="w-full py-4 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors">▶ Play Selected</button>
+            <button onclick="clearSelection()"
+                class="w-full py-4 bg-red-500 text-white rounded font-bold hover:bg-red-600 transition-colors">Clear Selection</button>
         </div>
         
         <div class="flex justify-center mt-6">
-            <button onclick="toggleMode()" aria-label="Toggle Quiz Mode"
-                class="w-full py-4 bg-gray-500 text-white rounded font-bold hover:bg-gray-600 transition-colors thumb-btn">
+            <button onclick="toggleMode()"
+                class="w-full py-4 bg-gray-500 text-white rounded font-bold hover:bg-gray-600 transition-colors">
                 Toggle to Quiz Mode
             </button>
         </div>
@@ -160,26 +152,22 @@
             <p id="currentShlokQuiz" class="text-lg font-semibold">Shlok 0</p>
             <p id="quizStatus" class="text-green-600 font-semibold hidden">Audio Paused. Your turn to recite! <span id="countdown"></span></p>
             <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                <button id="autoPlayToggle" onclick="toggleAutoPlay()" aria-label="Toggle Auto-Play"
-                    class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors thumb-btn">Auto-Play: OFF</button>
+                <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors">Auto-Play: OFF</button>
                 <div id="autoPlayTimeContainer" class="flex items-center space-x-2 hidden">
                     <span>Pause Duration:</span>
-                    <button onclick="changeQuizTime(-10)" aria-label="Decrease Pause Duration"
-                        class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors thumb-btn">-</button>
+                    <button onclick="changeQuizTime(-10)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">-</button>
                     <span id="quizTimeDisplay" class="mx-2 font-semibold">30s</span>
-                    <button onclick="changeQuizTime(10)" aria-label="Increase Pause Duration"
-                        class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors thumb-btn">+</button>
+                    <button onclick="changeQuizTime(10)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">+</button>
                 </div>
             </div>
-            <button onclick="playNextQuizTrack()" aria-label="Play Next Quiz Track"
-                class="w-full py-4 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors thumb-btn">▶ Play Next</button>
+            <button onclick="playNextQuizTrack()"
+                class="w-full py-4 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors">▶ Play Next</button>
         </div>
 
         <div id="recentlyPlayed" class="mt-6">
             <h2 class="text-lg font-semibold mb-2 text-gray-800">Recently Played</h2>
             <ul id="recentList" class="space-y-2"></ul>
-            <button onclick="clearHistory()" aria-label="Clear History"
-                class="mt-4 w-full py-2 bg-gray-400 text-white rounded font-bold hover:bg-gray-500 transition-colors thumb-btn">
+            <button onclick="clearHistory()" class="mt-4 w-full py-2 bg-gray-400 text-white rounded font-bold hover:bg-gray-500 transition-colors">
                 Clear History
             </button>
         </div>
@@ -220,15 +208,11 @@
             }
         };
 
-        const releaseWakeLock = async () => {
+        const releaseWakeLock = () => {
             if (wakeLock) {
-                try {
-                    await wakeLock.release();
-                    wakeLock = null;
-                    console.log('Wake Lock is released');
-                } catch (err) {
-                    console.log('Failed to release wake lock:', err);
-                }
+                wakeLock.release();
+                wakeLock = null;
+                console.log('Wake Lock is released');
             }
         };
 
@@ -563,13 +547,6 @@
             const searchInput = document.getElementById("search");
             const trackListContainer = document.getElementById("trackList");
 
-            // Corrected and placed DOMContentLoaded calls
-            generateGroups();
-            generateTracks();
-            restoreLastSelection();
-            renderRecentSelections();
-            // End of corrected calls
-
             searchInput.addEventListener("input", function () {
                 const term = this.value.trim();
                 document.querySelectorAll(".trackBox").forEach(cb => {
@@ -636,6 +613,11 @@
                     playCurrent();
                 }
             });
+
+            generateGroups();
+            generateTracks();
+            restoreLastSelection();
+            renderRecentSelections();
         });
     </script>
 </body>
