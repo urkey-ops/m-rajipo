@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -74,6 +76,24 @@
         /* Input Field Focus Shadow */
         input:focus {
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.5);
+        }
+
+        /* Style for recently played checkboxes */
+        .recent-item {
+            display: block;
+            padding: 0.75rem;
+            background-color: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .recent-item:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
+        }
+        .recent-item input[type="checkbox"] {
+            margin-right: 0.5rem;
         }
     </style>
 </head>
@@ -251,6 +271,10 @@
             document.querySelectorAll(".group-btn").forEach(btn => {
                 btn.classList.remove("selected");
             });
+            // Also clear recently played checkboxes
+            document.querySelectorAll(".recent-box").forEach(cb => {
+                cb.checked = false;
+            });
             playlist = [];
             currentIndex = 0;
         }
@@ -318,8 +342,22 @@
         }
 
         function playNextQuizTrack() {
-            const selected = Array.from(document.querySelectorAll(".trackBox:checked"))
-                .map(cb => parseInt(cb.value, 10));
+            let selected = [];
+            
+            // Check for recently played selections first
+            const recentSelections = Array.from(document.querySelectorAll(".recent-box:checked"))
+                .map(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim())));
+
+            if (recentSelections.length > 0) {
+                // Combine all selections and remove duplicates
+                const allNumbers = new Set(recentSelections.flat());
+                selected = Array.from(allNumbers);
+            } else {
+                // If no recent selections, fall back to main track list
+                selected = Array.from(document.querySelectorAll(".trackBox:checked"))
+                    .map(cb => parseInt(cb.value, 10));
+            }
+
             if (selected.length === 0) {
                 alert("Please select a group of shlokas to quiz yourself on first!");
                 return;
@@ -367,37 +405,32 @@
                 return; 
             }
             recentDiv.classList.remove("hidden");
-            history.forEach(sel => {
+            history.forEach((sel, index) => {
                 const numbers = sel.split(",").map(n => parseInt(n.trim()));
-                let label = numbers.length <= 6 ? "Shlok " + numbers.join(", ") : `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${numbers.length} total)`;
+                let labelText = numbers.length <= 6 ? "Shlok " + numbers.join(", ") : `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${numbers.length} total)`;
                 const li = document.createElement("li");
-                const btn = document.createElement("button");
-                btn.textContent = label;
-                btn.className = "px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors";
-                btn.onclick = () => replaySelection(sel);
-                li.appendChild(btn);
+                li.className = "space-y-2";
+                li.innerHTML = `
+                    <label class="recent-item">
+                        <input type="checkbox" class="recent-box" data-selection="${sel}">
+                        <span>${labelText}</span>
+                    </label>
+                `;
+                li.querySelector('.recent-box').addEventListener('change', () => {
+                    // Update main track list to reflect selected recent history items
+                    const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
+                    const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(Number)));
+                    
+                    document.querySelectorAll(".trackBox").forEach(cb => {
+                        const trackNum = parseInt(cb.value);
+                        const isChecked = allNumbers.has(trackNum);
+                        cb.checked = isChecked;
+                        cb.closest("label").classList.toggle("checked", isChecked);
+                    });
+                    updateGroupButtonSelection();
+                });
                 recentList.appendChild(li);
             });
-        }
-
-        function replaySelection(sel) {
-            clearSelection();
-            const selected = sel.split(",").map(n => parseInt(n.trim()));
-            document.querySelectorAll(".trackBox").forEach(cb => {
-                const label = cb.closest("label");
-                if (selected.includes(parseInt(cb.value, 10))) {
-                    cb.checked = true;
-                    label.classList.add("checked");
-                } else {
-                    cb.checked = false;
-                    label.classList.remove("checked");
-                }
-            });
-            updateGroupButtonSelection();
-            // This is the key change: only auto-start playback if not in Quiz Mode
-            if (!isQuizMode) {
-                playSelected();
-            }
         }
 
         function restoreLastSelection() {
@@ -496,6 +529,8 @@
                         label.classList.remove("checked");
                     }
                     updateGroupButtonSelection();
+                    // Uncheck all recent history items if a main track is checked/unchecked
+                    document.querySelectorAll(".recent-box").forEach(cb => cb.checked = false);
                 }
             });
             
