@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -198,49 +195,12 @@
         let countdownInterval;
         let currentQuizTime = 30; // Default quiz time
 
-        let wakeLock = null;
-
-        const requestWakeLock = async () => {
-            if ('wakeLock' in navigator) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock is active');
-                } catch (err) {
-                    console.log('Failed to request wake lock:', err);
-                }
-            }
-        };
-
-        const releaseWakeLock = () => {
-            if (wakeLock) {
-                wakeLock.release();
-                wakeLock = null;
-                console.log('Wake Lock is released');
-            }
-        };
-
-        // Re-request wake lock if tab becomes visible and audio is playing
-        document.addEventListener('visibilitychange', () => {
-            if (wakeLock !== null && document.visibilityState === 'visible' && !audioPlayer.paused) {
-                requestWakeLock();
-            }
-        });
-
-        // Release wake lock when audio is paused manually
-        audioPlayer.addEventListener('pause', () => {
-            releaseWakeLock();
-        });
-
         function playCurrent() {
             if (currentIndex < playlist.length) {
                 const trackNum = playlist[currentIndex];
                 audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
                 audioPlayer.playbackRate = currentSpeed;
-                requestWakeLock();
-                audioPlayer.play().catch(err => {
-                    console.log("Play error:", err);
-                    releaseWakeLock();
-                });
+                audioPlayer.play().catch(err => console.log("Play error:", err));
             } else if (document.getElementById("repeatPlaylist").checked) {
                 // Repeat the entire playlist
                 currentIndex = 0;
@@ -250,7 +210,6 @@
                 audioPlayer.pause();
                 audioPlayer.src = "";
                 console.log("Playlist finished.");
-                releaseWakeLock();
             }
         }
 
@@ -415,11 +374,7 @@
             
             hasQuizPaused = false;
             
-            requestWakeLock();
-            audioPlayer.play().catch(err => {
-                console.log("Play error:", err);
-                releaseWakeLock();
-            });
+            audioPlayer.play().catch(err => console.log("Play error:", err));
 
             currentIndex++;
         }
@@ -460,16 +415,17 @@
                     </label>
                 `;
                 li.querySelector('.recent-box').addEventListener('change', () => {
-                    // Uncheck main track list items if a recent item is checked
-                    if (li.querySelector('.recent-box').checked) {
-                        document.querySelectorAll(".trackBox").forEach(cb => {
-                            cb.checked = false;
-                            cb.closest("label").classList.remove("checked");
-                        });
-                        document.querySelectorAll(".group-btn").forEach(btn => {
-                            btn.classList.remove("selected");
-                        });
-                    }
+                    // Update main track list to reflect selected recent history items
+                    const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
+                    const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(Number)));
+                    
+                    document.querySelectorAll(".trackBox").forEach(cb => {
+                        const trackNum = parseInt(cb.value);
+                        const isChecked = allNumbers.has(trackNum);
+                        cb.checked = isChecked;
+                        cb.closest("label").classList.toggle("checked", isChecked);
+                    });
+                    updateGroupButtonSelection();
                 });
                 recentList.appendChild(li);
             });
