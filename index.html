@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -176,6 +177,24 @@
         let autoPlayTimeout;
         let countdownInterval;
         let currentQuizTime = 30; // Default quiz time
+
+        function playCurrent() {
+            if (currentIndex < playlist.length) {
+                const trackNum = playlist[currentIndex];
+                audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+                audioPlayer.playbackRate = currentSpeed;
+                audioPlayer.play().catch(err => console.log("Play error:", err));
+            } else if (document.getElementById("repeatPlaylist").checked) {
+                // Repeat the entire playlist
+                currentIndex = 0;
+                playCurrent();
+            } else {
+                // Playlist has ended
+                audioPlayer.pause();
+                audioPlayer.src = "";
+                console.log("Playlist finished.");
+            }
+        }
 
         function toggleMode() {
             isQuizMode = !isQuizMode;
