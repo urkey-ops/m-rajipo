@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -167,9 +169,16 @@
             const modeButton = document.querySelector('button[onclick="toggleMode()"]');
             modeButton.textContent = isQuizMode ? 'Toggle to Regular Mode' : 'Toggle to Quiz Mode';
 
-            clearSelection();
             if (isQuizMode) {
+                // If moving into quiz mode, clear the current playlist but keep selections.
+                playlist = [];
+                currentIndex = 0;
                 restoreLastSelection();
+                // Now that we have the last selection, update the group button visual state
+                updateGroupButtonSelection();
+            } else {
+                // If moving out of quiz mode, clear selection
+                clearSelection();
             }
         }
 
@@ -204,6 +213,7 @@
                         label.classList.remove("checked");
                     }
                 });
+                updateGroupButtonSelection();
             }
         }
 
@@ -331,6 +341,7 @@
                     label.classList.remove("checked");
                 }
             });
+            updateGroupButtonSelection();
             playSelected();
         }
 
@@ -349,7 +360,27 @@
                         label.classList.remove("checked");
                     }
                 });
+                updateGroupButtonSelection();
             }
+        }
+        
+        function updateGroupButtonSelection() {
+            const selectedTracks = new Set(Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value)));
+            document.querySelectorAll(".group-btn").forEach(btn => {
+                const [start, end] = btn.textContent.split('–').map(Number);
+                let isGroupSelected = true;
+                for(let i = start; i <= end; i++) {
+                    if (!selectedTracks.has(i)) {
+                        isGroupSelected = false;
+                        break;
+                    }
+                }
+                if (isGroupSelected && (end - start + 1) === Array.from(selectedTracks).filter(v => v >= start && v <= end).length) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
         }
 
         function generateGroups() {
@@ -401,6 +432,7 @@
                     } else {
                         label.classList.remove("checked");
                     }
+                    updateGroupButtonSelection();
                 }
             });
             
