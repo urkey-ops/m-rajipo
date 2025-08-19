@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -136,20 +133,14 @@
             <h2 class="text-xl font-bold">Quiz Mode</h2>
             <p id="currentShlokQuiz" class="text-lg font-semibold">Shlok 0</p>
             <p id="quizStatus" class="text-green-600 font-semibold hidden">Audio Paused. Your turn to recite! <span id="countdown"></span></p>
-            <div class="flex justify-center space-x-4">
+            <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
                 <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors">Auto-Play: OFF</button>
-                <label id="autoPlayTimeContainer" class="flex items-center space-x-2 hidden">
+                <div id="autoPlayTimeContainer" class="flex items-center space-x-2 hidden">
                     <span>Pause Duration:</span>
-                    <select id="autoPlayTime" class="p-1 border rounded">
-                        <option value="30">30s</option>
-                        <option value="40">40s</option>
-                        <option value="50">50s</option>
-                        <option value="60">60s</option>
-                        <option value="70">70s</option>
-                        <option value="80">80s</option>
-                        <option value="90">90s</option>
-                    </select>
-                </label>
+                    <button onclick="changeQuizTime(-10)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">-</button>
+                    <span id="quizTimeDisplay" class="mx-2 font-semibold">30s</span>
+                    <button onclick="changeQuizTime(10)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors">+</button>
+                </div>
             </div>
             <button onclick="playNextQuizTrack()"
                 class="w-full py-4 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors">▶ Play Next</button>
@@ -184,6 +175,7 @@
         let autoPlay = false;
         let autoPlayTimeout;
         let countdownInterval;
+        let currentQuizTime = 30; // Default quiz time
 
         function toggleMode() {
             isQuizMode = !isQuizMode;
@@ -219,8 +211,15 @@
             button.classList.toggle('bg-gray-400', !autoPlay);
             button.classList.toggle('bg-green-500', autoPlay);
 
-            // Toggle visibility of the timer dropdown
+            // Toggle visibility of the timer controls
             timerContainer.classList.toggle('hidden', !autoPlay);
+        }
+
+        function changeQuizTime(delta) {
+            currentQuizTime += delta;
+            if (currentQuizTime < 30) currentQuizTime = 30;
+            if (currentQuizTime > 90) currentQuizTime = 90;
+            document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
         }
 
         function toggleGroupDisplay() {
@@ -483,8 +482,7 @@
                     hasQuizPaused = true;
                     document.getElementById('quizStatus').classList.remove('hidden');
 
-                    const selectedDuration = parseInt(document.getElementById('autoPlayTime').value);
-                    let countdown = selectedDuration;
+                    let countdown = currentQuizTime;
                     const countdownEl = document.getElementById('countdown');
                     countdownEl.textContent = `(${countdown}s)`;
                     
@@ -500,7 +498,7 @@
                     if (autoPlay) {
                         autoPlayTimeout = setTimeout(() => {
                             playNextQuizTrack();
-                        }, selectedDuration * 1000);
+                        }, currentQuizTime * 1000);
                     }
                 }
             });
