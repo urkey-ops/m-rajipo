@@ -563,17 +563,12 @@
             const searchInput = document.getElementById("search");
             const trackListContainer = document.getElementById("trackList");
 
-            // Explicitly ensure visibility of main controls and track list
-            document.getElementById('regularControls').classList.remove('hidden');
-            document.getElementById('trackList').classList.remove('hidden');
-            document.getElementById('mainControls').classList.remove('hidden');
-            document.getElementById('quizControls').classList.add('hidden');
-            isQuizMode = false;
-
+            // Corrected and placed DOMContentLoaded calls
             generateGroups();
             generateTracks();
             restoreLastSelection();
             renderRecentSelections();
+            // End of corrected calls
 
             searchInput.addEventListener("input", function () {
                 const term = this.value.trim();
