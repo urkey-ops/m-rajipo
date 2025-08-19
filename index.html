@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -155,6 +153,26 @@
                 class="w-full py-4 bg-gray-500 text-white rounded font-bold hover:bg-gray-600 transition-colors thumb-btn">
                 Toggle to Quiz Mode
             </button>
+        </div>
+
+        <div id="quizControls" class="mt-4 space-y-3 hidden">
+            <h2 class="text-xl font-bold">Quiz Mode</h2>
+            <p id="currentShlokQuiz" class="text-lg font-semibold">Shlok 0</p>
+            <p id="quizStatus" class="text-green-600 font-semibold hidden">Audio Paused. Your turn to recite! <span id="countdown"></span></p>
+            <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <button id="autoPlayToggle" onclick="toggleAutoPlay()" aria-label="Toggle Auto-Play"
+                    class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors thumb-btn">Auto-Play: OFF</button>
+                <div id="autoPlayTimeContainer" class="flex items-center space-x-2 hidden">
+                    <span>Pause Duration:</span>
+                    <button onclick="changeQuizTime(-10)" aria-label="Decrease Pause Duration"
+                        class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors thumb-btn">-</button>
+                    <span id="quizTimeDisplay" class="mx-2 font-semibold">30s</span>
+                    <button onclick="changeQuizTime(10)" aria-label="Increase Pause Duration"
+                        class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors thumb-btn">+</button>
+                </div>
+            </div>
+            <button onclick="playNextQuizTrack()" aria-label="Play Next Quiz Track"
+                class="w-full py-4 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors thumb-btn">▶ Play Next</button>
         </div>
 
         <div id="recentlyPlayed" class="mt-6">
@@ -545,12 +563,17 @@
             const searchInput = document.getElementById("search");
             const trackListContainer = document.getElementById("trackList");
 
-            // Corrected and placed DOMContentLoaded calls
+            // Explicitly ensure visibility of main controls and track list
+            document.getElementById('regularControls').classList.remove('hidden');
+            document.getElementById('trackList').classList.remove('hidden');
+            document.getElementById('mainControls').classList.remove('hidden');
+            document.getElementById('quizControls').classList.add('hidden');
+            isQuizMode = false;
+
             generateGroups();
             generateTracks();
             restoreLastSelection();
             renderRecentSelections();
-            // End of corrected calls
 
             searchInput.addEventListener("input", function () {
                 const term = this.value.trim();
