@@ -1,3 +1,6 @@
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -135,7 +138,7 @@
             <p id="quizStatus" class="text-green-600 font-semibold hidden">Audio Paused. Your turn to recite! <span id="countdown"></span></p>
             <div class="flex justify-center space-x-4">
                 <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors">Auto-Play: OFF</button>
-                <label class="flex items-center space-x-2">
+                <label id="autoPlayTimeContainer" class="flex items-center space-x-2 hidden">
                     <span>Pause Duration:</span>
                     <select id="autoPlayTime" class="p-1 border rounded">
                         <option value="30">30s</option>
@@ -210,9 +213,14 @@
         function toggleAutoPlay() {
             autoPlay = !autoPlay;
             const button = document.getElementById("autoPlayToggle");
+            const timerContainer = document.getElementById("autoPlayTimeContainer");
+
             button.textContent = `Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
             button.classList.toggle('bg-gray-400', !autoPlay);
             button.classList.toggle('bg-green-500', autoPlay);
+
+            // Toggle visibility of the timer dropdown
+            timerContainer.classList.toggle('hidden', !autoPlay);
         }
 
         function toggleGroupDisplay() {
