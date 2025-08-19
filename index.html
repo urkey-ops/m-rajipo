@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -129,6 +127,7 @@
                 <div id="quizControls" class="mt-4 space-y-3 hidden">
             <h2 class="text-xl font-bold">Quiz Mode</h2>
             <p id="currentShlokQuiz" class="text-lg font-semibold">Shlok 0</p>
+            <p id="quizStatus" class="text-green-600 font-semibold hidden">Audio Paused. Your turn to recite!</p>
             <button onclick="playNextQuizTrack()"
                 class="w-full py-3 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 transition-colors">▶ Play Next</button>
         </div>
@@ -155,7 +154,7 @@
         const trackListEl = document.getElementById("trackList");
         let currentSpeed = 1.0;
         let isQuizMode = false;
-        let quizTimer;
+        let hasQuizPaused = false;
 
         function toggleMode() {
             isQuizMode = !isQuizMode;
@@ -170,7 +169,6 @@
 
             clearSelection();
             if (isQuizMode) {
-                // In quiz mode, let's pre-populate with the last selection for ease of use
                 restoreLastSelection();
             }
         }
@@ -267,14 +265,14 @@
             
             const trackNum = playlist[currentIndex];
             document.getElementById('currentShlokQuiz').textContent = `Now playing: Shlok ${trackNum}`;
+            document.getElementById('quizStatus').classList.add('hidden');
             audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
             audioPlayer.playbackRate = currentSpeed;
-            audioPlayer.play().then(() => {
-                clearTimeout(quizTimer);
-                quizTimer = setTimeout(() => {
-                    audioPlayer.pause();
-                }, 3000); // 3 seconds in milliseconds
-            }).catch(err => console.log("Play error:", err));
+            
+            // Reset the pause flag for the new track
+            hasQuizPaused = false;
+            
+            audioPlayer.play().catch(err => console.log("Play error:", err));
 
             currentIndex++;
         }
@@ -405,6 +403,15 @@
                     }
                 }
             });
+            
+            audioPlayer.addEventListener("timeupdate", () => {
+                if (isQuizMode && audioPlayer.currentTime >= 3 && !hasQuizPaused) {
+                    audioPlayer.pause();
+                    hasQuizPaused = true;
+                    document.getElementById('quizStatus').classList.remove('hidden');
+                }
+            });
+
 
             audioPlayer.addEventListener("ended", () => {
                 if (!isQuizMode) {
