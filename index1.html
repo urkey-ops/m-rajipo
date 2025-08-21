@@ -6,423 +6,351 @@
     <title>Satsang Diksha Audio Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+Devanagari:wght@400;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            color: #1f2937;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 1rem;
+            background-color: #f0f4f8;
         }
         .container {
-            max-width: 800px;
-            width: 100%;
-            background-color: #ffffff;
-            border-radius: 2rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            padding: 2rem;
+            max-width: 960px;
         }
-        .message-box {
-            background-color: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            color: #92400e;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            display: none;
+        .shloka-text {
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            line-height: 1.8;
+        }
+        .audio-player {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .loading-animation {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="flex items-center justify-center min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+    <div class="container bg-white p-8 rounded-2xl shadow-xl space-y-8">
+        <header class="text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Satsang Diksha</h1>
+            <p class="text-md sm:text-lg text-gray-600">Shlokas 1-10</p>
+        </header>
 
-    <!-- Main Container -->
-    <div class="container">
-        <div class="flex flex-col items-center">
-            <h1 class="text-3xl font-bold mb-4 text-center">Satsang Diksha Audio Player</h1>
-            <p class="text-sm text-gray-500 mb-6 text-center">A tool to help you learn and memorize Satsang Diksha shlokas.</p>
-        </div>
+        <main class="space-y-6">
+            <div id="shloka-container" class="bg-gray-50 p-6 rounded-xl border border-gray-200 min-h-[300px] flex flex-col justify-center items-center text-center transition-all duration-300">
+                <p id="shloka-id" class="text-lg font-semibold text-blue-600 mb-2"></p>
+                <p id="shloka-text" class="shloka-text text-xl sm:text-2xl text-gray-800 transition-opacity duration-500 opacity-0"></p>
+                <div id="loading-spinner" class="loading-animation hidden"></div>
+            </div>
 
-        <!-- Message Box for user feedback -->
-        <div id="message-box" class="message-box"></div>
-        
-        <!-- Audio Player Controls -->
-        <div class="flex flex-col items-center p-4 bg-gray-50 rounded-lg shadow-inner mb-6">
-            <div class="flex items-center space-x-4 mb-4">
-                <button id="prev-btn" class="p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors">
+            <div class="audio-player bg-gray-100 p-4 rounded-xl flex items-center justify-between mt-4">
+                <button id="prev-btn" class="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
-                <button id="play-pause-btn" class="p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors">
+                <button id="play-pause-btn" class="bg-blue-600 text-white p-4 rounded-full hover:bg-blue-700 transition-colors duration-200 transform scale-100 hover:scale-105">
                     <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4.004a1 1 0 001.555.832l3.445-2.002a1 1 0 000-1.664l-3.445-2.002z" clip-rule="evenodd" />
                     </svg>
                     <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 hidden" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                     </svg>
                 </button>
-                <button id="next-btn" class="p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors">
+                <button id="next-btn" class="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                 </button>
             </div>
-            
-            <div id="shloka-number" class="text-lg font-semibold mb-2">Shlok 1</div>
-            <div id="progress-container" class="w-full h-2 bg-gray-200 rounded-full mb-4">
-                <div id="progress-bar" class="h-full bg-blue-500 rounded-full" style="width: 0%;"></div>
-            </div>
-        </div>
-
-        <!-- Main Interface - Display and Controls -->
-        <div class="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
-            
-            <!-- Shloka and Controls Section -->
-            <div class="md:w-1/2">
-                <div id="main-content" class="bg-blue-50 p-6 rounded-2xl shadow-md h-full flex flex-col items-center justify-center">
-                    <h2 class="text-xl font-bold mb-4 text-center">Now Playing</h2>
-                    <div id="text-display" class="text-center font-medium text-lg leading-relaxed text-gray-800">
-                        Select a shloka to begin...
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings and Mode Section -->
-            <div class="md:w-1/2">
-                <!-- Mode Switcher -->
-                <div class="mb-6 p-4 bg-gray-50 rounded-xl shadow-md">
-                    <h3 class="text-xl font-bold mb-3 text-center">Player Mode</h3>
-                    <div class="flex justify-center space-x-4">
-                        <button id="mode-regular" class="flex-1 py-3 px-6 rounded-full font-semibold text-white bg-blue-500 hover:bg-blue-600 transition-colors">Regular</button>
-                        <button id="mode-quiz" class="flex-1 py-3 px-6 rounded-full font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors">Quiz</button>
-                    </div>
-                </div>
-
-                <!-- Repeat and Shuffle -->
-                <div class="mb-6 p-4 bg-gray-50 rounded-xl shadow-md">
-                    <h3 class="text-xl font-bold mb-3 text-center">Options</h3>
-                    <div class="flex justify-center items-center space-x-4">
-                        <button id="shuffle-btn" class="p-3 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.418 7H18a2 2 0 00-2 2v2M4 13v6h1.582M18 13v6h1.582m.418-6H18a2 2 0 00-2 2v2M4 7h16" />
-                            </svg>
-                        </button>
-                        <button id="repeat-btn" class="p-3 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.418-5h.582M4 16v-5h.582m15.418 5h.582" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Shloka Selector -->
-                <div class="p-4 bg-gray-50 rounded-xl shadow-md">
-                    <h3 class="text-xl font-bold mb-3 text-center">Select Shloka</h3>
-                    <div class="grid grid-cols-5 gap-2">
-                        <!-- Shloka buttons will be dynamically generated here -->
-                    </div>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
 
     <script>
-        // Data for shlokas (audio URLs and text)
-        const shlokas = {
-            1: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/001.mp3",
-                text: "Ātma-jñānam idam brahma-svarūpeṇa yuto Harihi । Ātmānanda-sukham dadātīti jñeyam sadaiva hi ॥ 1 ॥"
-            },
-            2: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/002.mp3",
-                text: "Deho'yam sādhanam mukter na bhoga-mātra-sādhanam । Durlabho nashvarash-chā'yam vāram-vāram na labhyate ॥ 2 ॥"
-            },
-            3: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/003.mp3",
-                text: "Suhṛudaya-bhāvena sevyo nityam hi sad-guruhi । Sarva-satsangibhihi sākṣhāt Akṣhara-brahma-rūpataha ॥ 3 ॥"
-            },
-            4: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/004.mp3",
-                text: "Nāshāya sarva-doṣhāṇām brahma-sthiter avāptaye । Kartum Bhagavato bhaktim asya dehasya lambhanam ॥ 4 ॥"
-            },
-            5: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/005.mp3",
-                text: "Sarvam idam hi satsangāl-labhyate nishchitam janaihi । Atah sadaiva satsangah karaṇīyo mumukṣhubhihi ॥ 5 ॥"
-            },
-            6: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/006.mp3",
-                text: "Loading..."
-            },
-            7: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/007.mp3",
-                text: "Loading..."
-            },
-            8: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/008.mp3",
-                text: "Loading..."
-            },
-            9: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/009.mp3",
-                text: "Loading..."
-            },
-            10: {
-                audio: "https://www.anirdesh.com/diksha/audio/sd-sanskrit/010.mp3",
-                text: "Loading..."
+        document.addEventListener('DOMContentLoaded', () => {
+            // Firestore and Firebase Auth setup
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+            if (Object.keys(firebaseConfig).length === 0) {
+                console.warn("Firebase config not available. App will not function with Firebase.");
             }
-        };
-
-        const audioPlayer = new Audio();
-        let currentShlokaIndex = 1;
-        let isPlaying = false;
-        let repeatEnabled = false;
-        let shuffleEnabled = false;
-        let quizMode = false;
-        let quizStep = 0; // 0: Play, 1: Pause for recitation
-        let quizTimer;
-
-        // DOM elements
-        const shlokaNumberEl = document.getElementById('shloka-number');
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        const playIcon = document.getElementById('play-icon');
-        const pauseIcon = document.getElementById('pause-icon');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const progressBar = document.getElementById('progress-bar');
-        const repeatBtn = document.getElementById('repeat-btn');
-        const shuffleBtn = document.getElementById('shuffle-btn');
-        const modeRegularBtn = document.getElementById('mode-regular');
-        const modeQuizBtn = document.getElementById('mode-quiz');
-        const mainContentEl = document.getElementById('main-content');
-        const textDisplayEl = document.getElementById('text-display');
-        const shlokaSelector = document.querySelector('.grid');
-        const messageBox = document.getElementById('message-box');
-
-        // Shloka button generation
-        function createShlokaButtons() {
-            shlokaSelector.innerHTML = '';
-            for (let i = 1; i <= Object.keys(shlokas).length; i++) {
-                const button = document.createElement('button');
-                button.textContent = i;
-                button.className = `shloka-btn py-2 px-4 rounded-lg font-semibold transition-colors ${i === currentShlokaIndex ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
-                button.dataset.shloka = i;
-                button.addEventListener('click', () => {
-                    selectShloka(i);
-                });
-                shlokaSelector.appendChild(button);
-            }
-        }
-
-        function updateShlokaButtons() {
-            document.querySelectorAll('.shloka-btn').forEach(btn => {
-                const shlokaNum = parseInt(btn.dataset.shloka);
-                btn.className = `shloka-btn py-2 px-4 rounded-lg font-semibold transition-colors ${shlokaNum === currentShlokaIndex ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
-            });
-        }
-
-        function selectShloka(index) {
-            currentShlokaIndex = index;
-            audioPlayer.src = shlokas[currentShlokaIndex].audio;
-            shlokaNumberEl.textContent = `Shlok ${currentShlokaIndex}`;
-            textDisplayEl.innerHTML = `Shlok ${currentShlokaIndex} text will appear here...`;
-            updateShlokaButtons();
             
-            if (quizMode) {
-                // In quiz mode, auto-play is off, but we need to update the UI
-                updateQuizUI();
-            } else {
-                playAudio();
-            }
-        }
-        
-        // Show a temporary message to the user
-        function showMessage(text, type = 'warning') {
-            messageBox.textContent = text;
-            messageBox.style.display = 'block';
-            if (type === 'success') {
-                messageBox.style.backgroundColor = '#d1fae5';
-                messageBox.style.borderColor = '#34d399';
-                messageBox.style.color = '#065f46';
-            } else { // default warning
-                messageBox.style.backgroundColor = '#fef3c7';
-                messageBox.style.borderColor = '#f59e0b';
-                messageBox.style.color = '#92400e';
-            }
-            setTimeout(() => {
-                messageBox.style.display = 'none';
-            }, 3000);
-        }
+            // Shloka data with updated text
+            const shlokas = [
+                {
+                    id: 1,
+                    text: `स्वामिनारायणः साक्षाद् अक्षरपुरुषोत्तमः। सर्वेभ्यः परमो ध्येयः परमात्मा स एव हि॥1॥`,
+                },
+                {
+                    id: 2,
+                    text: `देहस्यान्ते स वै प्राप्योऽन्यथाऽसाध्यश्च स ध्रुवम्। तं च प्राप्स्यति नित्यं योऽत्राश्रितोऽक्षरधाम्नि वै॥2॥`,
+                },
+                {
+                    id: 3,
+                    text: `तस्यैव शरणापन्नो यः स्यात् स सर्वथा सुखम्। प्राप्स्यत्यक्षयम् सौख्यं मोक्षं च ध्रुवमुत्तमम्॥3॥`,
+                },
+                {
+                    id: 4,
+                    text: `संसारं हि तरिष्यन्ति येऽमुं मोक्षं च यान्ति ये। ते सर्वेऽपि हि सत्सङ्गात् प्राप्नुवन्ति तदुत्तमम्॥4॥`,
+                },
+                {
+                    id: 5,
+                    text: `अतोऽक्षरब्रह्मणि येऽभ्युद्यतास्ते सर्वेऽपि हि। मोक्षमार्गं हि तं मोक्षं प्राप्नुवन्ति ततो ध्रुवम्॥5॥`,
+                },
+                {
+                    id: 6,
+                    text: `सत्सङ्गः स्थापितस्तस्माद् दिव्योऽयं परब्रह्मणा। स्वामिनारायणेनेहा साक्षादेवावतीर्य च॥6॥`,
+                },
+                {
+                    id: 7,
+                    text: `सत्सङ्गस्यास्य विज्ञानं मुमुक्षूणां भवेदिति। शास्त्रं सत्सङ्गदीक्षेति शुभाशयेन विरच्यते॥7॥`,
+                },
+                {
+                    id: 8,
+                    text: `सत्सङ्ग इति सत्यस्य सङ्गतिः सा हि षड्‌विधा। सत्यस्य परमात्मनः सत्यस्याक्षरधाम्नश्च॥8॥`,
+                },
+                {
+                    id: 9,
+                    text: `सत्यस्य परमात्मनः सत्यस्याक्षरधाम्नश्च। सत्यस्यात्मनश्चैव सत्यस्य सद‍्गुरोस्तथा॥9॥`,
+                },
+                {
+                    id: 10,
+                    text: `सत्यस्य सच‍्छास्त्रस्य सत्यस्य साधोस्तथा। सत्सङ्गस्य हि लक्षणम्॥10॥`,
+                },
+            ];
 
-        function playAudio() {
-            if (shlokas[currentShlokaIndex] && shlokas[currentShlokaIndex].audio) {
-                audioPlayer.play().catch(error => {
-                    showMessage("Playback was prevented by the browser. Please press play manually.");
-                    console.error("Playback failed:", error);
-                });
-                isPlaying = true;
-                playIcon.classList.add('hidden');
-                pauseIcon.classList.remove('hidden');
-            } else {
-                showMessage("Audio file not found for this shloka.");
-            }
-        }
+            let currentShlokaIndex = 0;
+            const shlokaIdElem = document.getElementById('shloka-id');
+            const shlokaTextElem = document.getElementById('shloka-text');
+            const playPauseBtn = document.getElementById('play-pause-btn');
+            const playIcon = document.getElementById('play-icon');
+            const pauseIcon = document.getElementById('pause-icon');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const loadingSpinner = document.getElementById('loading-spinner');
 
-        function pauseAudio() {
-            audioPlayer.pause();
-            isPlaying = false;
-            playIcon.classList.remove('hidden');
-            pauseIcon.classList.add('hidden');
-        }
+            let audio = null;
+            let isPlaying = false;
+            let currentAudioSource = null;
 
-        function nextShloka() {
-            if (shuffleEnabled) {
-                const shlokaKeys = Object.keys(shlokas);
-                let randomIndex;
-                do {
-                    randomIndex = Math.floor(Math.random() * shlokaKeys.length) + 1;
-                } while (randomIndex === currentShlokaIndex && shlokaKeys.length > 1);
-                currentShlokaIndex = randomIndex;
-            } else {
-                currentShlokaIndex++;
-                if (currentShlokaIndex > Object.keys(shlokas).length) {
-                    currentShlokaIndex = 1;
+            // This function handles the TTS API call and audio playback.
+            async function playShloka(index) {
+                // Do not proceed if already playing the same shloka
+                if (currentAudioSource && currentAudioSource.id === shlokas[index].id) {
+                    return;
+                }
+
+                if (audio) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio = null;
+                }
+
+                // Show loading spinner and hide text
+                shlokaTextElem.style.opacity = '0';
+                loadingSpinner.classList.remove('hidden');
+                
+                // Get the shloka text to send to the TTS API
+                const shloka = shlokas[index];
+                const textToSpeak = `Say in a formal, informative tone: Shloka ${shloka.id}: ${shloka.text}`;
+                
+                try {
+                    // Start the API call to generate TTS audio
+                    const payload = {
+                        contents: [{
+                            parts: [{ text: textToSpeak }]
+                        }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: { voiceName: "Charon" }
+                                }
+                            }
+                        },
+                        model: "gemini-2.5-flash-preview-tts"
+                    };
+
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+                    // Exponential backoff for API calls
+                    let response;
+                    for (let i = 0; i < 3; i++) { // Max 3 retries
+                        try {
+                            response = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            if (response.status !== 429) break;
+                            await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+                        } catch (error) {
+                            console.error("Fetch attempt failed:", error);
+                            if (i === 2) throw error;
+                            await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+                        }
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const audioData = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                    const mimeType = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType;
+
+                    if (!audioData || !mimeType || !mimeType.startsWith("audio/L16")) {
+                        throw new Error("Invalid audio data received from API.");
+                    }
+
+                    // Decode base64 and create a Blob with a WAV header
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10) || 16000;
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+
+                    audio = new Audio(audioUrl);
+                    currentAudioSource = shlokas[index];
+                    audio.play();
+                    isPlaying = true;
+                    updatePlayerUI();
+
+                    // Hide loading spinner and show text
+                    shlokaIdElem.textContent = `Shloka ${shloka.id}`;
+                    shlokaTextElem.textContent = shloka.text;
+                    loadingSpinner.classList.add('hidden');
+                    shlokaTextElem.style.opacity = '1';
+
+                    // Automatically play next shloka after the current one finishes
+                    audio.onended = () => {
+                        currentShlokaIndex = (currentShlokaIndex + 1) % shlokas.length;
+                        playShloka(currentShlokaIndex);
+                    };
+
+                } catch (error) {
+                    console.error("Error generating or playing audio:", error);
+                    shlokaTextElem.textContent = "Error loading audio. Please try again.";
+                    shlokaTextElem.style.opacity = '1';
+                    loadingSpinner.classList.add('hidden');
+                    isPlaying = false;
+                    updatePlayerUI();
                 }
             }
-            selectShloka(currentShlokaIndex);
-        }
 
-        function prevShloka() {
-            currentShlokaIndex--;
-            if (currentShlokaIndex < 1) {
-                currentShlokaIndex = Object.keys(shlokas).length;
+            // Function to convert base64 to ArrayBuffer
+            function base64ToArrayBuffer(base64) {
+                const binary_string = window.atob(base64);
+                const len = binary_string.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binary_string.charCodeAt(i);
+                }
+                return bytes.buffer;
             }
-            selectShloka(currentShlokaIndex);
-        }
 
-        function setRepeatState() {
-            repeatEnabled = !repeatEnabled;
-            repeatBtn.classList.toggle('bg-blue-500', repeatEnabled);
-            repeatBtn.classList.toggle('text-white', repeatEnabled);
-            repeatBtn.classList.toggle('bg-gray-200', !repeatEnabled);
-            repeatBtn.classList.toggle('text-gray-700', !repeatEnabled);
-            if (repeatEnabled) {
-                audioPlayer.loop = true;
-                showMessage("Repeat Enabled");
-            } else {
-                audioPlayer.loop = false;
-                showMessage("Repeat Disabled");
+            // Function to convert PCM to WAV format
+            function pcmToWav(pcm16, sampleRate) {
+                const dataLength = pcm16.length * 2;
+                const buffer = new ArrayBuffer(44 + dataLength);
+                const view = new DataView(buffer);
+
+                // RIFF identifier
+                writeString(view, 0, 'RIFF');
+                // file length
+                view.setUint32(4, 36 + dataLength, true);
+                // RIFF type
+                writeString(view, 8, 'WAVE');
+                // format chunk identifier
+                writeString(view, 12, 'fmt ');
+                // format chunk length
+                view.setUint32(16, 16, true);
+                // sample format (1 = PCM)
+                view.setUint16(20, 1, true);
+                // channel count
+                view.setUint16(22, 1, true);
+                // sample rate
+                view.setUint32(24, sampleRate, true);
+                // byte rate (sample rate * block align)
+                view.setUint32(28, sampleRate * 2, true);
+                // block align (channel count * bytes per sample)
+                view.setUint16(32, 2, true);
+                // bits per sample
+                view.setUint16(34, 16, true);
+                // data chunk identifier
+                writeString(view, 36, 'data');
+                // data chunk length
+                view.setUint32(40, dataLength, true);
+
+                // Write the PCM data
+                for (let i = 0; i < pcm16.length; i++) {
+                    view.setInt16(44 + i * 2, pcm16[i], true);
+                }
+
+                return new Blob([view], { type: 'audio/wav' });
             }
-        }
-        
-        function setShuffleState() {
-            shuffleEnabled = !shuffleEnabled;
-            shuffleBtn.classList.toggle('bg-blue-500', shuffleEnabled);
-            shuffleBtn.classList.toggle('text-white', shuffleEnabled);
-            shuffleBtn.classList.toggle('bg-gray-200', !shuffleEnabled);
-            shuffleBtn.classList.toggle('text-gray-700', !shuffleEnabled);
-            if (shuffleEnabled) {
-                showMessage("Shuffle Enabled");
-            } else {
-                showMessage("Shuffle Disabled");
+
+            function writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
             }
-        }
-
-        function enterQuizMode() {
-            quizMode = true;
-            modeRegularBtn.classList.remove('bg-blue-500', 'text-white');
-            modeRegularBtn.classList.add('bg-gray-200', 'text-gray-700');
-            modeQuizBtn.classList.add('bg-blue-500', 'text-white');
-            modeQuizBtn.classList.remove('bg-gray-200', 'text-gray-700');
-            showMessage("Entering Quiz Mode...");
-            updateQuizUI();
-        }
-
-        function enterRegularMode() {
-            quizMode = false;
-            modeQuizBtn.classList.remove('bg-blue-500', 'text-white');
-            modeQuizBtn.classList.add('bg-gray-200', 'text-gray-700');
-            modeRegularBtn.classList.add('bg-blue-500', 'text-white');
-            modeRegularBtn.classList.remove('bg-gray-200', 'text-gray-700');
-            showMessage("Entering Regular Mode...");
-            textDisplayEl.innerHTML = "Select a shloka to begin...";
-            // Clear any quiz timers
-            if (quizTimer) {
-                clearTimeout(quizTimer);
+            
+            // Function to update the play/pause UI
+            function updatePlayerUI() {
+                if (isPlaying) {
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                } else {
+                    playIcon.classList.remove('hidden');
+                    pauseIcon.classList.add('hidden');
+                }
             }
-            // Reset quiz step
-            quizStep = 0;
-            // Ensure audio is paused
-            pauseAudio();
-        }
 
-        function updateQuizUI() {
-            if (quizStep === 0) {
-                // Step 0: Play shloka
-                textDisplayEl.innerHTML = `<span class="text-gray-400">Now Playing:</span><br/>${shlokas[currentShlokaIndex] ? `Shlok ${currentShlokaIndex}` : 'Loading...'}`;
-                playAudio();
-                quizStep = 1;
-                // Wait for audio to finish, then go to next step
-                audioPlayer.onended = () => {
-                    quizTimer = setTimeout(() => {
-                        updateQuizUI();
-                    }, 1000); // 1-second pause after playback
-                };
-            } else if (quizStep === 1) {
-                // Step 1: Pause and display text for recitation
-                pauseAudio();
-                textDisplayEl.innerHTML = `<span class="text-gray-400">Recite:</span><br/>${shlokas[currentShlokaIndex] ? shlokas[currentShlokaIndex].text : 'Text loading...'}`;
-                quizStep = 0;
-                // Wait for 10 seconds before playing next shloka
-                quizTimer = setTimeout(() => {
-                    if (quizMode) {
-                        nextShloka();
+            // Play/Pause button event listener
+            playPauseBtn.addEventListener('click', () => {
+                if (audio) {
+                    if (isPlaying) {
+                        audio.pause();
+                    } else {
+                        audio.play();
                     }
-                }, 10000); // 10-second pause for recitation
-            }
-        }
+                    isPlaying = !isPlaying;
+                    updatePlayerUI();
+                } else {
+                    // First time a user clicks play, start the first shloka
+                    if (!isPlaying) {
+                        playShloka(currentShlokaIndex);
+                    }
+                }
+            });
 
-        // Event Listeners
-        playPauseBtn.addEventListener('click', () => {
-            if (isPlaying) {
-                pauseAudio();
-            } else {
-                playAudio();
-            }
+            // Previous button event listener
+            prevBtn.addEventListener('click', () => {
+                currentShlokaIndex = (currentShlokaIndex - 1 + shlokas.length) % shlokas.length;
+                playShloka(currentShlokaIndex);
+            });
+
+            // Next button event listener
+            nextBtn.addEventListener('click', () => {
+                currentShlokaIndex = (currentShlokaIndex + 1) % shlokas.length;
+                playShloka(currentShlokaIndex);
+            });
+
+            // Display initial shloka on load
+            shlokaIdElem.textContent = `Shloka ${shlokas[currentShlokaIndex].id}`;
+            shlokaTextElem.textContent = shlokas[currentShlokaIndex].text;
+            shlokaTextElem.style.opacity = '1';
         });
-
-        prevBtn.addEventListener('click', prevShloka);
-        nextBtn.addEventListener('click', () => {
-            if (quizMode) {
-                clearTimeout(quizTimer); // Clear current timer
-                nextShloka();
-            } else {
-                nextShloka();
-            }
-        });
-
-        repeatBtn.addEventListener('click', setRepeatState);
-        shuffleBtn.addEventListener('click', setShuffleState);
-        modeRegularBtn.addEventListener('click', enterRegularMode);
-        modeQuizBtn.addEventListener('click', enterQuizMode);
-
-        // Update progress bar
-        audioPlayer.addEventListener('timeupdate', () => {
-            const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-            progressBar.style.width = `${progress}%`;
-        });
-
-        // Handle end of audio in Regular mode
-        audioPlayer.addEventListener('ended', () => {
-            if (!quizMode && !repeatEnabled) {
-                nextShloka();
-            }
-        });
-        
-        // Initial setup
-        createShlokaButtons();
     </script>
 </body>
 </html>
-
