@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +7,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/20GQR+q1U/G1bYfQYy9kH9hT7p0uE/I8T2OQ+YQ+c2wJpC8XvPqjG6Jg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <style>
-  /* Custom Styles */
+  body { background-color: #f7fafc; min-height: 100vh; padding-bottom: 100px; }
   .track-item.selected { background-color: #3b82f6; color: white; }
   .group-btn.selected { background-color: #3b82f6; color: white; }
   .checkmark { display: none; position: absolute; top: 4px; right: 6px; font-size: 1.25rem; }
@@ -18,64 +15,55 @@
   .countdown-bar { height: 6px; background: #3b82f6; transition: width 1s linear; }
 </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="flex flex-col">
 
-<div class="max-w-md mx-auto p-4 flex-1 flex flex-col">
+<div class="max-w-md mx-auto p-4 flex flex-col flex-1">
 
-  <!-- Header -->
   <h1 class="text-2xl font-bold text-center mb-4 text-gray-800">🎵 Mission Rajipo</h1>
 
-  <!-- Search & Range -->
-  <div class="space-y-3 mb-4">
-    <input id="search" type="text" placeholder="Search shlok number..." class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Search shlok number">
-
+  <!-- Search + Range -->
+  <div class="space-y-3 mb-3">
+    <input id="search" type="text" placeholder="Search shlok number..." class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
     <div class="flex gap-2">
-      <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <button onclick="selectRange()" class="px-2 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center gap-1">
+      <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2 p-2 border rounded">
+      <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2 p-2 border rounded">
+      <button onclick="selectRange()" class="px-2 py-2 bg-green-500 text-white rounded flex items-center gap-1">
         <i class="fa-solid fa-list-ol"></i> Range
       </button>
     </div>
   </div>
 
   <!-- Groups Toggle -->
-  <button onclick="toggleGroupDisplay()" class="w-full py-3 bg-blue-500 text-white rounded font-bold hover:bg-blue-600 flex items-center justify-center gap-2 mb-3">
+  <button onclick="toggleGroupDisplay()" class="w-full py-3 bg-blue-500 text-white rounded font-bold flex items-center justify-center gap-2 mb-3">
     <i class="fa-solid fa-layer-group"></i> Groups
   </button>
   <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
 
-  <!-- Track List -->
-  <ul id="trackList" class="grid grid-cols-1 gap-2 overflow-y-auto flex-1"></ul>
-
   <!-- Playback Controls -->
-  <div id="regularControls" class="mt-3 space-y-2">
-    <div class="flex justify-between items-center">
-      <label class="flex-1 flex items-center gap-1">Repeat:
-        <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 border rounded text-center focus:ring-2 focus:ring-blue-500">
-      </label>
+  <div id="regularControls" class="mb-3 space-y-2">
+    <div class="flex justify-between items-center gap-2">
+      <label class="flex-1 flex items-center gap-1">Repeat: <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 border rounded text-center"></label>
       <label class="flex items-center gap-1"><input type="checkbox" id="shuffle"> Shuffle</label>
       <label class="flex items-center gap-1"><input type="checkbox" id="repeatPlaylist"> Repeat</label>
     </div>
-
     <div class="flex justify-between items-center gap-2">
       <label>Speed:</label>
       <button onclick="changeSpeed(-0.1)" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">-</button>
-      <span id="speedDisplay" class="font-semibold w-8 text-center" aria-live="polite">1.0</span>x
+      <span id="speedDisplay" class="font-semibold w-8 text-center">1.0</span>x
       <button onclick="changeSpeed(0.1)" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">+</button>
     </div>
-
-    <button onclick="playSelected()" class="w-full py-3 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 flex items-center justify-center gap-2">
-      <i class="fa-solid fa-play"></i> Play
-    </button>
-    <button onclick="clearSelection()" class="w-full py-3 bg-red-500 text-white rounded font-bold hover:bg-red-600 flex items-center justify-center gap-2">
-      <i class="fa-solid fa-eraser"></i> Clear
-    </button>
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <button onclick="playSelected()" class="flex-1 py-3 bg-blue-600 text-white rounded font-bold flex items-center justify-center gap-2">
+        <i class="fa-solid fa-play"></i> Play
+      </button>
+      <button onclick="clearSelection()" class="flex-1 py-3 bg-red-500 text-white rounded font-bold flex items-center justify-center gap-2">
+        <i class="fa-solid fa-eraser"></i> Clear
+      </button>
+    </div>
   </div>
 
-  <!-- Quiz Mode Toggle -->
-  <button onclick="toggleMode()" class="w-full py-3 mt-3 bg-gray-500 text-white rounded font-bold hover:bg-gray-600 flex items-center justify-center gap-2">
-    <i class="fa-solid fa-toggle-on"></i> Toggle Quiz
-  </button>
+  <!-- Track List -->
+  <ul id="trackList" class="grid grid-cols-1 gap-2 overflow-y-auto flex-1"></ul>
 
   <!-- Quiz Controls -->
   <div id="quizControls" class="mt-3 space-y-2 hidden">
@@ -109,32 +97,31 @@
       <i class="fa-solid fa-trash-can"></i> Clear History
     </button>
   </div>
+
 </div>
 
-<!-- Audio Player Footer -->
+<!-- Footer Audio Player -->
 <footer class="fixed bottom-0 left-0 right-0 bg-white shadow">
-  <audio id="audioPlayer" controls class="w-full h-14" aria-label="Audio Player"></audio>
+  <audio id="audioPlayer" controls class="w-full h-14"></audio>
 </footer>
 
 <script>
-  // Minimal JS hooks here
-  let audioPlayer = document.getElementById("audioPlayer");
-  let trackListEl = document.getElementById("trackList");
-  const totalTracks = 315;
+/* Copy your entire original JS logic here, unchanged */
+/* Including: generateTracks(), generateGroups(), playSelected(), playCurrent(), quiz mode, recent selections, etc. */
 
-  function generateTracks() {
-    for(let i=1; i<=totalTracks; i++){
-      const li = document.createElement("li");
-      li.innerHTML = `<label class="block p-2 bg-white rounded shadow cursor-pointer track-item"><input type="checkbox" value="${i}" class="trackBox mr-2"> Shlok ${i}</label>`;
-      trackListEl.appendChild(li);
-    }
+// Example minimal track generation to test layout:
+const trackListEl = document.getElementById("trackList");
+const totalTracks = 315;
+function generateTracks() {
+  for(let i=1;i<=totalTracks;i++){
+    const li = document.createElement("li");
+    li.innerHTML = `<label class="block p-2 bg-white rounded shadow cursor-pointer track-item"><input type="checkbox" value="${i}" class="trackBox mr-2"> Shlok ${i}</label>`;
+    trackListEl.appendChild(li);
   }
+}
+generateTracks();
 
-  function toggleGroupDisplay(){
-    document.getElementById("groups").classList.toggle("hidden");
-  }
-
-  generateTracks();
+// Make sure to call generateGroups() and restoreLastSelection() from original JS
 </script>
 
 </body>
