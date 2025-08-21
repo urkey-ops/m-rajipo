@@ -14,11 +14,13 @@
         .group-btn { position: relative; width: 100%; height: 50px; display: flex; justify-content: center; align-items: center; text-align: center; white-space: nowrap; font-size: 0.875rem; background-color: #e2e8f0; border: 1px solid #cbd5e1; color: #1a202c; transition: background-color 0.2s, transform 0.1s; }
         .group-btn:hover { background-color: #cbd5e1; }
         .group-btn.selected { background-color: #3b82f6; color: white; }
-        /* FIX: Use opacity instead of display: none to prevent layout shifts */
         .checkmark { position: absolute; top: 4px; right: 6px; font-size: 1.25rem; opacity: 0; transition: opacity 0.2s ease-in-out; }
         .group-btn.selected .checkmark { opacity: 1; }
         .countdown-bar { height: 6px; background: #3b82f6; transition: width 1s linear; }
         .recent-item.selected { background-color: #3b82f6; color: white; }
+        /* To prevent Cumulative Layout Shift, use opacity and visibility for smoother transitions. */
+        .fade-out { opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
+        .fade-in { opacity: 1; visibility: visible; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
     </style>
 </head>
 <body class="flex flex-col">
@@ -46,46 +48,50 @@
             <i class="fa-solid fa-toggle-off"></i> Toggle to Quiz Mode
         </button>
 
-        <div id="quizControls" class="space-y-3 hidden mb-3">
-            <h2 class="text-xl font-bold">Quiz Mode</h2>
-            <p id="currentShlokQuiz" class="text-lg font-semibold">Shlok 0</p>
-            <p id="quizStatus" class="text-green-600 font-semibold hidden">Audio Paused. Your turn to recite! <span id="countdown"></span></p>
-            <div id="countdownBarContainer" class="w-full bg-gray-200 rounded-full mb-2 hidden">
-                <div id="countdownBar" class="countdown-bar rounded-full"></div>
-            </div>
-            <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-3 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors">Auto-Play: OFF</button>
-                <div id="pauseTimeControls" class="flex items-center space-x-2">
-                    <span class="mr-1">Pause:</span>
-                    <button onclick="changeQuizTime(-10)" class="px-4 py-3 bg-gray-300 rounded hover:bg-gray-400">-</button>
-                    <span id="quizTimeDisplay" class="mx-2 font-semibold">20s</span>
-                    <button onclick="changeQuizTime(10)" class="px-4 py-3 bg-gray-300 rounded hover:bg-gray-400">+</button>
+        <!-- Use a container with a minimum height to prevent layout shifts -->
+        <div id="dynamicControlsWrapper" class="relative min-h-[250px] mb-3">
+            <div id="quizControls" class="space-y-3 absolute w-full top-0 left-0 fade-out hidden">
+                <h2 class="text-xl font-bold">Quiz Mode</h2>
+                <p id="currentShlokQuiz" class="text-lg font-semibold">Shlok 0</p>
+                <!-- Use a class for toggling visibility that won't cause layout shifts -->
+                <p id="quizStatus" class="text-green-600 font-semibold hidden flex">Audio Paused. Your turn to recite! <span id="countdown"></span></p>
+                <div id="countdownBarContainer" class="w-full bg-gray-200 rounded-full mb-2 hidden">
+                    <div id="countdownBar" class="countdown-bar rounded-full"></div>
                 </div>
-            </div>
-            <button onclick="playNextQuizTrack()" class="w-full py-3 bg-blue-600 text-white rounded font-bold">
-                <i class="fa-solid fa-forward"></i> Play Next
-            </button>
-        </div>
-
-        <div id="regularControls" class="mb-3 space-y-2">
-            <div class="flex justify-between items-center gap-2">
-                <label class="flex-1 flex items-center gap-1">Repeat: <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 border rounded text-center"></label>
-                <label class="flex items-center gap-1"><input type="checkbox" id="shuffle"> Shuffle</label>
-                <label class="flex items-center gap-1"><input type="checkbox" id="repeatPlaylist"> Repeat</label>
-            </div>
-            <div class="flex justify-between items-center gap-2">
-                <label>Speed:</label>
-                <button onclick="changeSpeed(-0.1)" class="px-3 py-3 bg-gray-300 rounded hover:bg-gray-400">-</button>
-                <span id="speedDisplay" class="font-semibold w-8 text-center">1.0</span>x
-                <button onclick="changeSpeed(0.1)" class="px-3 py-3 bg-gray-300 rounded hover:bg-gray-400">+</button>
-            </div>
-            <div class="flex flex-col gap-2 sm:flex-row">
-                <button onclick="playSelected()" class="flex-1 py-3 bg-blue-600 text-white rounded font-bold flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> Play
+                <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-3 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors">Auto-Play: OFF</button>
+                    <div id="pauseTimeControls" class="flex items-center space-x-2">
+                        <span class="mr-1">Pause:</span>
+                        <button onclick="changeQuizTime(-10)" class="px-4 py-3 bg-gray-300 rounded hover:bg-gray-400">-</button>
+                        <span id="quizTimeDisplay" class="mx-2 font-semibold">20s</span>
+                        <button onclick="changeQuizTime(10)" class="px-4 py-3 bg-gray-300 rounded hover:bg-gray-400">+</button>
+                    </div>
+                </div>
+                <button onclick="playNextQuizTrack()" class="w-full py-3 bg-blue-600 text-white rounded font-bold">
+                    <i class="fa-solid fa-forward"></i> Play Next
                 </button>
-                <button onclick="clearSelection()" class="flex-1 py-3 bg-red-500 text-white rounded font-bold flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-eraser"></i> Clear
-                </button>
+            </div>
+    
+            <div id="regularControls" class="space-y-2 absolute w-full top-0 left-0 fade-in">
+                <div class="flex justify-between items-center gap-2">
+                    <label class="flex-1 flex items-center gap-1">Repeat: <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 border rounded text-center"></label>
+                    <label class="flex items-center gap-1"><input type="checkbox" id="shuffle"> Shuffle</label>
+                    <label class="flex items-center gap-1"><input type="checkbox" id="repeatPlaylist"> Repeat</label>
+                </div>
+                <div class="flex justify-between items-center gap-2">
+                    <label>Speed:</label>
+                    <button onclick="changeSpeed(-0.1)" class="px-3 py-3 bg-gray-300 rounded hover:bg-gray-400">-</button>
+                    <span id="speedDisplay" class="font-semibold w-8 text-center">1.0</span>x
+                    <button onclick="changeSpeed(0.1)" class="px-3 py-3 bg-gray-300 rounded hover:bg-gray-400">+</button>
+                </div>
+                <div class="flex flex-col gap-2 sm:flex-row">
+                    <button onclick="playSelected()" class="flex-1 py-3 bg-blue-600 text-white rounded font-bold flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> Play
+                    </button>
+                    <button onclick="clearSelection()" class="flex-1 py-3 bg-red-500 text-white rounded font-bold flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-eraser"></i> Clear
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -113,6 +119,8 @@
         let repeatCounter = 0;
         const totalTracks = 315;
         const trackListEl = document.getElementById("trackList");
+        const quizControlsEl = document.getElementById("quizControls");
+        const regularControlsEl = document.getElementById("regularControls");
         let currentSpeed = 1.0;
         let isQuizMode = false;
         let hasQuizPaused = false;
@@ -149,9 +157,14 @@
 
         function toggleMode() {
             isQuizMode = !isQuizMode;
-            document.getElementById('regularControls').classList.toggle('hidden', isQuizMode);
+            
+            // Toggle visibility using classes to prevent layout shifts
+            quizControlsEl.classList.toggle('fade-out', !isQuizMode);
+            quizControlsEl.classList.toggle('hidden', !isQuizMode);
+            regularControlsEl.classList.toggle('fade-out', isQuizMode);
+            regularControlsEl.classList.toggle('hidden', isQuizMode);
+            
             document.getElementById('trackList').classList.toggle('hidden', isQuizMode);
-            document.getElementById('quizControls').classList.toggle('hidden', !isQuizMode);
             
             const modeButton = document.querySelector('button[onclick="toggleMode()"]');
             modeButton.innerHTML = `<i class="fa-solid fa-toggle-${isQuizMode ? 'on' : 'off'}"></i> Toggle to ${isQuizMode ? 'Regular' : 'Quiz'} Mode`;
@@ -446,6 +459,7 @@
                     setTimeout(() => {
                         audioPlayer.pause();
                         hasQuizPaused = true;
+                        // Use class to toggle visibility
                         document.getElementById('quizStatus').classList.remove('hidden');
                         document.getElementById('quizStatus').classList.add('flex');
 
