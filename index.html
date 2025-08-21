@@ -14,8 +14,9 @@
         .group-btn { position: relative; width: 100%; height: 50px; display: flex; justify-content: center; align-items: center; text-align: center; white-space: nowrap; font-size: 0.875rem; background-color: #e2e8f0; border: 1px solid #cbd5e1; color: #1a202c; transition: background-color 0.2s, transform 0.1s; }
         .group-btn:hover { background-color: #cbd5e1; }
         .group-btn.selected { background-color: #3b82f6; color: white; }
-        .checkmark { display: none; position: absolute; top: 4px; right: 6px; font-size: 1.25rem; }
-        .group-btn.selected .checkmark { display: block; }
+        /* FIX: Use opacity instead of display: none to prevent layout shifts */
+        .checkmark { position: absolute; top: 4px; right: 6px; font-size: 1.25rem; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .group-btn.selected .checkmark { opacity: 1; }
         .countdown-bar { height: 6px; background: #3b82f6; transition: width 1s linear; }
         .recent-item.selected { background-color: #3b82f6; color: white; }
     </style>
@@ -30,38 +31,16 @@
             <div class="flex gap-2">
                 <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2 p-2 border rounded">
                 <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2 p-2 border rounded">
-                <button onclick="selectRange()" class="px-2 py-2 bg-green-500 text-white rounded flex items-center gap-1">
+                <button onclick="selectRange()" class="px-4 py-3 bg-green-500 text-white rounded flex items-center gap-1">
                     <i class="fa-solid fa-list-ol"></i> Range
                 </button>
             </div>
         </div>
-
+        
         <button onclick="toggleGroupDisplay()" class="w-full py-3 bg-blue-500 text-white rounded font-bold flex items-center justify-center gap-2 mb-3">
             <i class="fa-solid fa-layer-group"></i> Groups
         </button>
         <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
-
-        <div id="regularControls" class="mb-3 space-y-2">
-            <div class="flex justify-between items-center gap-2">
-                <label class="flex-1 flex items-center gap-1">Repeat: <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 border rounded text-center"></label>
-                <label class="flex items-center gap-1"><input type="checkbox" id="shuffle"> Shuffle</label>
-                <label class="flex items-center gap-1"><input type="checkbox" id="repeatPlaylist"> Repeat</label>
-            </div>
-            <div class="flex justify-between items-center gap-2">
-                <label>Speed:</label>
-                <button onclick="changeSpeed(-0.1)" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">-</button>
-                <span id="speedDisplay" class="font-semibold w-8 text-center">1.0</span>x
-                <button onclick="changeSpeed(0.1)" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">+</button>
-            </div>
-            <div class="flex flex-col gap-2 sm:flex-row">
-                <button onclick="playSelected()" class="flex-1 py-2 bg-blue-600 text-white rounded font-bold flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> Play
-                </button>
-                <button onclick="clearSelection()" class="flex-1 py-2 bg-red-500 text-white rounded font-bold flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-eraser"></i> Clear
-                </button>
-            </div>
-        </div>
 
         <button onclick="toggleMode()" class="w-full py-3 bg-gray-500 text-white rounded font-bold flex items-center justify-center gap-2 mb-3">
             <i class="fa-solid fa-toggle-off"></i> Toggle to Quiz Mode
@@ -75,23 +54,45 @@
                 <div id="countdownBar" class="countdown-bar rounded-full"></div>
             </div>
             <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors">Auto-Play: OFF</button>
-                <div id="autoPlayTimeContainer" class="flex items-center space-x-2 hidden">
+                <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-3 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors">Auto-Play: OFF</button>
+                <div id="pauseTimeControls" class="flex items-center space-x-2">
                     <span class="mr-1">Pause:</span>
-                    <button onclick="changeQuizTime(-10)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">-</button>
-                    <span id="quizTimeDisplay" class="mx-2 font-semibold">30s</span>
-                    <button onclick="changeQuizTime(10)" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">+</button>
+                    <button onclick="changeQuizTime(-10)" class="px-4 py-3 bg-gray-300 rounded hover:bg-gray-400">-</button>
+                    <span id="quizTimeDisplay" class="mx-2 font-semibold">20s</span>
+                    <button onclick="changeQuizTime(10)" class="px-4 py-3 bg-gray-300 rounded hover:bg-gray-400">+</button>
                 </div>
             </div>
-            <button onclick="playNextQuizTrack()" class="w-full py-2 bg-blue-600 text-white rounded font-bold">
+            <button onclick="playNextQuizTrack()" class="w-full py-3 bg-blue-600 text-white rounded font-bold">
                 <i class="fa-solid fa-forward"></i> Play Next
             </button>
+        </div>
+
+        <div id="regularControls" class="mb-3 space-y-2">
+            <div class="flex justify-between items-center gap-2">
+                <label class="flex-1 flex items-center gap-1">Repeat: <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 border rounded text-center"></label>
+                <label class="flex items-center gap-1"><input type="checkbox" id="shuffle"> Shuffle</label>
+                <label class="flex items-center gap-1"><input type="checkbox" id="repeatPlaylist"> Repeat</label>
+            </div>
+            <div class="flex justify-between items-center gap-2">
+                <label>Speed:</label>
+                <button onclick="changeSpeed(-0.1)" class="px-3 py-3 bg-gray-300 rounded hover:bg-gray-400">-</button>
+                <span id="speedDisplay" class="font-semibold w-8 text-center">1.0</span>x
+                <button onclick="changeSpeed(0.1)" class="px-3 py-3 bg-gray-300 rounded hover:bg-gray-400">+</button>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <button onclick="playSelected()" class="flex-1 py-3 bg-blue-600 text-white rounded font-bold flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Play
+                </button>
+                <button onclick="clearSelection()" class="flex-1 py-3 bg-red-500 text-white rounded font-bold flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-eraser"></i> Clear
+                </button>
+            </div>
         </div>
 
         <div id="recentlyPlayed" class="mt-6 hidden">
             <h2 class="text-lg font-semibold mb-2 text-gray-800">Recently Played</h2>
             <ul id="recentList" class="space-y-2"></ul>
-            <button onclick="clearHistory()" class="mt-4 w-full py-2 bg-gray-400 text-white rounded font-bold flex items-center justify-center gap-2">
+            <button onclick="clearHistory()" class="mt-4 w-full py-3 bg-gray-400 text-white rounded font-bold flex items-center justify-center gap-2">
                 <i class="fa-solid fa-trash-can"></i> Clear History
             </button>
         </div>
@@ -118,7 +119,7 @@
         let autoPlay = false;
         let autoPlayTimeout;
         let countdownInterval;
-        let currentQuizTime = 30; // Default quiz time
+        let currentQuizTime = 20; // Default quiz time changed to 20
         const shlokas = {
             1: "Shlok 1: Manglacharan",
             2: "Shlok 2: Swaminarayan mantra",
@@ -150,7 +151,6 @@
             isQuizMode = !isQuizMode;
             document.getElementById('regularControls').classList.toggle('hidden', isQuizMode);
             document.getElementById('trackList').classList.toggle('hidden', isQuizMode);
-            document.getElementById('mainControls').classList.toggle('hidden', isQuizMode);
             document.getElementById('quizControls').classList.toggle('hidden', !isQuizMode);
             
             const modeButton = document.querySelector('button[onclick="toggleMode()"]');
@@ -176,16 +176,14 @@
         function toggleAutoPlay() {
             autoPlay = !autoPlay;
             const button = document.getElementById("autoPlayToggle");
-            const timerContainer = document.getElementById("autoPlayTimeContainer");
             button.textContent = `Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
             button.classList.toggle('bg-gray-400', !autoPlay);
             button.classList.toggle('bg-green-500', autoPlay);
-            timerContainer.classList.toggle('hidden', !autoPlay);
         }
 
         function changeQuizTime(delta) {
             currentQuizTime += delta;
-            if (currentQuizTime < 30) currentQuizTime = 30;
+            if (currentQuizTime < 10) currentQuizTime = 10; // Minimum quiz time changed to 10
             if (currentQuizTime > 90) currentQuizTime = 90;
             document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
         }
@@ -382,7 +380,7 @@
             for (let i = 1; i <= totalTracks; i += 10) {
                 const end = Math.min(i + 9, totalTracks);
                 const btn = document.createElement("button");
-                btn.className = "group-btn px-3 py-1 m-1 rounded";
+                btn.className = "group-btn px-3 py-2 m-1 rounded";
                 btn.dataset.start = i;
                 btn.dataset.end = end;
                 btn.innerHTML = `${i}–${end}<span class="checkmark">✓</span>`;
@@ -408,7 +406,7 @@
             modal.innerHTML = `
                 <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
                     <p class="text-gray-800 mb-4">${message}</p>
-                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-3 bg-blue-500 text-white rounded hover:bg-blue-600">
                         OK
                     </button>
                 </div>
