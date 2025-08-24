@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -68,7 +69,7 @@
             color: var(--secondary-text);
         }
         
-        /* Speed Slider Styling */
+        /* Sliders */
         input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -213,6 +214,13 @@
             transition: width 0.5s ease-out;
             border-radius: 9999px;
         }
+        /* Added for fixed countdown bar layout */
+        .countdown-bar-container {
+            height: 8px; /* Fixed height to prevent layout shift */
+            background-color: var(--border-color);
+            border-radius: 9999px;
+            margin-bottom: 8px;
+        }
 
         /* Audio Player */
         footer {
@@ -261,19 +269,20 @@
                 <div id="quizControls" class="space-y-4 absolute w-full top-0 left-0 fade-out hidden">
                     <h2 class="text-xl font-bold text-center">Quiz Mode 🧠</h2>
                     <p id="currentShlokQuiz" class="text-lg font-semibold text-center text-gray-400">Shlok 0</p>
-                    <p id="quizStatus" class="text-center font-semibold text-green-400 hidden flex items-center justify-center">
-                        Audio Paused. Your turn to recite! <span id="countdown" class="ml-2 text-white"></span>
-                    </p>
-                    <div id="countdownBarContainer" class="w-full bg-gray-600 rounded-full h-2 mb-2 hidden">
+                    <div class="countdown-bar-container">
                         <div id="countdownBar" class="countdown-bar h-full"></div>
                     </div>
+                    <div class="flex items-center justify-between space-x-2">
+                        <p id="quizStatus" class="text-center font-semibold text-green-400 hidden">Audio Paused. Your turn to recite!</p>
+                        <span id="countdown" class="font-semibold text-white ml-auto"></span>
+                    </div>
+
                     <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
                         <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-3 btn-secondary text-white btn-rounded">Auto-Play: OFF</button>
-                        <div id="pauseTimeControls" class="flex items-center space-x-2">
-                            <span class="mr-1 text-gray-400">Pause:</span>
-                            <button onclick="changeQuizTime(-10)" class="px-3 py-2 bg-gray-700 rounded-full hover:bg-gray-600 text-white">-</button>
-                            <span id="quizTimeDisplay" class="mx-2 font-semibold text-white">20s</span>
-                            <button onclick="changeQuizTime(10)" class="px-3 py-2 bg-gray-700 rounded-full hover:bg-gray-600 text-white">+</button>
+                        <div id="pauseTimeControls" class="flex items-center space-x-4 w-full sm:w-auto">
+                            <span class="text-sm text-gray-400 w-16">Pause:</span>
+                            <input type="range" id="quizTimeSlider" min="5" max="60" step="5" value="20" class="flex-1">
+                            <span id="quizTimeDisplay" class="font-semibold w-10 text-white">20s</span>
                         </div>
                     </div>
                     <button onclick="playNextQuizTrack()" class="w-full py-3 btn-primary text-white btn-rounded">
@@ -407,6 +416,7 @@
                 }
                 clearTimeout(autoPlayTimeout);
                 document.getElementById('quizStatus').classList.add('hidden');
+                document.getElementById('countdown').textContent = '';
             }
         }
 
@@ -418,10 +428,8 @@
             button.classList.toggle('btn-green', autoPlay);
         }
 
-        function changeQuizTime(delta) {
-            currentQuizTime += delta;
-            if (currentQuizTime < 10) currentQuizTime = 10;
-            if (currentQuizTime > 90) currentQuizTime = 90;
+        function changeQuizTime(time) {
+            currentQuizTime = time;
             document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
         }
 
@@ -657,10 +665,16 @@
             const searchInput = document.getElementById("search");
             const trackListContainer = document.getElementById("trackList");
 
-            // Update the speed slider functionality
+            // Regular speed slider
             const speedSlider = document.getElementById("speedSlider");
             speedSlider.addEventListener("input", function() {
                 changeSpeed(parseFloat(this.value));
+            });
+
+            // Quiz time slider
+            const quizTimeSlider = document.getElementById("quizTimeSlider");
+            quizTimeSlider.addEventListener("input", function() {
+                changeQuizTime(parseInt(this.value));
             });
 
             searchInput.addEventListener("input", function () {
@@ -715,13 +729,10 @@
                         audioPlayer.pause();
                         hasQuizPaused = true;
                         document.getElementById('quizStatus').classList.remove('hidden');
-                        document.getElementById('quizStatus').classList.add('flex');
 
                         let countdown = currentQuizTime;
                         const countdownEl = document.getElementById('countdown');
                         countdownEl.textContent = `(${countdown}s)`;
-                        document.getElementById('countdownBarContainer').classList.remove('hidden');
-                        document.getElementById('countdownBar').style.width = `100%`;
                         
                         if (countdownInterval) {
                             clearInterval(countdownInterval);
@@ -733,7 +744,8 @@
                             document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
                             if (countdown <= 0) {
                                 clearInterval(countdownInterval);
-                                document.getElementById('countdownBarContainer').classList.add('hidden');
+                                countdownEl.textContent = '';
+                                document.getElementById('quizStatus').classList.add('hidden');
                                 if (autoPlay) {
                                     playNextQuizTrack();
                                 }
