@@ -3,111 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Rajipo - Mobile Optimized</title>
+    <title>Mission Rajipo - Apple Music UI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/20GQR+q1U/G1bYfQYy9kH9hT7p0uE/I8T2OQ+YQ+c2wJpC8XvPqjG6Jg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/20GQR+q1U/G1bYfQYy9kH9hT7p0uE/I8T2OQ+YQ+c2wJpC8XvPqjG6Jg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        body { background-color: #f7fafc; min-height: 100vh; padding-bottom: 100px; }
-        .track-item { transition: all 0.2s ease-in-out; }
-        .track-item.selected { background-color: #3b82f6; color: white; }
-        .track-item:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transform: translateY(-2px); }
-        .group-btn { position: relative; width: 100%; height: 50px; display: flex; justify-content: center; align-items: center; text-align: center; white-space: nowrap; font-size: 0.875rem; background-color: #e2e8f0; border: 1px solid #cbd5e1; color: #1a202c; transition: background-color 0.2s, transform 0.1s; }
-        .group-btn:hover { background-color: #cbd5e1; }
-        .group-btn.selected { background-color: #3b82f6; color: white; }
-        .checkmark { position: absolute; top: 4px; right: 6px; font-size: 1.25rem; opacity: 0; transition: opacity 0.2s ease-in-out; }
-        .group-btn.selected .checkmark { opacity: 1; }
-        .countdown-bar { height: 6px; background: #3b82f6; transition: width 1s linear; }
-        .recent-item.selected { background-color: #3b82f6; color: white; }
-        /* To prevent Cumulative Layout Shift, use opacity and visibility for smoother transitions. */
-        .fade-out { opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
-        .fade-in { opacity: 1; visibility: visible; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
+        :root {
+            --bg-color: #1c1c1e;
+            --container-bg: #2c2c2e;
+            --card-bg: #2e2e30;
+            --text-color: #f2f2f7;
+            --secondary-text: #a0a0a0;
+            --accent-blue: #0a84ff;
+            --accent-green: #30d158;
+            --accent-red: #ff453a;
+            --border-color: #38383a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            padding-bottom: 120px;
+        }
+
+        /* General container and card styling */
+        .container-card {
+            background-color: var(--container-bg);
+            border-radius: 14px;
+            padding: 16px;
+        }
+        .track-item {
+            background-color: var(--card-bg);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            cursor: pointer;
+            border-radius: 10px;
+            border: 1px solid transparent;
+        }
+        .track-item:hover {
+            transform: scale(1.02);
+            background-color: #3b3b3d;
+        }
+        .track-item.selected {
+            background-color: var(--accent-blue);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        /* Form elements */
+        input[type="text"], input[type="number"] {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        input[type="text"]::placeholder, input[type="number"]::placeholder {
+            color: var(--secondary-text);
+        }
+        
+        /* Speed Slider Styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--border-color);
+            outline: none;
+            border-radius: 9999px;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--accent-blue);
+            cursor: pointer;
+            border-radius: 50%;
+            border: 4px solid var(--container-bg);
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: var(--accent-blue);
+            cursor: pointer;
+            border-radius: 50%;
+            border: 4px solid var(--container-bg);
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background-color: var(--accent-blue);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            background-color: #2b91ff;
+            transform: scale(1.01);
+        }
+        .btn-secondary {
+            background-color: #48484a;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-secondary:hover {
+            background-color: #5d5d5f;
+            transform: scale(1.01);
+        }
+        .btn-green {
+            background-color: var(--accent-green);
+        }
+        .btn-green:hover {
+            background-color: #40c666;
+        }
+        .btn-red {
+            background-color: var(--accent-red);
+        }
+        .btn-red:hover {
+            background-color: #ff574d;
+        }
+        .btn-rounded {
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-weight: 600;
+        }
+
+        /* Checkbox and Group buttons */
+        .trackBox, .recent-box {
+            display: none;
+        }
+        .track-item, .recent-item {
+            position: relative;
+            user-select: none;
+        }
+        .track-item::before, .recent-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--secondary-text);
+            transition: all 0.2s;
+        }
+        .track-item.selected::before, .recent-item.selected::before {
+            border-color: var(--accent-blue);
+            background-color: var(--accent-blue);
+        }
+        .track-item.selected::after, .recent-item.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 14px;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 10px;
+        }
+        
+        .group-btn {
+            position: relative;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.875rem;
+            transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .group-btn:hover {
+            background-color: #3b3b3d;
+            transform: scale(1.02);
+        }
+        .group-btn.selected {
+            background-color: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+        .checkmark {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 1.25rem;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .group-btn.selected .checkmark {
+            opacity: 1;
+        }
+
+        /* Quiz UI */
+        #quizControls {
+            min-height: 250px;
+        }
+        .countdown-bar {
+            height: 6px;
+            background: linear-gradient(90deg, #ff453a, #ff9f0a, #30d158);
+            transition: width 0.5s ease-out;
+            border-radius: 9999px;
+        }
+
+        /* Audio Player */
+        footer {
+            background-color: #1e1e1e;
+            border-top: 1px solid #333;
+        }
+        #audioPlayer::-webkit-media-controls-panel {
+            background-color: #1e1e1e;
+            filter: invert(100%);
+        }
+        #audioPlayer::-webkit-media-controls-play-button,
+        #audioPlayer::-webkit-media-controls-current-time-display,
+        #audioPlayer::-webkit-media-controls-time-remaining-display {
+            color: var(--text-color);
+        }
+        #audioPlayer::-webkit-media-controls-timeline {
+            background-color: #48484a;
+        }
+        #audioPlayer::-webkit-media-controls-volume-slider {
+            background-color: #48484a;
+        }
     </style>
 </head>
 <body class="flex flex-col">
 
-    <div class="max-w-md mx-auto p-4 flex flex-col flex-1">
-        <h1 class="text-2xl font-bold text-center mb-4 text-gray-800">🎵 Mission Rajipo</h1>
-
-        <div id="mainControls" class="space-y-3 mb-3">
-            <input id="search" type="text" placeholder="Search shlok number..." class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <div class="max-w-xl mx-auto p-4 flex flex-col flex-1 w-full">
+        <h1 class="text-3xl font-bold text-center mb-6 text-white">Mission Rajipo 🎵</h1>
+        
+        <div id="mainControls" class="space-y-3 mb-6 container-card">
+            <input id="search" type="text" placeholder="Search shlok number..." class="w-full">
             <div class="flex gap-2">
-                <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2 p-2 border rounded">
-                <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2 p-2 border rounded">
-                <button onclick="selectRange()" class="px-4 py-3 bg-green-500 text-white rounded flex items-center gap-1">
+                <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2">
+                <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2">
+                <button onclick="selectRange()" class="px-4 py-3 bg-gray-500 text-white rounded-lg flex items-center gap-1 btn-secondary">
                     <i class="fa-solid fa-list-ol"></i> Range
                 </button>
             </div>
         </div>
         
-        <button onclick="toggleGroupDisplay()" class="w-full py-3 bg-blue-500 text-white rounded font-bold flex items-center justify-center gap-2 mb-3">
-            <i class="fa-solid fa-layer-group"></i> Groups
-        </button>
-        <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
-
-        <button onclick="toggleMode()" class="w-full py-3 bg-gray-500 text-white rounded font-bold flex items-center justify-center gap-2 mb-3">
-            <i class="fa-solid fa-toggle-off"></i> Toggle to Quiz Mode
-        </button>
-
-        <!-- Use a container with a minimum height to prevent layout shifts -->
-        <div id="dynamicControlsWrapper" class="relative min-h-[250px] mb-3">
-            <div id="quizControls" class="space-y-3 absolute w-full top-0 left-0 fade-out hidden">
-                <h2 class="text-xl font-bold">Quiz Mode</h2>
-                <p id="currentShlokQuiz" class="text-lg font-semibold">Shlok 0</p>
-                <!-- Use a class for toggling visibility that won't cause layout shifts -->
-                <p id="quizStatus" class="text-green-600 font-semibold hidden flex">Audio Paused. Your turn to recite! <span id="countdown"></span></p>
-                <div id="countdownBarContainer" class="w-full bg-gray-200 rounded-full mb-2 hidden">
-                    <div id="countdownBar" class="countdown-bar rounded-full"></div>
-                </div>
-                <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                    <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-3 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors">Auto-Play: OFF</button>
-                    <div id="pauseTimeControls" class="flex items-center space-x-2">
-                        <span class="mr-1">Pause:</span>
-                        <button onclick="changeQuizTime(-10)" class="px-4 py-3 bg-gray-300 rounded hover:bg-gray-400">-</button>
-                        <span id="quizTimeDisplay" class="mx-2 font-semibold">20s</span>
-                        <button onclick="changeQuizTime(10)" class="px-4 py-3 bg-gray-300 rounded hover:bg-gray-400">+</button>
+        <div class="mb-6 container-card space-y-4">
+            <button onclick="toggleMode()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
+                <i class="fa-solid fa-toggle-off"></i> Toggle to Quiz Mode
+            </button>
+        
+            <div id="dynamicControlsWrapper" class="relative min-h-[250px]">
+                <div id="quizControls" class="space-y-4 absolute w-full top-0 left-0 fade-out hidden">
+                    <h2 class="text-xl font-bold text-center">Quiz Mode 🧠</h2>
+                    <p id="currentShlokQuiz" class="text-lg font-semibold text-center text-gray-400">Shlok 0</p>
+                    <p id="quizStatus" class="text-center font-semibold text-green-400 hidden flex items-center justify-center">
+                        Audio Paused. Your turn to recite! <span id="countdown" class="ml-2 text-white"></span>
+                    </p>
+                    <div id="countdownBarContainer" class="w-full bg-gray-600 rounded-full h-2 mb-2 hidden">
+                        <div id="countdownBar" class="countdown-bar h-full"></div>
                     </div>
-                </div>
-                <button onclick="playNextQuizTrack()" class="w-full py-3 bg-blue-600 text-white rounded font-bold">
-                    <i class="fa-solid fa-forward"></i> Play Next
-                </button>
-            </div>
-    
-            <div id="regularControls" class="space-y-2 absolute w-full top-0 left-0 fade-in">
-                <div class="flex justify-between items-center gap-2">
-                    <label class="flex-1 flex items-center gap-1">Repeat: <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 border rounded text-center"></label>
-                    <label class="flex items-center gap-1"><input type="checkbox" id="shuffle"> Shuffle</label>
-                    <label class="flex items-center gap-1"><input type="checkbox" id="repeatPlaylist"> Repeat</label>
-                </div>
-                <div class="flex justify-between items-center gap-2">
-                    <label>Speed:</label>
-                    <button onclick="changeSpeed(-0.1)" class="px-3 py-3 bg-gray-300 rounded hover:bg-gray-400">-</button>
-                    <span id="speedDisplay" class="font-semibold w-8 text-center">1.0</span>x
-                    <button onclick="changeSpeed(0.1)" class="px-3 py-3 bg-gray-300 rounded hover:bg-gray-400">+</button>
-                </div>
-                <div class="flex flex-col gap-2 sm:flex-row">
-                    <button onclick="playSelected()" class="flex-1 py-3 bg-blue-600 text-white rounded font-bold flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play"></i> Play
+                    <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-3 btn-secondary text-white btn-rounded">Auto-Play: OFF</button>
+                        <div id="pauseTimeControls" class="flex items-center space-x-2">
+                            <span class="mr-1 text-gray-400">Pause:</span>
+                            <button onclick="changeQuizTime(-10)" class="px-3 py-2 bg-gray-700 rounded-full hover:bg-gray-600 text-white">-</button>
+                            <span id="quizTimeDisplay" class="mx-2 font-semibold text-white">20s</span>
+                            <button onclick="changeQuizTime(10)" class="px-3 py-2 bg-gray-700 rounded-full hover:bg-gray-600 text-white">+</button>
+                        </div>
+                    </div>
+                    <button onclick="playNextQuizTrack()" class="w-full py-3 btn-primary text-white btn-rounded">
+                        <i class="fa-solid fa-forward"></i> Play Next
                     </button>
-                    <button onclick="clearSelection()" class="flex-1 py-3 bg-red-500 text-white rounded font-bold flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-eraser"></i> Clear
-                    </button>
+                </div>
+                
+                <div id="regularControls" class="space-y-4 absolute w-full top-0 left-0 fade-in">
+                    <div class="flex flex-wrap justify-between items-center gap-4 text-sm text-gray-400">
+                        <label class="flex-1 flex items-center gap-2">
+                            <span class="text-gray-400">Repeat:</span> 
+                            <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 text-center bg-transparent border-b-2 border-gray-600">
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="shuffle" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600">
+                            Shuffle
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="repeatPlaylist" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600">
+                            Repeat
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-400 w-12">Speed:</span>
+                        <input type="range" id="speedSlider" min="0.5" max="1.5" step="0.1" value="1.0" class="flex-1">
+                        <span id="speedDisplay" class="font-semibold w-8 text-white">1.0</span>x
+                    </div>
+                    
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <button onclick="playSelected()" class="flex-1 py-3 btn-primary text-white btn-rounded">
+                            <i class="fa-solid fa-play"></i> Play
+                        </button>
+                        <button onclick="clearSelection()" class="flex-1 py-3 btn-red text-white btn-rounded">
+                            <i class="fa-solid fa-eraser"></i> Clear
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div id="recentlyPlayed" class="mt-6 hidden">
-            <h2 class="text-lg font-semibold mb-2 text-gray-800">Recently Played</h2>
-            <ul id="recentList" class="space-y-2"></ul>
-            <button onclick="clearHistory()" class="mt-4 w-full py-3 bg-gray-400 text-white rounded font-bold flex items-center justify-center gap-2">
+        <div class="mb-6 container-card">
+            <button onclick="toggleGroupDisplay()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2 mb-3">
+                <i class="fa-solid fa-layer-group"></i> Groups
+            </button>
+            <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
+        </div>
+
+        <div id="recentlyPlayed" class="mt-6 hidden container-card">
+            <h2 class="text-lg font-bold mb-3 text-white">Recently Played</h2>
+            <ul id="recentList" class="space-y-3"></ul>
+            <button onclick="clearHistory()" class="mt-4 w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
                 <i class="fa-solid fa-trash-can"></i> Clear History
             </button>
         </div>
 
-        <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4"></ul>
-
+        <h2 class="text-lg font-bold mt-6 mb-3 text-white">All Shlokas</h2>
+        <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></ul>
     </div>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-white shadow p-3 z-10">
+    <footer class="fixed bottom-0 left-0 right-0 bg-white shadow p-3 z-10 bg-[#1e1e1e]">
         <audio id="audioPlayer" controls class="w-full"></audio>
     </footer>
 
@@ -127,12 +354,10 @@
         let autoPlay = false;
         let autoPlayTimeout;
         let countdownInterval;
-        let currentQuizTime = 20; // Default quiz time changed to 20
+        let currentQuizTime = 20;
         const shlokas = {
             1: "Shlok 1: Manglacharan",
             2: "Shlok 2: Swaminarayan mantra",
-            // Add more shlokas and their details here for better context for the LLM
-            // This is a placeholder for a real database or data source
             10: "Shlok 10: Describes the qualities of God",
             20: "Shlok 20: On the importance of devotion",
             30: "Shlok 30: Discusses the nature of the soul",
@@ -158,7 +383,6 @@
         function toggleMode() {
             isQuizMode = !isQuizMode;
             
-            // Toggle visibility using classes to prevent layout shifts
             quizControlsEl.classList.toggle('fade-out', !isQuizMode);
             quizControlsEl.classList.toggle('hidden', !isQuizMode);
             regularControlsEl.classList.toggle('fade-out', isQuizMode);
@@ -190,13 +414,13 @@
             autoPlay = !autoPlay;
             const button = document.getElementById("autoPlayToggle");
             button.textContent = `Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
-            button.classList.toggle('bg-gray-400', !autoPlay);
-            button.classList.toggle('bg-green-500', autoPlay);
+            button.classList.toggle('btn-secondary', !autoPlay);
+            button.classList.toggle('btn-green', autoPlay);
         }
 
         function changeQuizTime(delta) {
             currentQuizTime += delta;
-            if (currentQuizTime < 10) currentQuizTime = 10; // Minimum quiz time changed to 10
+            if (currentQuizTime < 10) currentQuizTime = 10;
             if (currentQuizTime > 90) currentQuizTime = 90;
             document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
         }
@@ -210,6 +434,7 @@
             document.querySelectorAll(".trackBox").forEach(cb => cb.checked = false);
             document.querySelectorAll(".group-btn").forEach(btn => btn.classList.remove("selected"));
             document.querySelectorAll(".recent-box").forEach(cb => cb.checked = false);
+            document.querySelectorAll(".recent-item").forEach(item => item.classList.remove("selected"));
             playlist = [];
             currentIndex = 0;
         }
@@ -239,10 +464,8 @@
             }
         }
 
-        function changeSpeed(delta) {
-            currentSpeed = Math.round((currentSpeed + delta) * 10) / 10;
-            if (currentSpeed < 0.5) currentSpeed = 0.5;
-            if (currentSpeed > 1.5) currentSpeed = 1.5;
+        function changeSpeed(speed) {
+            currentSpeed = speed;
             audioPlayer.playbackRate = currentSpeed;
             document.getElementById("speedDisplay").textContent = currentSpeed.toFixed(1);
         }
@@ -334,9 +557,9 @@
                 const li = document.createElement("li");
                 li.className = "space-y-2";
                 li.innerHTML = `
-                    <label class="recent-item p-3 bg-white rounded-lg shadow-sm hover:shadow-lg transition cursor-pointer">
+                    <label class="recent-item block p-3 container-card cursor-pointer">
                         <input type="checkbox" class="recent-box mr-2" data-selection="${sel}">
-                        <span>${labelText}</span>
+                        <span class="ml-6">${labelText}</span>
                     </label>
                 `;
                 li.querySelector('.recent-box').addEventListener('change', (e) => {
@@ -349,6 +572,8 @@
                         cb.checked = isChecked;
                         cb.closest("label").classList.toggle("selected", isChecked);
                     });
+                    document.querySelectorAll(".recent-item").forEach(item => item.classList.remove("selected"));
+                    selectedRecents.forEach(cb => cb.closest("label").classList.add("selected"));
                     updateGroupButtonSelection();
                 });
                 recentList.appendChild(li);
@@ -393,7 +618,7 @@
             for (let i = 1; i <= totalTracks; i += 10) {
                 const end = Math.min(i + 9, totalTracks);
                 const btn = document.createElement("button");
-                btn.className = "group-btn px-3 py-2 m-1 rounded";
+                btn.className = "group-btn";
                 btn.dataset.start = i;
                 btn.dataset.end = end;
                 btn.innerHTML = `${i}–${end}<span class="checkmark">✓</span>`;
@@ -406,8 +631,8 @@
             for (let i = 1; i <= totalTracks; i++) {
                 const li = document.createElement("li");
                 li.innerHTML = `
-                    <label class="track-item block p-3 bg-white rounded-lg shadow-sm cursor-pointer">
-                        <input type="checkbox" value="${i}" class="trackBox mr-2"> Shlok ${i}
+                    <label class="track-item block p-3 text-white">
+                        <input type="checkbox" value="${i}" class="trackBox mr-2"> <span class="ml-6">Shlok ${i}</span>
                     </label>`;
                 trackListEl.appendChild(li);
             }
@@ -417,9 +642,9 @@
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50';
             modal.innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
-                    <p class="text-gray-800 mb-4">${message}</p>
-                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-3 bg-blue-500 text-white rounded hover:bg-blue-600">
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center text-white">
+                    <p class="mb-4">${message}</p>
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">
                         OK
                     </button>
                 </div>
@@ -432,11 +657,17 @@
             const searchInput = document.getElementById("search");
             const trackListContainer = document.getElementById("trackList");
 
+            // Update the speed slider functionality
+            const speedSlider = document.getElementById("speedSlider");
+            speedSlider.addEventListener("input", function() {
+                changeSpeed(parseFloat(this.value));
+            });
+
             searchInput.addEventListener("input", function () {
                 const term = this.value.trim();
-                document.querySelectorAll(".trackBox").forEach(cb => {
-                    const li = cb.closest("li");
-                    if (!term || cb.value === term) {
+                document.querySelectorAll("#trackList li").forEach(li => {
+                    const trackNumber = li.querySelector(".trackBox").value;
+                    if (!term || trackNumber.startsWith(term)) {
                         li.classList.remove("hidden");
                     } else {
                         li.classList.add("hidden");
@@ -450,7 +681,31 @@
                     const isChecked = event.target.checked;
                     label.classList.toggle("selected", isChecked);
                     updateGroupButtonSelection();
-                    document.querySelectorAll(".recent-box").forEach(cb => cb.checked = false);
+                    document.querySelectorAll(".recent-box").forEach(cb => {
+                        cb.checked = false;
+                        cb.closest("label").classList.remove("selected");
+                    });
+                }
+            });
+            
+            document.getElementById("recentList").addEventListener("change", function(event) {
+                if (event.target.classList.contains("recent-box")) {
+                    document.querySelectorAll(".track-item").forEach(item => item.classList.remove("selected"));
+                    document.querySelectorAll(".trackBox").forEach(cb => cb.checked = false);
+                    document.querySelectorAll(".recent-item").forEach(item => item.classList.remove("selected"));
+
+                    const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
+                    const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(Number)));
+                    
+                    document.querySelectorAll(".trackBox").forEach(cb => {
+                        const trackNum = parseInt(cb.value);
+                        if (allNumbers.has(trackNum)) {
+                            cb.checked = true;
+                            cb.closest("label").classList.add("selected");
+                        }
+                    });
+                    selectedRecents.forEach(cb => cb.closest("label").classList.add("selected"));
+                    updateGroupButtonSelection();
                 }
             });
 
@@ -459,7 +714,6 @@
                     setTimeout(() => {
                         audioPlayer.pause();
                         hasQuizPaused = true;
-                        // Use class to toggle visibility
                         document.getElementById('quizStatus').classList.remove('hidden');
                         document.getElementById('quizStatus').classList.add('flex');
 
@@ -480,6 +734,9 @@
                             if (countdown <= 0) {
                                 clearInterval(countdownInterval);
                                 document.getElementById('countdownBarContainer').classList.add('hidden');
+                                if (autoPlay) {
+                                    playNextQuizTrack();
+                                }
                             }
                         }, 1000);
 
@@ -487,7 +744,7 @@
                             clearTimeout(autoPlayTimeout);
                             autoPlayTimeout = setTimeout(() => {
                                 playNextQuizTrack();
-                            }, currentQuizTime * 1000);
+                            }, currentQuizTime * 1000 + 1000);
                         }
                     }, 3000);
                 }
