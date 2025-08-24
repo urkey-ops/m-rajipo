@@ -3,353 +3,732 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Satsang Diksha Audio Player</title>
+    <title>Mission Rajipo - Apple Music UI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/20GQR+q1U/G1bYfQYy9kH9hT7p0uE/I8T2OQ+YQ+c2wJpC8XvPqjG6Jg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+Devanagari:wght@400;700&display=swap');
+        :root {
+            --bg-color: #1c1c1e;
+            --container-bg: #2c2c2e;
+            --card-bg: #2e2e30;
+            --text-color: #f2f2f7;
+            --secondary-text: #a0a0a0;
+            --accent-blue: #0a84ff;
+            --accent-green: #30d158;
+            --accent-red: #ff453a;
+            --border-color: #38383a;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            padding-bottom: 120px;
         }
-        .container {
-            max-width: 960px;
+
+        /* General container and card styling */
+        .container-card {
+            background-color: var(--container-bg);
+            border-radius: 14px;
+            padding: 16px;
         }
-        .shloka-text {
-            font-family: 'Noto Sans Devanagari', sans-serif;
-            line-height: 1.8;
+        .track-item {
+            background-color: var(--card-bg);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            cursor: pointer;
+            border-radius: 10px;
+            border: 1px solid transparent;
         }
-        .audio-player {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        .track-item:hover {
+            transform: scale(1.02);
+            background-color: #3b3b3d;
         }
-        .loading-animation {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+        .track-item.selected {
+            background-color: var(--accent-blue);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        /* Form elements */
+        input[type="text"], input[type="number"] {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        input[type="text"]::placeholder, input[type="number"]::placeholder {
+            color: var(--secondary-text);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background-color: var(--accent-blue);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            background-color: #2b91ff;
+            transform: scale(1.01);
+        }
+        .btn-secondary {
+            background-color: #48484a;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-secondary:hover {
+            background-color: #5d5d5f;
+            transform: scale(1.01);
+        }
+        .btn-green {
+            background-color: var(--accent-green);
+        }
+        .btn-green:hover {
+            background-color: #40c666;
+        }
+        .btn-red {
+            background-color: var(--accent-red);
+        }
+        .btn-red:hover {
+            background-color: #ff574d;
+        }
+        .btn-rounded {
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-weight: 600;
+        }
+
+        /* Checkbox and Group buttons */
+        .trackBox, .recent-box {
+            display: none;
+        }
+        .track-item, .recent-item {
+            position: relative;
+            user-select: none;
+        }
+        .track-item::before, .recent-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
+            border: 2px solid var(--secondary-text);
+            transition: all 0.2s;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .track-item.selected::before, .recent-item.selected::before {
+            border-color: var(--accent-blue);
+            background-color: var(--accent-blue);
         }
+        .track-item.selected::after, .recent-item.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 14px;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 10px;
+        }
+        
+        .group-btn {
+            position: relative;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.875rem;
+            transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .group-btn:hover {
+            background-color: #3b3b3d;
+            transform: scale(1.02);
+        }
+        .group-btn.selected {
+            background-color: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+        .checkmark {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 1.25rem;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .group-btn.selected .checkmark {
+            opacity: 1;
+        }
+
+        /* Quiz UI */
+        #quizControls {
+            min-height: 250px;
+        }
+        .countdown-bar {
+            height: 6px;
+            background: linear-gradient(90deg, #ff453a, #ff9f0a, #30d158);
+            transition: width 0.5s ease-out;
+            border-radius: 9999px;
+        }
+
+        /* Audio Player */
+        footer {
+            background-color: #1e1e1e;
+            border-top: 1px solid #333;
+        }
+        #audioPlayer::-webkit-media-controls-panel {
+            background-color: #1e1e1e;
+            filter: invert(100%);
+        }
+        #audioPlayer::-webkit-media-controls-play-button,
+        #audioPlayer::-webkit-media-controls-current-time-display,
+        #audioPlayer::-webkit-media-controls-time-remaining-display {
+            color: var(--text-color);
+        }
+        #audioPlayer::-webkit-media-controls-timeline {
+            background-color: #48484a;
+        }
+        #audioPlayer::-webkit-media-controls-volume-slider {
+            background-color: #48484a;
+        }
+
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen py-10 px-4 sm:px-6 lg:px-8">
-    <div class="container bg-white p-8 rounded-2xl shadow-xl space-y-8">
-        <header class="text-center">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Satsang Diksha</h1>
-            <p class="text-md sm:text-lg text-gray-600">Shlokas 1-10</p>
-        </header>
+<body class="flex flex-col">
 
-        <main class="space-y-6">
-            <div id="shloka-container" class="bg-gray-50 p-6 rounded-xl border border-gray-200 min-h-[300px] flex flex-col justify-center items-center text-center transition-all duration-300">
-                <p id="shloka-id" class="text-lg font-semibold text-blue-600 mb-2"></p>
-                <p id="shloka-text" class="shloka-text text-xl sm:text-2xl text-gray-800 transition-opacity duration-500 opacity-0"></p>
-                <div id="loading-spinner" class="loading-animation hidden"></div>
-            </div>
-
-            <div class="audio-player bg-gray-100 p-4 rounded-xl flex items-center justify-between mt-4">
-                <button id="prev-btn" class="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-                <button id="play-pause-btn" class="bg-blue-600 text-white p-4 rounded-full hover:bg-blue-700 transition-colors duration-200 transform scale-100 hover:scale-105">
-                    <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4.004a1 1 0 001.555.832l3.445-2.002a1 1 0 000-1.664l-3.445-2.002z" clip-rule="evenodd" />
-                    </svg>
-                    <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 hidden" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-                <button id="next-btn" class="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors duration-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
+    <div class="max-w-xl mx-auto p-4 flex flex-col flex-1 w-full">
+        <h1 class="text-3xl font-bold text-center mb-6 text-white">Mission Rajipo 🎵</h1>
+        
+        <div id="mainControls" class="space-y-3 mb-6 container-card">
+            <input id="search" type="text" placeholder="Search shlok number..." class="w-full">
+            <div class="flex gap-2">
+                <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2">
+                <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2">
+                <button onclick="selectRange()" class="px-4 py-3 bg-gray-500 text-white rounded-lg flex items-center gap-1 btn-secondary">
+                    <i class="fa-solid fa-list-ol"></i> Range
                 </button>
             </div>
-        </main>
+        </div>
+        
+        <div class="mb-6 container-card space-y-4">
+            <button onclick="toggleMode()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
+                <i class="fa-solid fa-toggle-off"></i> Toggle to Quiz Mode
+            </button>
+        
+            <div id="dynamicControlsWrapper" class="relative min-h-[250px]">
+                <div id="quizControls" class="space-y-4 absolute w-full top-0 left-0 fade-out hidden">
+                    <h2 class="text-xl font-bold text-center">Quiz Mode 🧠</h2>
+                    <p id="currentShlokQuiz" class="text-lg font-semibold text-center text-gray-400">Shlok 0</p>
+                    <p id="quizStatus" class="text-center font-semibold text-green-400 hidden flex items-center justify-center">
+                        Audio Paused. Your turn to recite! <span id="countdown" class="ml-2 text-white"></span>
+                    </p>
+                    <div id="countdownBarContainer" class="w-full bg-gray-600 rounded-full h-2 mb-2 hidden">
+                        <div id="countdownBar" class="countdown-bar h-full"></div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-3 btn-secondary text-white btn-rounded">Auto-Play: OFF</button>
+                        <div id="pauseTimeControls" class="flex items-center space-x-2">
+                            <span class="mr-1 text-gray-400">Pause:</span>
+                            <button onclick="changeQuizTime(-10)" class="px-3 py-2 bg-gray-700 rounded-full hover:bg-gray-600 text-white">-</button>
+                            <span id="quizTimeDisplay" class="mx-2 font-semibold text-white">20s</span>
+                            <button onclick="changeQuizTime(10)" class="px-3 py-2 bg-gray-700 rounded-full hover:bg-gray-600 text-white">+</button>
+                        </div>
+                    </div>
+                    <button onclick="playNextQuizTrack()" class="w-full py-3 btn-primary text-white btn-rounded">
+                        <i class="fa-solid fa-forward"></i> Play Next
+                    </button>
+                </div>
+                
+                <div id="regularControls" class="space-y-4 absolute w-full top-0 left-0 fade-in">
+                    <div class="flex flex-wrap justify-between items-center gap-4 text-sm text-gray-400">
+                        <label class="flex-1 flex items-center gap-2">
+                            <span class="text-gray-400">Repeat:</span> 
+                            <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 text-center bg-transparent border-b-2 border-gray-600">
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="shuffle" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600">
+                            Shuffle
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="repeatPlaylist" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600">
+                            Repeat
+                        </label>
+                    </div>
+                    <div class="flex justify-between items-center gap-2 text-gray-400">
+                        <span class="text-sm">Speed:</span>
+                        <button onclick="changeSpeed(-0.1)" class="px-3 py-2 bg-gray-700 rounded-full hover:bg-gray-600 text-white">-</button>
+                        <span id="speedDisplay" class="font-semibold w-8 text-center text-white">1.0</span>x
+                        <button onclick="changeSpeed(0.1)" class="px-3 py-2 bg-gray-700 rounded-full hover:bg-gray-600 text-white">+</button>
+                    </div>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <button onclick="playSelected()" class="flex-1 py-3 btn-primary text-white btn-rounded">
+                            <i class="fa-solid fa-play"></i> Play
+                        </button>
+                        <button onclick="clearSelection()" class="flex-1 py-3 btn-red text-white btn-rounded">
+                            <i class="fa-solid fa-eraser"></i> Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-6 container-card">
+            <button onclick="toggleGroupDisplay()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2 mb-3">
+                <i class="fa-solid fa-layer-group"></i> Groups
+            </button>
+            <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
+        </div>
+
+        <div id="recentlyPlayed" class="mt-6 hidden container-card">
+            <h2 class="text-lg font-bold mb-3 text-white">Recently Played</h2>
+            <ul id="recentList" class="space-y-3"></ul>
+            <button onclick="clearHistory()" class="mt-4 w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
+                <i class="fa-solid fa-trash-can"></i> Clear History
+            </button>
+        </div>
+
+        <h2 class="text-lg font-bold mt-6 mb-3 text-white">All Shlokas</h2>
+        <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></ul>
     </div>
 
+    <footer class="fixed bottom-0 left-0 right-0 bg-white shadow p-3 z-10 bg-[#1e1e1e]">
+        <audio id="audioPlayer" controls class="w-full"></audio>
+    </footer>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Firestore and Firebase Auth setup
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-            if (Object.keys(firebaseConfig).length === 0) {
-                console.warn("Firebase config not available. App will not function with Firebase.");
+        let audioPlayer;
+        let playlist = [];
+        let currentIndex = 0;
+        let repeatEach = 1;
+        let repeatCounter = 0;
+        const totalTracks = 315;
+        const trackListEl = document.getElementById("trackList");
+        const quizControlsEl = document.getElementById("quizControls");
+        const regularControlsEl = document.getElementById("regularControls");
+        let currentSpeed = 1.0;
+        let isQuizMode = false;
+        let hasQuizPaused = false;
+        let autoPlay = false;
+        let autoPlayTimeout;
+        let countdownInterval;
+        let currentQuizTime = 20;
+        const shlokas = {
+            1: "Shlok 1: Manglacharan",
+            2: "Shlok 2: Swaminarayan mantra",
+            10: "Shlok 10: Describes the qualities of God",
+            20: "Shlok 20: On the importance of devotion",
+            30: "Shlok 30: Discusses the nature of the soul",
+            315: "Shlok 315: Concluding verses"
+        };
+        
+        function playCurrent() {
+            if (currentIndex < playlist.length) {
+                const trackNum = playlist[currentIndex];
+                audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+                audioPlayer.playbackRate = currentSpeed;
+                audioPlayer.play().catch(err => console.log("Play error:", err));
+            } else if (document.getElementById("repeatPlaylist").checked) {
+                currentIndex = 0;
+                playCurrent();
+            } else {
+                audioPlayer.pause();
+                audioPlayer.src = "";
+                console.log("Playlist finished.");
             }
+        }
+
+        function toggleMode() {
+            isQuizMode = !isQuizMode;
             
-            // Shloka data with updated text
-            const shlokas = [
-                {
-                    id: 1,
-                    text: `स्वामिनारायणः साक्षाद् अक्षरपुरुषोत्तमः। सर्वेभ्यः परमो ध्येयः परमात्मा स एव हि॥1॥`,
-                },
-                {
-                    id: 2,
-                    text: `देहस्यान्ते स वै प्राप्योऽन्यथाऽसाध्यश्च स ध्रुवम्। तं च प्राप्स्यति नित्यं योऽत्राश्रितोऽक्षरधाम्नि वै॥2॥`,
-                },
-                {
-                    id: 3,
-                    text: `तस्यैव शरणापन्नो यः स्यात् स सर्वथा सुखम्। प्राप्स्यत्यक्षयम् सौख्यं मोक्षं च ध्रुवमुत्तमम्॥3॥`,
-                },
-                {
-                    id: 4,
-                    text: `संसारं हि तरिष्यन्ति येऽमुं मोक्षं च यान्ति ये। ते सर्वेऽपि हि सत्सङ्गात् प्राप्नुवन्ति तदुत्तमम्॥4॥`,
-                },
-                {
-                    id: 5,
-                    text: `अतोऽक्षरब्रह्मणि येऽभ्युद्यतास्ते सर्वेऽपि हि। मोक्षमार्गं हि तं मोक्षं प्राप्नुवन्ति ततो ध्रुवम्॥5॥`,
-                },
-                {
-                    id: 6,
-                    text: `सत्सङ्गः स्थापितस्तस्माद् दिव्योऽयं परब्रह्मणा। स्वामिनारायणेनेहा साक्षादेवावतीर्य च॥6॥`,
-                },
-                {
-                    id: 7,
-                    text: `सत्सङ्गस्यास्य विज्ञानं मुमुक्षूणां भवेदिति। शास्त्रं सत्सङ्गदीक्षेति शुभाशयेन विरच्यते॥7॥`,
-                },
-                {
-                    id: 8,
-                    text: `सत्सङ्ग इति सत्यस्य सङ्गतिः सा हि षड्‌विधा। सत्यस्य परमात्मनः सत्यस्याक्षरधाम्नश्च॥8॥`,
-                },
-                {
-                    id: 9,
-                    text: `सत्यस्य परमात्मनः सत्यस्याक्षरधाम्नश्च। सत्यस्यात्मनश्चैव सत्यस्य सद‍्गुरोस्तथा॥9॥`,
-                },
-                {
-                    id: 10,
-                    text: `सत्यस्य सच‍्छास्त्रस्य सत्यस्य साधोस्तथा। सत्सङ्गस्य हि लक्षणम्॥10॥`,
-                },
-            ];
+            quizControlsEl.classList.toggle('fade-out', !isQuizMode);
+            quizControlsEl.classList.toggle('hidden', !isQuizMode);
+            regularControlsEl.classList.toggle('fade-out', isQuizMode);
+            regularControlsEl.classList.toggle('hidden', isQuizMode);
+            
+            document.getElementById('trackList').classList.toggle('hidden', isQuizMode);
+            
+            const modeButton = document.querySelector('button[onclick="toggleMode()"]');
+            modeButton.innerHTML = `<i class="fa-solid fa-toggle-${isQuizMode ? 'on' : 'off'}"></i> Toggle to ${isQuizMode ? 'Regular' : 'Quiz'} Mode`;
 
-            let currentShlokaIndex = 0;
-            const shlokaIdElem = document.getElementById('shloka-id');
-            const shlokaTextElem = document.getElementById('shloka-text');
-            const playPauseBtn = document.getElementById('play-pause-btn');
-            const playIcon = document.getElementById('play-icon');
-            const pauseIcon = document.getElementById('pause-icon');
-            const prevBtn = document.getElementById('prev-btn');
-            const nextBtn = document.getElementById('next-btn');
-            const loadingSpinner = document.getElementById('loading-spinner');
+            if (isQuizMode) {
+                audioPlayer.pause();
+                audioPlayer.src = "";
+                playlist = [];
+                currentIndex = 0;
+                restoreLastSelection();
+                updateGroupButtonSelection();
+            } else {
+                clearSelection();
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+                clearTimeout(autoPlayTimeout);
+                document.getElementById('quizStatus').classList.add('hidden');
+            }
+        }
 
-            let audio = null;
-            let isPlaying = false;
-            let currentAudioSource = null;
+        function toggleAutoPlay() {
+            autoPlay = !autoPlay;
+            const button = document.getElementById("autoPlayToggle");
+            button.textContent = `Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
+            button.classList.toggle('btn-secondary', !autoPlay);
+            button.classList.toggle('btn-green', autoPlay);
+        }
 
-            // This function handles the TTS API call and audio playback.
-            async function playShloka(index) {
-                // Do not proceed if already playing the same shloka
-                if (currentAudioSource && currentAudioSource.id === shlokas[index].id) {
+        function changeQuizTime(delta) {
+            currentQuizTime += delta;
+            if (currentQuizTime < 10) currentQuizTime = 10;
+            if (currentQuizTime > 90) currentQuizTime = 90;
+            document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
+        }
+
+        function toggleGroupDisplay() {
+            document.getElementById("groups").classList.toggle("hidden");
+        }
+
+        function clearSelection() {
+            document.querySelectorAll(".track-item").forEach(item => item.classList.remove("selected"));
+            document.querySelectorAll(".trackBox").forEach(cb => cb.checked = false);
+            document.querySelectorAll(".group-btn").forEach(btn => btn.classList.remove("selected"));
+            document.querySelectorAll(".recent-box").forEach(cb => cb.checked = false);
+            document.querySelectorAll(".recent-item").forEach(item => item.classList.remove("selected"));
+            playlist = [];
+            currentIndex = 0;
+        }
+
+        function selectRange() {
+            const start = parseInt(document.getElementById("rangeStart").value);
+            const end = parseInt(document.getElementById("rangeEnd").value);
+            if (!isNaN(start) && !isNaN(end) && start <= end) {
+                document.querySelectorAll(".trackBox").forEach(cb => {
+                    const val = parseInt(cb.value, 10);
+                    const isChecked = val >= start && val <= end;
+                    cb.checked = isChecked;
+                    cb.closest("label").classList.toggle("selected", isChecked);
+                });
+                updateGroupButtonSelection();
+            }
+        }
+
+        function toggleGroup(start, end, element) {
+            const isSelected = element.classList.toggle('selected');
+            for (let i = start; i <= end; i++) {
+                const checkbox = document.querySelector(`.trackBox[value="${i}"]`);
+                if (checkbox) {
+                    checkbox.checked = isSelected;
+                    checkbox.closest("label").classList.toggle("selected", isSelected);
+                }
+            }
+        }
+
+        function changeSpeed(delta) {
+            currentSpeed = Math.round((currentSpeed + delta) * 10) / 10;
+            if (currentSpeed < 0.5) currentSpeed = 0.5;
+            if (currentSpeed > 1.5) currentSpeed = 1.5;
+            audioPlayer.playbackRate = currentSpeed;
+            document.getElementById("speedDisplay").textContent = currentSpeed.toFixed(1);
+        }
+
+        function playSelected() {
+            const selected = Array.from(document.querySelectorAll(".trackBox:checked"))
+                .map(cb => parseInt(cb.value, 10));
+            if (selected.length === 0) {
+                showModal("Please select at least one shlok to play.");
+                return;
+            }
+            repeatEach = parseInt(document.getElementById("repeatCount").value) || 1;
+            playlist = [...selected];
+            if (document.getElementById("shuffle").checked) {
+                playlist = playlist.sort(() => Math.random() - 0.5);
+            }
+            currentIndex = 0;
+            repeatCounter = 0;
+            saveSelection(selected);
+            playCurrent();
+        }
+
+        function playNextQuizTrack() {
+            let selected = [];
+            const recentSelections = Array.from(document.querySelectorAll(".recent-box:checked"))
+                .map(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim())));
+            if (recentSelections.length > 0) {
+                const allNumbers = new Set(recentSelections.flat());
+                selected = Array.from(allNumbers);
+            } else {
+                selected = Array.from(document.querySelectorAll(".trackBox:checked"))
+                    .map(cb => parseInt(cb.value, 10));
+            }
+
+            if (selected.length === 0) {
+                showModal("Please select a group of shlokas to quiz yourself on first!");
+                return;
+            }
+
+            if (playlist.length === 0 || currentIndex >= playlist.length) {
+                playlist = [...selected].sort(() => Math.random() - 0.5);
+                currentIndex = 0;
+            }
+
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            clearTimeout(autoPlayTimeout);
+            document.getElementById('quizStatus').classList.add('hidden');
+
+            const trackNum = playlist[currentIndex];
+            document.getElementById('currentShlokQuiz').textContent = `Now playing: Shlok ${trackNum}`;
+            audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+            audioPlayer.playbackRate = currentSpeed;
+            
+            hasQuizPaused = false;
+            audioPlayer.play().catch(err => console.log("Play error:", err));
+
+            currentIndex++;
+        }
+
+        function saveSelection(selection) {
+            let history = [];
+            try { history = JSON.parse(localStorage.getItem("recentSelections")) || []; } catch (e) { history = []; }
+            const selString = selection.join(",");
+            history = [selString, ...history.filter(h => h !== selString)].slice(0, 5);
+            localStorage.setItem("recentSelections", JSON.stringify(history));
+            renderRecentSelections();
+        }
+
+        function clearHistory() {
+            localStorage.removeItem("recentSelections");
+            renderRecentSelections();
+        }
+
+        function renderRecentSelections() {
+            const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+            const recentDiv = document.getElementById("recentlyPlayed");
+            const recentList = document.getElementById("recentList");
+            recentList.innerHTML = "";
+            if (history.length === 0) { 
+                recentDiv.classList.add("hidden"); 
+                return; 
+            }
+            recentDiv.classList.remove("hidden");
+            history.forEach((sel, index) => {
+                const numbers = sel.split(",").map(n => parseInt(n.trim()));
+                let labelText = numbers.length <= 6 ? "Shlok " + numbers.join(", ") : `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${numbers.length} total)`;
+                const li = document.createElement("li");
+                li.className = "space-y-2";
+                li.innerHTML = `
+                    <label class="recent-item block p-3 container-card cursor-pointer">
+                        <input type="checkbox" class="recent-box mr-2" data-selection="${sel}">
+                        <span class="ml-6">${labelText}</span>
+                    </label>
+                `;
+                li.querySelector('.recent-box').addEventListener('change', (e) => {
+                    const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
+                    const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(Number)));
+                    
+                    document.querySelectorAll(".trackBox").forEach(cb => {
+                        const trackNum = parseInt(cb.value);
+                        const isChecked = allNumbers.has(trackNum);
+                        cb.checked = isChecked;
+                        cb.closest("label").classList.toggle("selected", isChecked);
+                    });
+                    document.querySelectorAll(".recent-item").forEach(item => item.classList.remove("selected"));
+                    selectedRecents.forEach(cb => cb.closest("label").classList.add("selected"));
+                    updateGroupButtonSelection();
+                });
+                recentList.appendChild(li);
+            });
+        }
+
+        function restoreLastSelection() {
+            let history = [];
+            try { history = JSON.parse(localStorage.getItem("recentSelections")) || []; } catch (e) { history = []; }
+            if (history.length > 0) {
+                const lastSel = history[0].split(",").map(n => parseInt(n.trim()));
+                document.querySelectorAll(".trackBox").forEach(cb => {
+                    const isChecked = lastSel.includes(parseInt(cb.value, 10));
+                    cb.checked = isChecked;
+                    cb.closest("label").classList.toggle("selected", isChecked);
+                });
+                updateGroupButtonSelection();
+            }
+        }
+        
+        function updateGroupButtonSelection() {
+            const selectedTracks = new Set(Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value)));
+            document.querySelectorAll(".group-btn").forEach(btn => {
+                const start = parseInt(btn.dataset.start);
+                const end = parseInt(btn.dataset.end);
+                if (isNaN(start) || isNaN(end)) {
                     return;
                 }
-
-                if (audio) {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio = null;
+                let isGroupSelected = true;
+                for(let i = start; i <= end; i++) {
+                    if (!selectedTracks.has(i)) {
+                        isGroupSelected = false;
+                        break;
+                    }
                 }
+                btn.classList.toggle('selected', isGroupSelected);
+            });
+        }
 
-                // Show loading spinner and hide text
-                shlokaTextElem.style.opacity = '0';
-                loadingSpinner.classList.remove('hidden');
-                
-                // Get the shloka text to send to the TTS API
-                const shloka = shlokas[index];
-                const textToSpeak = `Say in a formal, informative tone: Shloka ${shloka.id}: ${shloka.text}`;
-                
-                try {
-                    // Start the API call to generate TTS audio
-                    const payload = {
-                        contents: [{
-                            parts: [{ text: textToSpeak }]
-                        }],
-                        generationConfig: {
-                            responseModalities: ["AUDIO"],
-                            speechConfig: {
-                                voiceConfig: {
-                                    prebuiltVoiceConfig: { voiceName: "Charon" }
+        function generateGroups() {
+            const groupDiv = document.getElementById("groups");
+            for (let i = 1; i <= totalTracks; i += 10) {
+                const end = Math.min(i + 9, totalTracks);
+                const btn = document.createElement("button");
+                btn.className = "group-btn";
+                btn.dataset.start = i;
+                btn.dataset.end = end;
+                btn.innerHTML = `${i}–${end}<span class="checkmark">✓</span>`;
+                btn.onclick = () => toggleGroup(i, end, btn);
+                groupDiv.appendChild(btn);
+            }
+        }
+
+        function generateTracks() {
+            for (let i = 1; i <= totalTracks; i++) {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    <label class="track-item block p-3 text-white">
+                        <input type="checkbox" value="${i}" class="trackBox mr-2"> <span class="ml-6">Shlok ${i}</span>
+                    </label>`;
+                trackListEl.appendChild(li);
+            }
+        }
+
+        function showModal(message) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center text-white">
+                    <p class="mb-4">${message}</p>
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">
+                        OK
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            audioPlayer = document.getElementById("audioPlayer");
+            const searchInput = document.getElementById("search");
+            const trackListContainer = document.getElementById("trackList");
+
+            searchInput.addEventListener("input", function () {
+                const term = this.value.trim();
+                document.querySelectorAll("#trackList li").forEach(li => {
+                    const trackNumber = li.querySelector(".trackBox").value;
+                    if (!term || trackNumber.startsWith(term)) {
+                        li.classList.remove("hidden");
+                    } else {
+                        li.classList.add("hidden");
+                    }
+                });
+            });
+
+            trackListContainer.addEventListener("change", function(event) {
+                if (event.target.classList.contains("trackBox")) {
+                    const label = event.target.closest("label");
+                    const isChecked = event.target.checked;
+                    label.classList.toggle("selected", isChecked);
+                    updateGroupButtonSelection();
+                    document.querySelectorAll(".recent-box").forEach(cb => {
+                        cb.checked = false;
+                        cb.closest("label").classList.remove("selected");
+                    });
+                }
+            });
+            
+            document.getElementById("recentList").addEventListener("change", function(event) {
+                if (event.target.classList.contains("recent-box")) {
+                    document.querySelectorAll(".track-item").forEach(item => item.classList.remove("selected"));
+                    document.querySelectorAll(".trackBox").forEach(cb => cb.checked = false);
+                    document.querySelectorAll(".recent-item").forEach(item => item.classList.remove("selected"));
+
+                    const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
+                    const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(Number)));
+                    
+                    document.querySelectorAll(".trackBox").forEach(cb => {
+                        const trackNum = parseInt(cb.value);
+                        if (allNumbers.has(trackNum)) {
+                            cb.checked = true;
+                            cb.closest("label").classList.add("selected");
+                        }
+                    });
+                    selectedRecents.forEach(cb => cb.closest("label").classList.add("selected"));
+                    updateGroupButtonSelection();
+                }
+            });
+
+            audioPlayer.addEventListener("playing", () => {
+                if (isQuizMode && !hasQuizPaused) {
+                    setTimeout(() => {
+                        audioPlayer.pause();
+                        hasQuizPaused = true;
+                        document.getElementById('quizStatus').classList.remove('hidden');
+                        document.getElementById('quizStatus').classList.add('flex');
+
+                        let countdown = currentQuizTime;
+                        const countdownEl = document.getElementById('countdown');
+                        countdownEl.textContent = `(${countdown}s)`;
+                        document.getElementById('countdownBarContainer').classList.remove('hidden');
+                        document.getElementById('countdownBar').style.width = `100%`;
+                        
+                        if (countdownInterval) {
+                            clearInterval(countdownInterval);
+                        }
+
+                        countdownInterval = setInterval(() => {
+                            countdown--;
+                            countdownEl.textContent = `(${countdown}s)`;
+                            document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+                            if (countdown <= 0) {
+                                clearInterval(countdownInterval);
+                                document.getElementById('countdownBarContainer').classList.add('hidden');
+                                if (autoPlay) {
+                                    playNextQuizTrack();
                                 }
                             }
-                        },
-                        model: "gemini-2.5-flash-preview-tts"
-                    };
+                        }, 1000);
 
-                    const apiKey = "";
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-
-                    // Exponential backoff for API calls
-                    let response;
-                    for (let i = 0; i < 3; i++) { // Max 3 retries
-                        try {
-                            response = await fetch(apiUrl, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload)
-                            });
-                            if (response.status !== 429) break;
-                            await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
-                        } catch (error) {
-                            console.error("Fetch attempt failed:", error);
-                            if (i === 2) throw error;
-                            await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+                        if (autoPlay) {
+                            clearTimeout(autoPlayTimeout);
+                            autoPlayTimeout = setTimeout(() => {
+                                playNextQuizTrack();
+                            }, currentQuizTime * 1000 + 1000);
                         }
-                    }
-
-                    if (!response.ok) {
-                        throw new Error(`API call failed with status: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    const audioData = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                    const mimeType = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType;
-
-                    if (!audioData || !mimeType || !mimeType.startsWith("audio/L16")) {
-                        throw new Error("Invalid audio data received from API.");
-                    }
-
-                    // Decode base64 and create a Blob with a WAV header
-                    const pcmData = base64ToArrayBuffer(audioData);
-                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10) || 16000;
-                    const pcm16 = new Int16Array(pcmData);
-                    const wavBlob = pcmToWav(pcm16, sampleRate);
-                    const audioUrl = URL.createObjectURL(wavBlob);
-
-                    audio = new Audio(audioUrl);
-                    currentAudioSource = shlokas[index];
-                    audio.play();
-                    isPlaying = true;
-                    updatePlayerUI();
-
-                    // Hide loading spinner and show text
-                    shlokaIdElem.textContent = `Shloka ${shloka.id}`;
-                    shlokaTextElem.textContent = shloka.text;
-                    loadingSpinner.classList.add('hidden');
-                    shlokaTextElem.style.opacity = '1';
-
-                    // Automatically play next shloka after the current one finishes
-                    audio.onended = () => {
-                        currentShlokaIndex = (currentShlokaIndex + 1) % shlokas.length;
-                        playShloka(currentShlokaIndex);
-                    };
-
-                } catch (error) {
-                    console.error("Error generating or playing audio:", error);
-                    shlokaTextElem.textContent = "Error loading audio. Please try again.";
-                    shlokaTextElem.style.opacity = '1';
-                    loadingSpinner.classList.add('hidden');
-                    isPlaying = false;
-                    updatePlayerUI();
-                }
-            }
-
-            // Function to convert base64 to ArrayBuffer
-            function base64ToArrayBuffer(base64) {
-                const binary_string = window.atob(base64);
-                const len = binary_string.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    bytes[i] = binary_string.charCodeAt(i);
-                }
-                return bytes.buffer;
-            }
-
-            // Function to convert PCM to WAV format
-            function pcmToWav(pcm16, sampleRate) {
-                const dataLength = pcm16.length * 2;
-                const buffer = new ArrayBuffer(44 + dataLength);
-                const view = new DataView(buffer);
-
-                // RIFF identifier
-                writeString(view, 0, 'RIFF');
-                // file length
-                view.setUint32(4, 36 + dataLength, true);
-                // RIFF type
-                writeString(view, 8, 'WAVE');
-                // format chunk identifier
-                writeString(view, 12, 'fmt ');
-                // format chunk length
-                view.setUint32(16, 16, true);
-                // sample format (1 = PCM)
-                view.setUint16(20, 1, true);
-                // channel count
-                view.setUint16(22, 1, true);
-                // sample rate
-                view.setUint32(24, sampleRate, true);
-                // byte rate (sample rate * block align)
-                view.setUint32(28, sampleRate * 2, true);
-                // block align (channel count * bytes per sample)
-                view.setUint16(32, 2, true);
-                // bits per sample
-                view.setUint16(34, 16, true);
-                // data chunk identifier
-                writeString(view, 36, 'data');
-                // data chunk length
-                view.setUint32(40, dataLength, true);
-
-                // Write the PCM data
-                for (let i = 0; i < pcm16.length; i++) {
-                    view.setInt16(44 + i * 2, pcm16[i], true);
-                }
-
-                return new Blob([view], { type: 'audio/wav' });
-            }
-
-            function writeString(view, offset, string) {
-                for (let i = 0; i < string.length; i++) {
-                    view.setUint8(offset + i, string.charCodeAt(i));
-                }
-            }
-            
-            // Function to update the play/pause UI
-            function updatePlayerUI() {
-                if (isPlaying) {
-                    playIcon.classList.add('hidden');
-                    pauseIcon.classList.remove('hidden');
-                } else {
-                    playIcon.classList.remove('hidden');
-                    pauseIcon.classList.add('hidden');
-                }
-            }
-
-            // Play/Pause button event listener
-            playPauseBtn.addEventListener('click', () => {
-                if (audio) {
-                    if (isPlaying) {
-                        audio.pause();
-                    } else {
-                        audio.play();
-                    }
-                    isPlaying = !isPlaying;
-                    updatePlayerUI();
-                } else {
-                    // First time a user clicks play, start the first shloka
-                    if (!isPlaying) {
-                        playShloka(currentShlokaIndex);
-                    }
+                    }, 3000);
                 }
             });
 
-            // Previous button event listener
-            prevBtn.addEventListener('click', () => {
-                currentShlokaIndex = (currentShlokaIndex - 1 + shlokas.length) % shlokas.length;
-                playShloka(currentShlokaIndex);
+            audioPlayer.addEventListener("ended", () => {
+                if (!isQuizMode) {
+                    repeatCounter++;
+                    if (repeatCounter >= repeatEach) {
+                        repeatCounter = 0;
+                        currentIndex++;
+                    }
+                    playCurrent();
+                }
             });
 
-            // Next button event listener
-            nextBtn.addEventListener('click', () => {
-                currentShlokaIndex = (currentShlokaIndex + 1) % shlokas.length;
-                playShloka(currentShlokaIndex);
-            });
-
-            // Display initial shloka on load
-            shlokaIdElem.textContent = `Shloka ${shlokas[currentShlokaIndex].id}`;
-            shlokaTextElem.textContent = shlokas[currentShlokaIndex].text;
-            shlokaTextElem.style.opacity = '1';
+            generateGroups();
+            generateTracks();
+            restoreLastSelection();
+            renderRecentSelections();
         });
     </script>
 </body>
