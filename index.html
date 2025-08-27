@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -380,7 +377,7 @@
             </button>
         </div>
 
-        <h2 class="text-lg font-bold mt-6 mb-3 text-white">All Shlokas</h2>
+        <h2 id="allShlokasTitle" class="text-lg font-bold mt-6 mb-3 text-white">All Shlokas</h2>
         <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></ul>
     </div>
 
@@ -398,6 +395,7 @@
         let repeatCounter = 0;
         const totalTracks = 315;
         const trackListEl = document.getElementById("trackList");
+        const allShlokasTitleEl = document.getElementById("allShlokasTitle");
         const quizControlsEl = document.getElementById("quizControls");
         const regularControlsEl = document.getElementById("regularControls");
         const savePlaylistBtnEl = document.getElementById("savePlaylistBtn");
@@ -430,7 +428,8 @@
             quizControlsEl.classList.toggle('hidden', !isQuizMode);
             regularControlsEl.classList.toggle('hidden', isQuizMode);
             
-            document.getElementById('trackList').classList.toggle('hidden', isQuizMode);
+            allShlokasTitleEl.classList.toggle('hidden', isQuizMode);
+            trackListEl.classList.toggle('hidden', isQuizMode);
             document.getElementById('search').closest('div').classList.toggle('hidden', isQuizMode);
             document.getElementById('savePlaylistBtn').classList.toggle('hidden', isQuizMode);
 
@@ -452,6 +451,7 @@
                 document.getElementById('quizStatus').classList.add('hidden');
                 document.getElementById('countdown').textContent = '';
             }
+            updateGroupButtonSelection();
         }
 
         function toggleAutoPlay() {
@@ -477,6 +477,7 @@
             document.querySelectorAll(".group-btn.selected").forEach(btn => btn.classList.remove("selected"));
             playlist = [];
             currentIndex = 0;
+            updateGroupButtonSelection();
         }
 
         function confirmClearSelection() {
@@ -522,6 +523,7 @@
                     checkbox.closest("label").classList.toggle("selected", isSelected);
                 }
             }
+            updateGroupButtonSelection();
         }
         
         function changeSpeed(speed) {
@@ -638,13 +640,13 @@
             
             if (names.length === 0) {
                 personalPlaylistsDiv.classList.add("hidden");
+                emptyMessage.classList.remove("hidden");
                 return;
             } else {
                 personalPlaylistsDiv.classList.remove("hidden");
+                emptyMessage.classList.add("hidden");
             }
             
-            emptyMessage.classList.add("hidden");
-
             names.forEach(name => {
                 const shlokas = playlists[name];
                 const li = document.createElement("li");
@@ -768,7 +770,7 @@
                 }
                 btn.classList.toggle('selected', isGroupSelected);
             });
-             savePlaylistBtnEl.classList.toggle('hidden', selectedTracks.size === 0);
+             savePlaylistBtnEl.classList.toggle('hidden', selectedTracks.size === 0 || isQuizMode);
         }
 
         function generateGroups() {
@@ -938,7 +940,7 @@
                             clearInterval(countdownInterval);
                         }
                         
-                        document.getElementById('countdownBar').style.width = `100%`;
+                        document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
 
                         countdownInterval = setInterval(() => {
                             countdown--;
