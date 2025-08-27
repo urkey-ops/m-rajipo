@@ -1,3 +1,6 @@
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -320,6 +323,13 @@
                 </button>
             </div>
         </div>
+
+        <div id="groups-container" class="mb-6 container-card">
+            <button onclick="toggleGroupDisplay()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2 mb-3">
+                <i id="group-toggle-icon" class="fa-solid fa-chevron-down"></i> Groups
+            </button>
+            <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
+        </div>
         
         <div class="mb-6 container-card space-y-4">
             <button onclick="toggleMode()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
@@ -397,13 +407,6 @@
             </div>
         </div>
         
-        <div id="groups-container" class="mb-6 container-card">
-            <button onclick="toggleGroupDisplay()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2 mb-3">
-                <i id="group-toggle-icon" class="fa-solid fa-chevron-down"></i> Groups
-            </button>
-            <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
-        </div>
-
         <div id="personalPlaylists" class="mt-6 container-card">
             <h2 class="text-lg font-bold mb-3 text-white">My Personal Playlists 💾</h2>
             <p id="playlist-empty" class="text-gray-400 text-center mb-3 hidden">No saved playlists yet.</p>
