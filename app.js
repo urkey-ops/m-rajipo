@@ -14,24 +14,27 @@ import {
   confirmClearHistory,
   updateSavePlaylistButtonVisibility,
   toggleGroupSelection,
-  generateTrackListAndGroups, // CRITICAL: Imported the generation function
+  generateTrackListAndGroups,
   updateQuizModeUI,
 } from './selection.js'; 
 import { toggleClass } from './ui-helpers.js';
 
 
 // --- 1. DOM CACHE ---
-// Expose DOM object globally for use by other modules (e.g., player.js, ui-helpers.js)
+// Expose DOM object globally for use by other modules
 window.DOM = {};
 
 /**
  * Caches all necessary DOM elements.
+ * CRITICAL FIX: Ensures all IDs match the HTML.
  */
 function cacheDOM() {
   // Main Player & Lists
-  window.DOM.audioPlayer = document.getElementById('audio-player');
-  window.DOM.trackList = document.getElementById('track-list');
+  window.DOM.audioPlayer = document.getElementById('audio-player'); // FIX: Core element
+  window.DOM.trackList = document.getElementById('track-list'); // FIX: Core element
   window.DOM.groups = document.getElementById('groups');
+  
+  // Modal & Toast (CRITICAL FIXES for ui-helpers errors)
   window.DOM.modalContainer = document.getElementById('modal-container');
   window.DOM.toast = document.getElementById('toast-notification');
   
@@ -47,7 +50,7 @@ function cacheDOM() {
   window.DOM.playSelectedBtn = document.getElementById('play-selected-btn');
   window.DOM.playIcon = document.getElementById('play-icon');
   
-  // Checkbox IDs must match HTML
+  // Checkbox IDs
   window.DOM.repeatTrack = document.getElementById('repeatTrackCheckbox');
   window.DOM.repeatPlaylist = document.getElementById('repeatPlaylistCheckbox');
   window.DOM.repeatEach = document.getElementById('repeatEachCheckbox');
@@ -55,18 +58,17 @@ function cacheDOM() {
   window.DOM.repeatEachInput = document.getElementById('repeat-each-input');
   window.DOM.speedBtn = document.getElementById('speed-btn');
 
-  // Quiz Mode
+  // Quiz Mode (CRITICAL FIXES for toggle failure)
   window.DOM.quizToggle = document.getElementById('quiz-toggle');
   window.DOM.quizDisplay = document.getElementById('quiz-display');
-  window.DOM.quizProgress = document.getElementById('quiz-progress-bar');
-  window.DOM.quizProgressText = document.getElementById('quiz-progress-text');
+  window.DOM.regularControls = document.getElementById('playbackControls'); // Matches <section id="playbackControls">
   window.DOM.quizPauseBtn = document.getElementById('quiz-pause-btn');
-  window.DOM.mainControls = document.getElementById('mainControls');
+  window.DOM.playNextQuizBtn = document.getElementById('play-next-quiz-btn');
+  window.DOM.autoplayToggleBtn = document.getElementById('autoplay-toggle-btn');
   window.DOM.currentShlokQuiz = document.getElementById('current-shlok-quiz');
   window.DOM.quizStatus = document.getElementById('quiz-status'); 
-  window.DOM.regularControls = document.getElementById('playbackControls'); // Added for mode toggle
-  window.DOM.playNextQuizBtn = document.getElementById('play-next-quiz-btn'); // Added for quiz mode
-  window.DOM.autoplayToggleBtn = document.getElementById('autoplay-toggle-btn'); // Added for quiz mode
+  window.DOM.quizProgress = document.getElementById('quiz-progress-bar');
+  window.DOM.quizProgressText = document.getElementById('quiz-progress-text');
   
   // Playlist Management
   window.DOM.savePlaylistBtn = document.getElementById('save-playlist-btn');
@@ -85,7 +87,7 @@ function cacheDOM() {
 // --- 2. EVENT LISTENERS ---
 
 function setupEventListeners() {
-  // Global listener for selection changes (Event Delegation)
+  // Global listener for selection changes
   document.addEventListener('change', (e) => {
     if (e.target.type === 'checkbox' && (e.target.classList.contains('trackBox') || e.target.classList.contains('playlist-box') || e.target.classList.contains('recent-box'))) {
       handleTrackSelection(e.target);
@@ -104,12 +106,11 @@ function setupEventListeners() {
     }
   });
   
-  // Listener for selecting range
+  // Listener for selecting range (Logic remains the same)
   window.DOM.selectRangeBtn?.addEventListener('click', () => {
     const start = parseInt(window.DOM.rangeStart.value, 10);
     const end = parseInt(window.DOM.rangeEnd.value, 10);
     
-    // Use CONFIG.totalTracks for dynamic validation
     const isValid = !isNaN(start) && !isNaN(end) && 
                     start > 0 && end <= CONFIG.totalTracks && start <= end;
 
@@ -120,7 +121,6 @@ function setupEventListeners() {
         const checkbox = document.getElementById(`track-box-${i}`);
         if (checkbox) {
           checkbox.checked = true;
-          // Dispatch 'change' event to trigger selection.js logic (highlighting, group updates)
           checkbox.dispatchEvent(new Event('change', { bubbles: true })); 
         }
       }
@@ -141,7 +141,7 @@ function setupEventListeners() {
   // Repeat Each input change
   window.DOM.repeatEachInput?.addEventListener('change', (e) => {
     const count = parseInt(e.target.value, 10);
-    setRepeatEach(count); // Logic for validation is now in state.js
+    setRepeatEach(count);
   });
   
   // Search/Clear Search listeners
@@ -149,12 +149,11 @@ function setupEventListeners() {
     if (!window.DOM.search.value && window.DOM.searchFeedback) {
       window.DOM.searchFeedback.textContent = '';
     }
-    // Search filter logic would go here
+    // Search filter logic placeholder
   });
   window.DOM.clearSearch?.addEventListener('click', () => {
     if (window.DOM.search) window.DOM.search.value = '';
     if (window.DOM.searchFeedback) window.DOM.searchFeedback.textContent = '';
-    // Trigger search function to clear filter
   });
 
   // Clear Selection Button
@@ -180,19 +179,14 @@ function setupEventListeners() {
  * Initializes the application: DOM caching, state loading, listeners, and UI rendering.
  */
 function init() {
-  // CRITICAL STEP 1: Cache the DOM first
+  // 1. Cache the DOM
   cacheDOM();
-  
-  // Check for the absolute critical element and log if missing
-  if (!window.DOM.audioPlayer) {
-     console.error('CRITICAL: Audio Player element (id="audio-player") is missing from HTML. Playback will fail.');
-  }
 
-  // CRITICAL STEP 2: Generate the track list and group buttons so they exist in the DOM
-  // THIS IS THE FIX for why tracks/groups weren't showing up.
+  // 2. CRITICAL UI GENERATION (Must run AFTER cacheDOM)
+  // This generates the track boxes and group buttons that were missing.
   generateTrackListAndGroups(); 
   
-  // Initialize internal states and persistence
+  // 3. Initialize internal states and persistence
   initializeLocalStorage(); 
 
   // 4. Restore Last Selection (Must run AFTER track boxes are generated in step 2)
@@ -204,7 +198,6 @@ function init() {
         const checkbox = document.getElementById(`track-box-${trackId}`);
         if (checkbox) {
           checkbox.checked = true;
-          // Dispatch 'change' event to trigger selection.js logic
           checkbox.dispatchEvent(new Event('change', { bubbles: true })); 
         }
       });
@@ -217,7 +210,7 @@ function init() {
   // 5. Render Recents
   renderRecentSelections(); 
 
-  // 6. Set up all listeners
+  // 6. Set up all listeners (Now runs without failing due to missing DOM elements)
   setupEventListeners(); 
   setupPlayerEventListeners(); 
 
