@@ -13,21 +13,18 @@ import {
   confirmClearSelection,
   confirmClearHistory,
   updateSavePlaylistButtonVisibility,
-  toggleGroupSelection, // <-- NEW IMPORT
+  toggleGroupSelection,
+  renderGroupButtons, 
+  generateTrackList,
+  updateQuizModeUI, // <-- NEW IMPORT for initial UI setup
 } from './selection.js'; 
 import { toggleClass } from './ui-helpers.js';
-// Assuming UI generation helpers (like renderGroupButtons, generateTrackList) are now in selection.js
-import { renderGroupButtons, generateTrackList } from './selection.js'; 
 
 
 // --- 1. DOM CACHE ---
 // Expose DOM object globally for use by other modules (e.g., player.js, ui-helpers.js)
 window.DOM = {};
 
-/**
- * Caches all necessary DOM elements for global access.
- * FIX: Updated playback control IDs to match index.html's camelCase IDs.
- */
 function cacheDOM() {
   // Main Player & Lists
   window.DOM.audioPlayer = document.getElementById('audio-player');
@@ -62,6 +59,8 @@ function cacheDOM() {
   window.DOM.quizProgress = document.getElementById('quiz-progress-bar');
   window.DOM.quizProgressText = document.getElementById('quiz-progress-text');
   window.DOM.quizPauseBtn = document.getElementById('quiz-pause-btn');
+  // NOTE: Assuming your HTML has a main content area to toggle visibility for Quiz Mode
+  window.DOM.mainControls = document.getElementById('mainControls'); // Used for hiding in Quiz Mode
 
   // Playlist Management
   window.DOM.savePlaylistBtn = document.getElementById('save-playlist-btn');
@@ -72,14 +71,11 @@ function cacheDOM() {
 
 
 // --- 2. DYNAMIC UI GENERATION ---
-// Helper to generate dynamic content after DOM cache
 function generateTrackListAndGroups() {
   if (window.DOM.groups) {
-    // Renders group buttons based on CONFIG.totalTracks
     renderGroupButtons(window.DOM.groups); 
   }
   if (window.DOM.trackList) {
-    // Generates the list of shloka checkboxes
     generateTrackList(window.DOM.trackList);
   }
 }
@@ -98,26 +94,10 @@ function setupEventListeners() {
   // Listener for play button
   window.DOM.playSelectedBtn?.addEventListener('click', playSelected);
   
-  // Listener for search input (with debounce not implemented here)
-  window.DOM.search?.addEventListener('input', () => {
-    // Search/filter logic would be called here
-    if (!window.DOM.search.value) {
-      window.DOM.searchFeedback.textContent = '';
-    }
-  });
-
-  // Listener for clearing search
-  window.DOM.clearSearch?.addEventListener('click', () => {
-    window.DOM.search.value = '';
-    // Call search/filter logic here to reset the view
-    window.DOM.searchFeedback.textContent = '';
-  });
-
   // Listener for group selection buttons (delegation)
   window.DOM.groups?.addEventListener('click', (e) => {
     const target = e.target.closest('.group-btn');
     if (target && target.dataset.group) {
-      // *** FIX: Call the newly implemented group selection function ***
       toggleGroupSelection(target.dataset.group);
       updateGroupButtonSelection(); 
     }
@@ -168,6 +148,19 @@ function setupEventListeners() {
       e.target.value = AppState.repeatEach; // Revert to current state
     }
   });
+  
+  // Search/Clear Search listeners
+  window.DOM.search?.addEventListener('input', () => {
+    // Search/filter logic would be called here: filterTracks(window.DOM.search.value)
+    if (!window.DOM.search.value) {
+      window.DOM.searchFeedback.textContent = '';
+    }
+  });
+  window.DOM.clearSearch?.addEventListener('click', () => {
+    window.DOM.search.value = '';
+    // Call search/filter logic here to reset the view: filterTracks('');
+    window.DOM.searchFeedback.textContent = '';
+  });
 }
 
 
@@ -176,7 +169,6 @@ function setupEventListeners() {
 function init() {
   cacheDOM();
   
-  // Safety check for core elements
   if (!window.DOM.audioPlayer || !window.DOM.trackList) {
     console.error('Core DOM elements missing. Cannot initialize application.');
     return;
@@ -185,16 +177,36 @@ function init() {
   // Initialize internal states and persistence
   initializeLocalStorage(); 
   
-  // *** FIX: Generate UI here so elements exist before listeners are set up ***
+  // *** FIX: Generate UI before restoration ***
   generateTrackListAndGroups(); 
-  
-  renderRecentSelections(); 
 
+  // *** CRITICAL FIX: Restore Last Selection ***
+  const lastSelectionStr = localStorage.getItem('lastSelection');
+  if (lastSelectionStr) {
+    try {
+      const lastSelection = JSON.parse(lastSelectionStr);
+      lastSelection.forEach(trackId => {
+        const checkbox = document.getElementById(`track-box-${trackId}`);
+        if (checkbox) {
+          checkbox.checked = true;
+          // Dispatch 'change' to trigger selection.js logic (highlighting, group updates)
+          checkbox.dispatchEvent(new Event('change', { bubbles: true })); 
+        }
+      });
+    } catch(e) {
+      console.error("Failed to parse last selection from storage:", e);
+      localStorage.removeItem('lastSelection'); // Clear corrupt data
+    }
+  }
+
+  renderRecentSelections(); // Ensure recents list is built
+  
   // Set up all listeners
   setupEventListeners(); 
   setupPlayerEventListeners(); 
   
   // Initial UI updates
+  updateQuizModeUI(); // <-- CRITICAL FIX: Set initial Quiz/Standard mode UI
   updatePlayerDisplay(); 
   updateGroupButtonSelection(); 
   updateSavePlaylistButtonVisibility(); 
@@ -209,7 +221,6 @@ function init() {
 // --- 5. KICK OFF THE APPLICATION ---
 window.addEventListener('DOMContentLoaded', init);
 
-// Export utility functions needed by other modules (if any)
 export { 
   init, 
   generateTrackListAndGroups 
