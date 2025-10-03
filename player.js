@@ -1,21 +1,41 @@
-// player.js
+// player.js (Patched)
 
-import { CONFIG, AppState, setCurrentIndex, resetRepeatCounter, incrementRepeatCounter, setCurrentSpeed, setQuizMode, stopAllTimers } from './state.js';
-import { toggleClass, showToast, showModal } from './ui-helpers.js';
+import { 
+  CONFIG, AppState, setCurrentIndex, resetRepeatCounter, incrementRepeatCounter, 
+  setCurrentSpeed, setQuizMode, stopAllTimers, incrementErrorCount 
+} from './state.js';
+import { toggleClass, showToast } from './ui-helpers.js';
 
 // DOM object is expected to be initialized and set up in app.js
 const DOM = window.DOM || {}; 
 
-// --- NEW HELPER FUNCTION FOR ZERO-PADDING ---
+// --- Helper Functions ---
 
 /**
- * Formats a shloka number to a three-digit string (e.g., 1 -> '001', 15 -> '015').
- * This is crucial for matching the audio file names in the archive.
+ * Formats a shloka number to a three-digit string.
  * @param {number} num The shloka number.
  * @returns {string} The zero-padded shloka number string.
  */
 function formatShlokaNum(num) {
   return String(num).padStart(3, '0');
+}
+
+/**
+ * A helper to toggle the play/pause icon on the control button.
+ * @param {boolean} isPlaying True to show pause icon, false to show play icon.
+ */
+function togglePlayIcon(isPlaying) {
+  if (!DOM.playIcon || !DOM.playSelectedBtn) return;
+  
+  if (isPlaying) {
+    toggleClass(DOM.playIcon, 'fa-play', false);
+    toggleClass(DOM.playIcon, 'fa-pause', true);
+    DOM.playSelectedBtn.setAttribute('title', 'Pause Playback');
+  } else {
+    toggleClass(DOM.playIcon, 'fa-pause', false);
+    toggleClass(DOM.playIcon, 'fa-play', true);
+    DOM.playSelectedBtn.setAttribute('title', 'Play Selected');
+  }
 }
 
 // --- Core Playback Functions ---
@@ -24,20 +44,20 @@ function formatShlokaNum(num) {
  * Loads and plays the track at AppState.currentIndex from the current playlist.
  */
 export function playCurrent() {
+  // CRITICAL FIX: Check if player element exists and playlist is not empty
+  if (!DOM.audioPlayer) {
+    console.error("CRITICAL: Player element missing. Cannot play.");
+    showToast('Player element missing from HTML. Cannot play.');
+    return;
+  }
   if (AppState.playlist.length === 0) {
     showToast('Playlist is empty.');
     return;
   }
   
-  // CRITICAL FIX: Check if player element exists
-  if (!DOM.audioPlayer) {
-    showToast('Player element missing from HTML. Cannot play.');
-    return;
-  }
-
   // 1. Check for playlist end
   if (AppState.currentIndex >= AppState.playlist.length) {
-    // STABILITY CHECK: Ensure repeatPlaylist element is cached
+    // Robustness check for DOM element
     if (DOM.repeatPlaylist && DOM.repeatPlaylist.checked) { 
       setCurrentIndex(0);
       playCurrent(); 
@@ -56,15 +76,16 @@ export function playCurrent() {
 
   // 2. Play the current track
   const shlokaNum = AppState.playlist[AppState.currentIndex];
-  // CRITICAL FIX: Use the zero-padding helper for correct file path
   const formattedShlokaNum = formatShlokaNum(shlokaNum); 
   const src = `${CONFIG.audioBaseUrl}${formattedShlokaNum}.mp3`;
 
   DOM.audioPlayer.src = src;
   DOM.audioPlayer.playbackRate = AppState.currentSpeed;
+  
+  // Use try/catch to handle potential browser autoplay blocks
   DOM.audioPlayer.play().catch(e => {
-    console.error('Playback failed (possible autoplay block):', e);
-    showToast('Playback requires user interaction or was blocked.');
+    console.error('Playback failed (possible autoplay block or invalid file):', e);
+    showToast('Playback failed. Please interact with the page or check the file source.');
   });
   
   resetRepeatCounter(); 
@@ -74,7 +95,10 @@ export function playCurrent() {
  * Logic to run when the current audio track finishes.
  */
 function handleTrackEnded() {
-  if (!DOM.audioPlayer) return; // Robustness check
+  if (!DOM.audioPlayer) return; 
+
+  // CRITICAL FIX: Ensure playlist is valid before continuing
+  if (AppState.playlist.length === 0) return;
 
   // 1. Handle repeat single track logic
   if (DOM.repeatTrack && DOM.repeatTrack.checked) {
@@ -83,9 +107,8 @@ function handleTrackEnded() {
     return;
   } 
   
-  // 2. Handle repeat N times logic
-  // CRITICAL FIX: Use repeatEachCheckbox for the check (updated to repeatEach in app.js cache)
-  if (DOM.repeatEach && DOM.repeatEach.checked) { 
+  // 2. Handle repeat N times logic (using DOM.repeatEach which is the checkbox)
+  if (DOM.repeatEach && DOM.repeatEach.checked) {
     incrementRepeatCounter();
     if (AppState.repeatCounter < AppState.repeatEach) {
       DOM.audioPlayer.currentTime = 0;
@@ -109,31 +132,22 @@ function handleTrackEnded() {
 }
 
 /**
- * Toggles playback speed through common values.
+ * Toggles playback speed through common values defined in CONFIG.
  */
 function toggleSpeed() {
-  let newSpeed;
-  switch (AppState.currentSpeed) {
-    case 1.0:
-      newSpeed = 1.25;
-      break;
-    case 1.25:
-      newSpeed = 1.5;
-      break;
-    case 1.5:
-      newSpeed = 2.0;
-      break;
-    default:
-      newSpeed = 1.0;
-      break;
-  }
+  const speeds = CONFIG.speeds;
+  const currentIndex = speeds.indexOf(AppState.currentSpeed);
+  // Cycle to the next speed, wrapping around if at the end
+  const nextIndex = (currentIndex + 1) % speeds.length; 
+  const newSpeed = speeds[nextIndex];
 
-  setCurrentSpeed(newSpeed);
-  if (DOM.audioPlayer) { // Robustness check
+  setCurrentSpeed(newSpeed); // Updates AppState and runs validation
+  
+  if (DOM.audioPlayer) {
     DOM.audioPlayer.playbackRate = newSpeed;
   }
   
-  if (DOM.speedBtn) { // Robustness check
+  if (DOM.speedBtn) {
     DOM.speedBtn.textContent = `${newSpeed.toFixed(2)}x`;
   }
   showToast(`Speed set to ${newSpeed.toFixed(2)}x`);
@@ -154,31 +168,33 @@ export function setupPlayerEventListeners() {
   // Audio Player Listeners
   DOM.audioPlayer.addEventListener('ended', handleTrackEnded);
   
-  // Use null checks on UI elements to prevent TypeErrors in case of partial HTML
-  DOM.audioPlayer.addEventListener('play', () => {
-    if (DOM.playIcon) toggleClass(DOM.playIcon, 'fa-play', false);
-    if (DOM.playIcon) toggleClass(DOM.playIcon, 'fa-pause', true);
-    if (DOM.playSelectedBtn) DOM.playSelectedBtn.setAttribute('title', 'Pause Playback');
-  });
+  // Refactored to use helper
+  DOM.audioPlayer.addEventListener('play', () => togglePlayIcon(true));
+  DOM.audioPlayer.addEventListener('pause', () => togglePlayIcon(false));
 
-  DOM.audioPlayer.addEventListener('pause', () => {
-    if (DOM.playIcon) toggleClass(DOM.playIcon, 'fa-pause', false);
-    if (DOM.playIcon) toggleClass(DOM.playIcon, 'fa-play', true);
-    if (DOM.playSelectedBtn) DOM.playSelectedBtn.setAttribute('title', 'Play Selected');
-  });
-
+  // CRITICAL FIX: Infinite loop prevention logic
   DOM.audioPlayer.addEventListener('error', (e) => {
     console.error("Audio playback error:", DOM.audioPlayer.error, e);
+    
+    incrementErrorCount();
+
+    if (AppState.errorCount >= AppState.maxErrorSkip) {
+      console.error(`Max errors (${AppState.maxErrorSkip}) reached. Stopping playback.`);
+      DOM.audioPlayer.pause();
+      showToast('Too many tracks failed to load. Playback stopped.');
+      setCurrentIndex(AppState.playlist.length); // Force end of playlist logic
+      return;
+    }
+
     showToast(`Error playing shloka ${AppState.playlist[AppState.currentIndex]}. Skipping to next.`);
     
+    // Attempt to skip to the next track on error
     setCurrentIndex(AppState.currentIndex + 1);
     playCurrent();
   });
 
-  // Control Listeners (now safely guarded)
+  // Control Listeners (safely guarded)
   if (DOM.speedBtn) {
     DOM.speedBtn.addEventListener('click', toggleSpeed);
-  } else {
-    console.warn("Speed button (id='speed-btn') not found. Speed toggle disabled.");
   }
 }
