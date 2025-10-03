@@ -1,6 +1,6 @@
 // player.js
 
-import { CONFIG, AppState, setCurrentIndex, resetRepeatCounter, incrementRepeatCounter, setRepeatEach, setCurrentSpeed, setQuizMode, stopAllTimers } from './state.js';
+import { CONFIG, AppState, setCurrentIndex, resetRepeatCounter, incrementRepeatCounter, setCurrentSpeed, setQuizMode, stopAllTimers } from './state.js';
 import { toggleClass, showToast, showModal } from './ui-helpers.js';
 
 // DOM object is expected to be initialized and set up in app.js
@@ -57,7 +57,7 @@ export function playCurrent() {
  */
 function handleTrackEnded() {
   // 1. Handle repeat single track logic
-  // *** STABILITY FIX: Add null check for DOM.repeatTrack and DOM.repeatEach ***
+  // *** STABILITY FIX: Add null check for DOM.repeatTrack ***
   if (DOM.repeatTrack && DOM.repeatTrack.checked) {
     DOM.audioPlayer.currentTime = 0;
     DOM.audioPlayer.play();
@@ -65,6 +65,7 @@ function handleTrackEnded() {
   } 
   
   // 2. Handle repeat N times logic
+  // *** STABILITY FIX: Add null check for DOM.repeatEach ***
   if (DOM.repeatEach && DOM.repeatEach.checked) {
     incrementRepeatCounter();
     if (AppState.repeatCounter < AppState.repeatEach) {
@@ -79,19 +80,10 @@ function handleTrackEnded() {
 
   // 4. Handle Quiz Mode vs. Standard Playback
   if (AppState.isQuizMode) {
-    // Stop all audio/timers before starting the quiz delay
+    // Logic for quiz mode
     DOM.audioPlayer.pause();
     stopAllTimers(); 
-
-    // Logic to initiate the quiz countdown/UI update would be here
-    // ...
     showToast('Time for the next question!'); // Placeholder
-    
-    // Set a timeout to proceed to the next track after the quiz delay
-    // setAutoPlayTimeout(() => {
-    //   playCurrent();
-    // }, CONFIG.quizAutoPlayDelay);
-    
   } else {
     // Standard auto-advance
     playCurrent();
@@ -99,7 +91,7 @@ function handleTrackEnded() {
 }
 
 /**
- * Toggles playback speed through common values (1.0x, 1.25x, 1.5x, 2.0x, then cycles back).
+ * Toggles playback speed through common values.
  */
 function toggleSpeed() {
   let newSpeed;
