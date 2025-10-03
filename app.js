@@ -13,9 +13,12 @@ import {
   confirmClearSelection,
   confirmClearHistory,
   updateSavePlaylistButtonVisibility,
+  toggleGroupSelection, // <-- NEW IMPORT
 } from './selection.js'; 
 import { toggleClass } from './ui-helpers.js';
-import { renderGroupButtons, generateTrackList } from './ui-elements.js'; // Assuming this utility is needed
+// Assuming UI generation helpers (like renderGroupButtons, generateTrackList) are now in selection.js
+import { renderGroupButtons, generateTrackList } from './selection.js'; 
+
 
 // --- 1. DOM CACHE ---
 // Expose DOM object globally for use by other modules (e.g., player.js, ui-helpers.js)
@@ -71,13 +74,12 @@ function cacheDOM() {
 // --- 2. DYNAMIC UI GENERATION ---
 // Helper to generate dynamic content after DOM cache
 function generateTrackListAndGroups() {
-  // Assuming these functions exist and work.
   if (window.DOM.groups) {
-    // Note: Assuming a hardcoded 315 total tracks, 
-    // groups are generated in a 10-track interval by default (1-10, 11-20, etc.)
+    // Renders group buttons based on CONFIG.totalTracks
     renderGroupButtons(window.DOM.groups); 
   }
   if (window.DOM.trackList) {
+    // Generates the list of shloka checkboxes
     generateTrackList(window.DOM.trackList);
   }
 }
@@ -99,7 +101,6 @@ function setupEventListeners() {
   // Listener for search input (with debounce not implemented here)
   window.DOM.search?.addEventListener('input', () => {
     // Search/filter logic would be called here
-    // For now, let's just clear the search if it's empty
     if (!window.DOM.search.value) {
       window.DOM.searchFeedback.textContent = '';
     }
@@ -116,10 +117,9 @@ function setupEventListeners() {
   window.DOM.groups?.addEventListener('click', (e) => {
     const target = e.target.closest('.group-btn');
     if (target && target.dataset.group) {
-      // Logic to select all tracks in this group would be implemented in selection.js
-      // For now, let's assume it calls a helper:
-      // toggleGroupSelection(target.dataset.group); 
-      updateGroupButtonSelection(); // Update all buttons after action
+      // *** FIX: Call the newly implemented group selection function ***
+      toggleGroupSelection(target.dataset.group);
+      updateGroupButtonSelection(); 
     }
   });
   
@@ -128,20 +128,18 @@ function setupEventListeners() {
     const start = parseInt(window.DOM.rangeStart.value, 10);
     const end = parseInt(window.DOM.rangeEnd.value, 10);
     
+    // NOTE: Hardcoded 315 limit assumes CONFIG.totalTracks is 315.
     const isValid = !isNaN(start) && !isNaN(end) && start > 0 && end <= 315 && start <= end;
 
     if (isValid) {
-      // Clear all existing checks before applying range
       confirmClearSelection(); 
 
-      // Apply new range selection
       for (let i = start; i <= end; i++) {
         const checkbox = document.getElementById(`track-box-${i}`);
         if (checkbox) {
           const shouldBeChecked = i >= start && i <= end;
           if (checkbox.checked !== shouldBeChecked) {
             checkbox.checked = shouldBeChecked;
-            // Dispatch a change event to trigger handleTrackSelection logic (e.g., clearing other boxes)
             checkbox.dispatchEvent(new Event('change', { bubbles: true }));
           }
         }
@@ -165,8 +163,6 @@ function setupEventListeners() {
     const count = parseInt(e.target.value, 10);
     if (count > 0 && count <= 100) {
       setRepeatEach(count);
-      // Optional: showToast is implemented in ui-helpers.js
-      // showToast(`Repeat each track ${count} times.`);
     } else {
       alert('Repeat count must be between 1 and 100.');
       e.target.value = AppState.repeatEach; // Revert to current state
@@ -183,20 +179,20 @@ function init() {
   // Safety check for core elements
   if (!window.DOM.audioPlayer || !window.DOM.trackList) {
     console.error('Core DOM elements missing. Cannot initialize application.');
-    // Exit early if critical elements are absent
     return;
   }
   
   // Initialize internal states and persistence
   initializeLocalStorage(); 
   
-  // Generate UI (must run before setting up listeners that depend on these elements)
+  // *** FIX: Generate UI here so elements exist before listeners are set up ***
   generateTrackListAndGroups(); 
+  
   renderRecentSelections(); 
 
   // Set up all listeners
   setupEventListeners(); 
-  setupPlayerEventListeners(); // Listeners specific to the audio player
+  setupPlayerEventListeners(); 
   
   // Initial UI updates
   updatePlayerDisplay(); 
