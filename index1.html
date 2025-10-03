@@ -31,30 +31,29 @@
             line-height: 1.6;
         }
 
-        /* Utility classes specific to the Apple UI look */
+        /* Utility classes specific to the Apple UI look that Tailwind can't handle alone */
         .container-card {
             background-color: var(--container-bg);
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
-
-        /* Custom Checkbox/Selection Styling */
+        
+        /* The custom selection indicator styling */
         .track-item, .recent-item, .playlist-item {
             position: relative;
-            padding: 0.75rem 1rem 0.75rem 3.5rem !important; /* Adjust padding for custom checkbox */
+            padding: 0.75rem 1rem 0.75rem 3.5rem !important; 
             transition: background-color 0.15s;
         }
 
         .track-item input[type="checkbox"], 
         .recent-item input[type="checkbox"], 
         .playlist-item input[type="checkbox"] {
-            position: absolute; /* Hide the native checkbox */
+            position: absolute; 
             opacity: 0;
             cursor: pointer;
         }
         
-        /* Custom indicator for unchecked state */
         .track-item input[type="checkbox"] + span::before,
         .recent-item input[type="checkbox"] + span::before,
         .playlist-item input[type="checkbox"] + span::before {
@@ -67,11 +66,10 @@
             height: 20px;
             border: 1px solid var(--secondary-text);
             background-color: transparent;
-            border-radius: 50%; /* Rounded checkbox */
+            border-radius: 50%; 
             transition: all 0.2s;
         }
         
-        /* Custom indicator for checked state */
         .track-item input[type="checkbox"]:checked + span::before,
         .recent-item input[type="checkbox"]:checked + span::before,
         .playlist-item input[type="checkbox"]:checked + span::before {
@@ -87,7 +85,7 @@
         }
         
         .track-item.selected, .recent-item.selected, .playlist-item.selected {
-            background-color: var(--card-bg); /* Highlight background on selection */
+            background-color: var(--card-bg); 
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
         }
         
@@ -170,7 +168,7 @@
             width: 100%;
             max-width: 400px;
             margin-right: 1rem;
-            display: none; /* Hide the standard HTML5 audio player */
+            display: none; 
         }
     </style>
 </head>
@@ -317,7 +315,7 @@
         let countdownInterval = null;
         let autoPlayTimeout = null;
         let autoPlay = true;
-        let totalTracks = 315;
+        let totalTracks = 315; // The total number of shlokas
         let localStorageEnabled = typeof localStorage !== 'undefined';
         
         // DOM element references (to be assigned in DOMContentLoaded)
