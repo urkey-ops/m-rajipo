@@ -2,8 +2,6 @@
 
 /**
  * 1. CONFIG: Immutable Application Settings
- * NOTE: Using Object.freeze for immutability.
- * @type {Readonly<object>}
  */
 export const CONFIG = Object.freeze({
   audioBaseUrl: 'https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_',
@@ -16,7 +14,6 @@ export const CONFIG = Object.freeze({
 /**
  * 2. AppState: Mutable Runtime State
  * NOTE: This is the single source of truth for all application status.
- * @type {object}
  */
 export const AppState = {
   playlist: [],
@@ -64,6 +61,7 @@ export function setCurrentSpeed(speed) {
   AppState.currentSpeed = speed;
 }
 
+// CRITICAL FIX: The setQuizMode function is key for the graceful toggle
 export function setQuizMode(mode) {
   AppState.isQuizMode = mode;
 }
