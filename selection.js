@@ -2,7 +2,7 @@
 
 import { CONFIG, AppState, setPlaylist, setQuizMode, setLocalStorageEnabled, setPersonalPlaylists, stopAllTimers } from './state.js';
 import { toggleClass, showToast, showModal } from './ui-helpers.js';
-import { playCurrent } from './player.js'; // Need to call player functions
+import { playCurrent } from './player.js'; 
 
 // DOM object is expected to be initialized and set up in app.js
 const DOM = window.DOM || {}; 
@@ -16,6 +16,9 @@ const DOM = window.DOM || {};
 export function handleTrackSelection(target) {
   if (target.type !== 'checkbox') return;
 
+  // The element to apply the 'selected' class to is always the closest label
+  const label = target.closest('label');
+  
   const selectorToUncheck = target.classList.contains('trackBox')
     ? '.playlist-box:checked, .recent-box:checked'
     : target.classList.contains('playlist-box')
@@ -27,21 +30,30 @@ export function handleTrackSelection(target) {
   if (selectorToUncheck && target.checked) {
     document.querySelectorAll(selectorToUncheck).forEach(cb => {
       cb.checked = false;
-      toggleClass(cb.closest('label'), 'selected', false);
+      // Also remove the visual highlight on the unchecked item
+      toggleClass(cb.closest('label'), 'selected', false); 
     });
   }
 
-  toggleClass(target.closest('label'), 'selected', target.checked);
+  // *** CRITICAL FIX: Applies the 'selected' class for the blue highlight ***
+  toggleClass(label, 'selected', target.checked);
 
   // Update dependent UI elements
   updateGroupButtonSelection();
   updateSavePlaylistButtonVisibility();
+  
+  // If track selection changes, update the last selection in localStorage
+  if (target.classList.contains('trackBox')) {
+    const selectedTrackIds = getActivePlaylist(); // getActivePlaylist will return track IDs
+    localStorage.setItem('lastSelection', JSON.stringify(selectedTrackIds));
+  }
 }
 
 /**
  * Retrieves the currently active list of tracks based on the selection mode.
  */
 function getActivePlaylist() {
+  // If track boxes are checked, prioritize them
   const selectedTracks = Array.from(document.querySelectorAll('.trackBox:checked'))
     .map(cb => parseInt(cb.dataset.trackId, 10))
     .sort((a, b) => a - b);
@@ -53,8 +65,10 @@ function getActivePlaylist() {
   // Placeholder for retrieving tracks from a selected Playlist or Recent item
   const selectedPlaylistBox = document.querySelector('.playlist-box:checked, .recent-box:checked');
   if (selectedPlaylistBox) {
-    // This logic is missing, but for now we'll return a placeholder
-    return [1, 2, 3]; // Return a placeholder list if a list type is selected
+    // In a real app, you would retrieve the track list based on selectedPlaylistBox.dataset.id
+    // For now, return a placeholder list
+    showToast('Note: Retrieving track list from selected playlist/recent is a placeholder.');
+    return [10, 20, 30]; 
   }
 
   return [];
@@ -72,11 +86,10 @@ export function playSelected() {
   }
 
   setPlaylist(newPlaylist);
-  // Always start at the first track of the new playlist
   AppState.currentIndex = 0; 
 
   // Toggle play/pause state if currently paused on the same list
-  if (AppState.audioPlayer && !AppState.audioPlayer.paused) {
+  if (DOM.audioPlayer && !DOM.audioPlayer.paused) {
     DOM.audioPlayer.pause();
   } else {
     playCurrent();
@@ -108,14 +121,14 @@ export function updateGroupButtonSelection() {
     // Reset classes
     toggleClass(btn, 'group-selected', false);
     toggleClass(btn, 'group-partial', false);
-    toggleClass(btn, 'group-unselected', false);
+    toggleClass(btn, 'group-unselected', true); // Default state
 
     if (selectedCount === groupSize) {
+      toggleClass(btn, 'group-unselected', false);
       toggleClass(btn, 'group-selected', true);
     } else if (selectedCount > 0) {
+      toggleClass(btn, 'group-unselected', false);
       toggleClass(btn, 'group-partial', true);
-    } else {
-      toggleClass(btn, 'group-unselected', true);
     }
   });
 }
@@ -124,23 +137,21 @@ export function updateGroupButtonSelection() {
  * Toggles the selection state for all track boxes within a specific group.
  * @param {string} groupNumString The group number (e.g., '1' for tracks 1-10).
  */
-export function toggleGroupSelection(groupNumString) { // <-- NEW FUNCTION FOR GROUP CLICK
+export function toggleGroupSelection(groupNumString) { 
   const groupNum = parseInt(groupNumString, 10);
   const start = (groupNum - 1) * 10 + 1;
   const end = Math.min(groupNum * 10, CONFIG.totalTracks);
   
-  // 1. Determine the current state of the group
   let isGroupSelected = true;
   for (let i = start; i <= end; i++) {
     const checkbox = document.getElementById(`track-box-${i}`);
     if (checkbox && !checkbox.checked) {
-      isGroupSelected = false; // Found an unchecked box, so we need to select all
+      isGroupSelected = false; 
       break;
     }
   }
 
-  // 2. Set the new state
-  const newState = !isGroupSelected; // If selected, newState is false (uncheck), otherwise true (check)
+  const newState = !isGroupSelected; 
   
   // Clear other selections only if we are selecting track boxes
   if (newState) {
@@ -150,7 +161,7 @@ export function toggleGroupSelection(groupNumString) { // <-- NEW FUNCTION FOR G
     });
   }
 
-  // 3. Iterate and apply new state
+  // Iterate and apply new state
   for (let i = start; i <= end; i++) {
     const checkbox = document.getElementById(`track-box-${i}`);
     if (checkbox && checkbox.checked !== newState) {
@@ -167,8 +178,14 @@ export function toggleGroupSelection(groupNumString) { // <-- NEW FUNCTION FOR G
  * Updates the display elements based on current player state.
  */
 export function updatePlayerDisplay() {
-  // Logic to update the currently playing track number, quiz display, etc.
-  // ... (implementation details omitted for brevity)
+  // CRITICAL FIX: Implement logic to update currently playing track display
+  if (AppState.playlist.length > 0) {
+    const currentTrack = AppState.playlist[AppState.currentIndex];
+    // NOTE: Requires a DOM element to display this, e.g., DOM.currentTrackInfo
+    // if (DOM.currentTrackInfo) {
+    //   DOM.currentTrackInfo.textContent = `Playing Shloka ${currentTrack}`;
+    // }
+  }
 }
 
 /**
@@ -178,11 +195,7 @@ export function updateSavePlaylistButtonVisibility() {
   const selectedTracks = document.querySelectorAll('.trackBox:checked');
   const container = document.getElementById('save-playlist-container');
   if (container) {
-    if (selectedTracks.length > 0) {
-      toggleClass(container, 'hidden', false);
-    } else {
-      toggleClass(container, 'hidden', true);
-    }
+    toggleClass(container, 'hidden', selectedTracks.length === 0);
   }
 }
 
@@ -193,21 +206,35 @@ export function renderRecentSelections() {
   const recentsList = DOM.recentSelectionsList;
   if (!recentsList) return;
   
-  // Assuming recentSelections are stored in localStorage
   const recentSelectionsStr = localStorage.getItem('recentSelections');
   const recentSelections = recentSelectionsStr ? JSON.parse(recentSelectionsStr) : [];
   
-  recentsList.innerHTML = ''; // Clear existing list
+  recentsList.innerHTML = ''; 
+
   if (recentSelections.length === 0) {
-    document.getElementById('recent-empty').classList.remove('hidden');
+    DOM.recentEmpty?.classList.remove('hidden');
     return;
   }
-  document.getElementById('recent-empty').classList.add('hidden');
+  DOM.recentEmpty?.classList.add('hidden');
 
+  // *** CRITICAL FIX: Implement rendering loop ***
   recentSelections.forEach((item, index) => {
-    // Render list item for each recent selection
     const listItem = document.createElement('li');
-    listItem.innerHTML = `...`; // Actual rendering HTML for recent item
+    // Using a simple title and list of IDs for example
+    const title = item.name || `Recent Selection #${index + 1}`; 
+    const trackCount = item.tracks ? item.tracks.length : 0;
+    
+    // NOTE: This HTML structure must match your CSS/UI helpers
+    listItem.innerHTML = `
+      <label for="recent-box-${index}" class="track-label flex justify-between items-center p-3 rounded-lg cursor-pointer">
+        <div class="flex items-center">
+          <input type="checkbox" id="recent-box-${index}" class="recent-box sr-only" data-id="${item.id || index}" />
+          <span class="custom-checkbox flex-shrink-0"></span>
+          <span class="ml-3 text-white text-sm">${title}</span>
+        </div>
+        <span class="text-secondary-text text-xs">${trackCount} tracks</span>
+      </label>
+    `;
     recentsList.appendChild(listItem);
   });
 }
@@ -223,6 +250,7 @@ export function confirmClearSelection() {
   updateGroupButtonSelection();
   updateSavePlaylistButtonVisibility();
   showToast('Selection cleared.');
+  localStorage.removeItem('lastSelection'); // Clear last selection on clear
 }
 
 /**
@@ -238,15 +266,64 @@ export function confirmClearHistory() {
 }
 
 /**
- * Toggles between standard playback mode and quiz mode.
+ * Updates the visibility and styling of the application based on AppState.isQuizMode.
+ */
+export function updateQuizModeUI() {
+    // 1. Update overall containers/controls
+    if (DOM.mainControls) {
+        // Toggle the visibility of the main controls section
+        toggleClass(DOM.mainControls, 'hidden', AppState.isQuizMode);
+    }
+    
+    // 2. Quiz Display elements (must be shown/hidden)
+    if (DOM.quizDisplay) {
+        // Toggle the visibility of the quiz mode display section
+        toggleClass(DOM.quizDisplay, 'hidden', !AppState.isQuizMode);
+    }
+    
+    // 3. Quiz Toggle Button Feedback (Visual State)
+    if (DOM.quizToggle) {
+        const icon = DOM.quizToggle.querySelector('i');
+        const text = DOM.quizToggle.querySelector('span');
+        
+        // Use colors/classes consistent with the rest of the application
+        if (AppState.isQuizMode) {
+            toggleClass(DOM.quizToggle, 'btn-secondary', false);
+            toggleClass(DOM.quizToggle, 'btn-green', true);
+            if (icon) toggleClass(icon, 'fa-solid', true); 
+            if (text) text.textContent = 'Quiz Mode: ON';
+        } else {
+            toggleClass(DOM.quizToggle, 'btn-green', false);
+            toggleClass(DOM.quizToggle, 'btn-secondary', true);
+            if (text) text.textContent = 'Quiz Mode: OFF';
+        }
+    }
+}
+
+
+/**
+ * Toggles between standard playback mode and quiz mode (Graceful implementation).
  */
 export function toggleAppMode() {
     setQuizMode(!AppState.isQuizMode);
-    // Logic to update the UI based on AppState.isQuizMode would go here
+
+    if (AppState.isQuizMode) {
+        // Just switched INTO Quiz Mode: pause the audio immediately
+        if (DOM.audioPlayer && !DOM.audioPlayer.paused) {
+            DOM.audioPlayer.pause();
+        }
+    } else {
+        // Just switched OUT OF Quiz Mode: clear any running quiz timers
+        stopAllTimers(); 
+    }
+
+    // *** CRITICAL FIX: Update the UI to reflect the mode change ***
+    updateQuizModeUI();
+
     showToast(AppState.isQuizMode ? 'Switched to Quiz Mode' : 'Switched to Standard Mode');
 }
 
-// --- Dynamic UI Generation (Handles Issue 2) ---
+// --- Dynamic UI Generation ---
 
 /**
  * Dynamically generates the list of shloka checkboxes (tracks).
@@ -298,6 +375,7 @@ export function renderGroupButtons(container) {
     container.innerHTML = html;
 }
 
+
 // --- Initialization ---
 
 /**
@@ -309,10 +387,6 @@ export function initializeLocalStorage() {
     localStorage.setItem(testKey, testKey);
     localStorage.removeItem(testKey);
     setLocalStorageEnabled(true);
-    
-    // Placeholder logic for loading last selection
-    // ...
-    
   } catch (e) {
     setLocalStorageEnabled(false);
     console.warn("Local storage is not available or disabled.");
