@@ -5,12 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Mission Rajipo - Apple Music UI</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet"/>
 <style>
-/* Keep your original styles unchanged */
+/* Your original styles, omitted here for brevity, include all your CSS styles from original */
+:root {
+  --bg-color: #1c1c1e;
+  --container-bg: #2c2c2e;
+  --card-bg: #2e2e30;
+  --text-color: #f2f2f7;
+  --secondary-text: #a0a0a0;
+  --accent-blue: #0a84ff;
+  --accent-green: #30d158;
+  --accent-red: #ff453a;
+  --border-color: #38383a;
+}
+
+/* ... all your CSS styles from the original ... */
 </style>
 </head>
 <body class="flex flex-col">
@@ -47,7 +60,7 @@
   </button>
 
   <div id="dynamicControlsWrapper" class="relative min-h-[250px]">
-    <!-- Quiz controls -->
+    <!-- Quiz Controls -->
     <div id="quizControls" class="space-y-4 absolute w-full top-0 left-0 fade-out hidden">
       <h2 class="text-xl font-bold text-center">Quiz Mode 🧠</h2>
       <p id="currentShlokQuiz" class="text-lg font-semibold text-center text-gray-400">Shlok 0</p>
@@ -81,7 +94,7 @@
       </button>
     </div>
 
-    <!-- Regular controls -->
+    <!-- Regular Controls -->
     <div id="regularControls" class="space-y-4 absolute w-full top-0 left-0 fade-in">
       <div class="flex flex-wrap justify-between items-center gap-4 text-sm text-gray-400">
         <label class="flex-1 flex items-center gap-2">
@@ -177,7 +190,7 @@ function isLocalStorageAvailable() {
 }
 const localStorageEnabled = isLocalStorageAvailable();
 
-// Helper to play current track
+// Helper functions
 function playCurrent() {
   if (!playlist || playlist.length === 0) {
     showToast("No tracks selected");
@@ -203,13 +216,13 @@ function playCurrent() {
   audioPlayer.playbackRate = currentSpeed;
   audioPlayer.play().catch(err => {
     console.error("Play error:", err);
-    showToast("Failed to play track. Please check your connection.");
+    showToast("Failed to play track");
   });
 }
 
-// Toggle mode
 function toggleMode() {
   isQuizMode = !isQuizMode;
+  // Toggle visibility of controls
   if (quizControlsEl && regularControlsEl) {
     quizControlsEl.classList.toggle('hidden', !isQuizMode);
     quizControlsEl.classList.toggle('fade-in', isQuizMode);
@@ -218,12 +231,12 @@ function toggleMode() {
     regularControlsEl.classList.toggle('fade-out', isQuizMode);
     regularControlsEl.classList.toggle('fade-in', !isQuizMode);
   }
-  // Update button text/icon
+  // Update toggle button icon/text
   const modeBtn = document.querySelector('button[onclick="toggleMode()"]');
   if (modeBtn) {
     modeBtn.innerHTML = `<i class="fa-solid fa-toggle-${isQuizMode ? 'on' : 'off'}"></i> ${isQuizMode ? 'Exit Quiz Mode' : 'Toggle to Quiz Mode'}`;
   }
-  // Reset quiz mode state
+  // Reset quiz mode states
   if (isQuizMode) {
     try { audioPlayer.pause(); } catch(e) {}
     try { audioPlayer.src = ''; } catch(e) {}
@@ -242,7 +255,6 @@ function toggleMode() {
   updateGroupButtonSelection();
 }
 
-// Toggle auto-play
 function toggleAutoPlay() {
   autoPlay = !autoPlay;
   const btn = document.getElementById("autoPlayToggle");
@@ -251,13 +263,12 @@ function toggleAutoPlay() {
   btn.classList.toggle('btn-green', autoPlay);
 }
 
-// Play full shloka
 function playFullShloka() {
   if (playlist.length === 0) {
     showToast("No playlist");
     return;
   }
-  // Play the last played track, or currentIndex-1 if in middle
+  // Play the last track played (currentIndex - 1) if valid, else first
   const indexToPlay = (currentIndex > 0 && currentIndex <= playlist.length) ? currentIndex - 1 : 0;
   const trackNum = playlist[indexToPlay];
   if (trackNum == null || isNaN(trackNum)) {
@@ -269,12 +280,11 @@ function playFullShloka() {
   audioPlayer.playbackRate = currentSpeed;
   audioPlayer.play().catch(err => {
     console.error("Play error:", err);
-    showToast("Failed to play track");
+    showToast("Failed to play");
   });
   document.getElementById('playFullBtn').classList.add('hidden');
 }
 
-// Change quiz controls
 function changeQuizTime(t) {
   currentQuizTime = t;
   document.getElementById("quizTimeDisplay").textContent = `${t}s`;
@@ -284,7 +294,6 @@ function changeQuizDelay(d) {
   document.getElementById("quizDelayDisplay").textContent = `${d}s`;
 }
 
-// Toggle group display
 function toggleGroupDisplay() {
   const groupsDiv = document.getElementById("groups");
   const hidden = groupsDiv.classList.toggle("hidden");
@@ -293,7 +302,6 @@ function toggleGroupDisplay() {
   icon.classList.toggle("fa-chevron-up", !hidden);
 }
 
-// Clear current selection
 function clearSelection() {
   document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(el => el.classList.remove("selected"));
   document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => { cb.checked = false; });
@@ -317,17 +325,16 @@ function confirmClearHistory() {
   });
 }
 function confirmDeletePlaylist(name) {
-  showModal(`Are you sure you want to delete the playlist "${name}"?`, () => {
+  showModal(`Are you sure you want to delete "${name}"?`, () => {
     deletePlaylist(name);
   });
 }
 
-// Select range
 function selectRange() {
   const start = parseInt(document.getElementById("rangeStart").value);
   const end = parseInt(document.getElementById("rangeEnd").value);
   if (isNaN(start) || isNaN(end) || start < 1 || end > totalTracks || start > end) {
-    showModal("Please enter a valid shlok range");
+    showModal("Invalid range");
     return;
   }
   document.querySelectorAll(".trackBox").forEach(cb => {
@@ -340,7 +347,6 @@ function selectRange() {
   showToast(`Shlok ${start}-${end} selected`);
 }
 
-// Toggle group button
 function toggleGroup(start, end, element) {
   const isSelected = !element.classList.contains('selected');
   element.classList.toggle('selected', isSelected);
@@ -355,14 +361,12 @@ function toggleGroup(start, end, element) {
   updateGroupButtonSelection();
 }
 
-// Change speed
 function changeSpeed(speed) {
   currentSpeed = speed;
   audioPlayer.playbackRate = currentSpeed;
   document.getElementById("speedDisplay").textContent = speed.toFixed(1);
 }
 
-// Play selected tracks
 function playSelected() {
   const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked")).map(cb => JSON.parse(cb.dataset.selection));
   const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
@@ -376,7 +380,7 @@ function playSelected() {
   }
 
   if (finalSelection.length === 0) {
-    showModal("Select at least one shlok or playlist");
+    showModal("Select at least one shlok");
     return;
   }
 
@@ -387,15 +391,12 @@ function playSelected() {
   }
   currentIndex = 0;
   repeatCounter = 0;
-
-  if (localStorageEnabled) {
-    saveSelection(finalSelection);
-  }
+  if (localStorageEnabled) saveSelection(finalSelection);
   playCurrent();
   showToast("Playing");
 }
 
-// Play next track in quiz mode
+// Play next in quiz mode
 function playNextQuizTrack() {
   let selected = [];
   const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked")).map(cb => JSON.parse(cb.dataset.selection));
@@ -412,7 +413,7 @@ function playNextQuizTrack() {
   }
 
   if (selected.length === 0) {
-    showModal("Select a group of shlokas or playlist for quiz");
+    showModal("Select a group of shlokas or playlist");
     return;
   }
 
@@ -443,47 +444,205 @@ function playNextQuizTrack() {
   currentIndex++;
 }
 
-// Show modal
-function showModal(msg, onConfirm = null) {
+// Save playlist modal
+function showSavePlaylistModal() {
+  if (!localStorageEnabled) {
+    showModal("Local storage not available");
+    return;
+  }
+  const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
+  if (selectedTracks.length === 0) {
+    showModal("Select at least one shlok");
+    return;
+  }
   const container = document.getElementById('modal-container');
   container.innerHTML = '';
   const modal = document.createElement('div');
   modal.className = 'modal';
-  modal.setAttribute('role', 'dialog');
-  modal.setAttribute('aria-modal', 'true');
   modal.innerHTML = `
     <div class="modal-content">
       <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
-      <p class="mb-4">${msg}</p>
-      ${onConfirm ? `
-        <div class="flex gap-4 justify-center">
-          <button class="px-4 py-3 btn-red text-white btn-rounded" id="modal-cancel">Cancel</button>
-          <button class="px-4 py-3 btn-primary text-white btn-rounded" id="modal-confirm">OK</button>
-        </div>` : `
-        <button onclick="this.closest('.modal').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">OK</button>
-      `}
+      <h3 class="text-xl font-bold mb-4">Save Playlist</h3>
+      <p class="mb-2">Enter a name:</p>
+      <input type="text" id="playlistNameInput" class="w-full mb-4" placeholder="My playlist"/>
+      <div id="playlistNameFeedback" class="text-red-400 font-semibold hidden mb-4"></div>
+      <div class="flex gap-4 justify-end">
+        <button class="px-4 py-3 btn-secondary text-white btn-rounded" onclick="this.closest('.modal').remove()">Cancel</button>
+        <button class="px-4 py-3 btn-green text-white btn-rounded" id="savePlaylistConfirm">Save</button>
+      </div>
     </div>`;
   container.appendChild(modal);
-  if (onConfirm) {
-    document.getElementById('modal-confirm').addEventListener('click', () => { onConfirm(); modal.remove(); });
-    document.getElementById('modal-cancel').addEventListener('click', () => modal.remove());
+  const inputEl = document.getElementById('playlistNameInput');
+  const feedbackEl = document.getElementById('playlistNameFeedback');
+  document.getElementById('savePlaylistConfirm').addEventListener('click', () => {
+    const name = inputEl.value.trim();
+    if (!name) {
+      feedbackEl.textContent = "Name cannot be empty";
+      feedbackEl.classList.remove('hidden');
+      return;
+    }
+    let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+    if (playlists[name]) {
+      feedbackEl.textContent = "Name exists";
+      feedbackEl.classList.remove('hidden');
+      return;
+    }
+    playlists[name] = selectedTracks;
+    localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
+    renderPersonalPlaylists();
+    showToast(`Playlist "${name}" saved`);
+    modal.remove();
+  });
+  inputEl.focus();
+}
+
+// Render personal playlists
+function renderPersonalPlaylists() {
+  if (!localStorageEnabled) return;
+  const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+  const ul = document.getElementById("playlistList");
+  ul.innerHTML = "";
+  const names = Object.keys(playlists);
+  if (names.length === 0) {
+    document.getElementById("playlist-empty").classList.remove("hidden");
+  } else {
+    document.getElementById("playlist-empty").classList.add("hidden");
   }
-  modal.querySelector('.modal-close').focus();
+  names.forEach(name => {
+    const shlokas = playlists[name];
+    ul.innerHTML += `
+      <li>
+        <label class="playlist-item block p-3 container-card cursor-pointer flex items-center justify-between">
+          <div class="flex items-center">
+            <input type="checkbox" class="playlist-box" data-selection='${JSON.stringify(shlokas)}'/>
+            <span class="ml-6 font-semibold">${name}</span>
+          </div>
+          <div class="flex items-center space-x-2 text-sm text-gray-400">
+            <span>(${shlokas.length} shlokas)</span>
+            <button onclick="loadPlaylist('${name.replace(/'/g, "\\'")}')" class="text-xs px-2 py-1 btn-secondary rounded-full">Load</button>
+            <button onclick="confirmDeletePlaylist('${name.replace(/'/g, "\\'")}')" class="text-xs px-2 py-1 btn-red rounded-full">Delete</button>
+          </div>
+        </label>
+      </li>`;
+  });
 }
 
-// Show toast
-function showToast(msg) {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.setAttribute('role', 'status');
-  toast.setAttribute('aria-live', 'polite');
-  toast.textContent = msg;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 4000);
+function loadPlaylist(name) {
+  if (!localStorageEnabled) return;
+  const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+  const shlokas = playlists[name];
+  if (shlokas) {
+    // Clear previous selections
+    clearSelection();
+    shlokas.forEach(trackNum => {
+      const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+        checkbox.closest("label").classList.add("selected");
+      }
+    });
+    updateGroupButtonSelection();
+    showToast(`Playlist "${name}" loaded`);
+  }
 }
 
-// Generate groups
+function deletePlaylist(name) {
+  if (!localStorageEnabled) return;
+  let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+  delete playlists[name];
+  localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
+  renderPersonalPlaylists();
+}
+
+function saveSelection(selection) {
+  if (!localStorageEnabled) return;
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+  } catch(e) {}
+  const selStr = selection.join(",");
+  // Remove duplicate
+  history = [selStr, ...history.filter(h => h !== selStr)].slice(0, 5);
+  localStorage.setItem("recentSelections", JSON.stringify(history));
+  renderRecentSelections();
+}
+
+function clearHistory() {
+  if (!localStorageEnabled) return;
+  localStorage.removeItem("recentSelections");
+  renderRecentSelections();
+}
+
+function renderRecentSelections() {
+  if (!localStorageEnabled) return;
+  const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+  const ul = document.getElementById("recentList");
+  const recentDiv = document.getElementById("recentlyPlayed");
+  const recentEmpty = document.getElementById("recent-empty");
+  ul.innerHTML = "";
+  if (history.length === 0) {
+    recentDiv.classList.add("hidden");
+    recentEmpty.classList.remove("hidden");
+    return;
+  }
+  recentDiv.classList.remove("hidden");
+  recentEmpty.classList.add("hidden");
+  history.forEach(sel => {
+    const numbers = sel.split(",").map(n => parseInt(n.trim()));
+    let labelText = (numbers.length <= 6) ? "Shlok " + numbers.join(", ") : `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${numbers.length} total)`;
+    ul.innerHTML += `
+      <li>
+        <label class="recent-item block p-3 container-card cursor-pointer">
+          <input type="checkbox" class="recent-box" data-selection="${sel}"/>
+          <span class="ml-6">${labelText}</span>
+        </label>
+      </li>`;
+  });
+}
+
+// Restore last selection
+function restoreLastSelection() {
+  if (!localStorageEnabled) return;
+  const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+  if (history.length > 0) {
+    const lastSel = history[0].split(",").map(n => parseInt(n.trim()));
+    // Clear previous
+    clearSelection();
+    // Apply new
+    lastSel.forEach(trackNum => {
+      const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+        checkbox.closest("label").classList.add("selected");
+      }
+    });
+    updateGroupButtonSelection();
+  }
+}
+
+function updateGroupButtonSelection() {
+  const selectedTracks = new Set(Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value)));
+  document.querySelectorAll(".group-btn").forEach(btn => {
+    const start = parseInt(btn.dataset.start);
+    const end = parseInt(btn.dataset.end);
+    if (isNaN(start) || isNaN(end)) return;
+    let isGroupSelected = true;
+    for (let i = start; i <= end; i++) {
+      if (!selectedTracks.has(i)) {
+        isGroupSelected = false;
+        break;
+      }
+    }
+    btn.classList.toggle('selected', isGroupSelected);
+    btn.setAttribute('aria-pressed', isGroupSelected);
+  });
+  // toggle save button
+  if (savePlaylistBtnEl) {
+    savePlaylistBtnEl.classList.toggle('hidden', selectedTracks.size === 0 || isQuizMode);
+  }
+}
+
+// Generate group buttons
 function generateGroups() {
   const container = document.getElementById("groups");
   container.innerHTML = "";
@@ -516,9 +675,50 @@ function generateTracks() {
   }
 }
 
-// Set up event listeners
+// Show modal dialog
+function showModal(message, onConfirm = null) {
+  const container = document.getElementById('modal-container');
+  container.innerHTML = '';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+      <p class="mb-4">${message}</p>
+      ${onConfirm ? `
+        <div class="flex gap-4 justify-center">
+          <button class="px-4 py-3 btn-red text-white btn-rounded" id="modal-cancel">Cancel</button>
+          <button class="px-4 py-3 btn-primary text-white btn-rounded" id="modal-confirm">OK</button>
+        </div>` : `
+        <button onclick="this.closest('.modal').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">OK</button>
+      `}
+    </div>`;
+  container.appendChild(modal);
+  if (onConfirm) {
+    document.getElementById('modal-confirm').addEventListener('click', () => { onConfirm(); modal.remove(); });
+    document.getElementById('modal-cancel').addEventListener('click', () => modal.remove());
+  }
+  modal.querySelector('.modal-close').focus();
+}
+
+// Show toast
+function showToast(msg) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// Initialize on DOM ready
 document.addEventListener("DOMContentLoaded", () => {
-  // References
+  // Get references
   audioPlayer = document.getElementById("audioPlayer");
   trackListEl = document.getElementById("trackList");
   allShlokasTitleEl = document.getElementById("allShlokasTitle");
@@ -526,7 +726,6 @@ document.addEventListener("DOMContentLoaded", () => {
   regularControlsEl = document.getElementById("regularControls");
   savePlaylistBtnEl = document.getElementById("savePlaylistBtn");
 
-  // Generate data
   generateTracks();
   generateGroups();
 
@@ -570,15 +769,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Recent list change
   document.getElementById("recentList").addEventListener("change", e => {
     if (e.target.classList.contains("recent-box")) {
-      // Clear all
+      // Clear all previous selections
       document.querySelectorAll(".track-item.selected, .recent-item.selected").forEach(el => el.classList.remove("selected"));
       document.querySelectorAll(".trackBox, .recent-box").forEach(c => { c.checked = false; c.closest("label").classList.remove("selected"); });
-      // Apply selection
+      // Apply selection based on checked recent boxes
       const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
       const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim()))));
       document.querySelectorAll(".trackBox").forEach(cb => {
-        const trackNum = parseInt(cb.value);
-        if (allNumbers.has(trackNum)) {
+        const tnum = parseInt(cb.value);
+        if (allNumbers.has(tnum)) {
           cb.checked = true;
           cb.closest("label").classList.add("selected");
         }
@@ -591,15 +790,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Playlist list change
   document.getElementById("playlistList").addEventListener("change", e => {
     if (e.target.classList.contains("playlist-box")) {
-      // Clear previous
+      // Clear previous selections
       document.querySelectorAll(".track-item.selected, .recent-item.selected").forEach(el => el.classList.remove("selected"));
       document.querySelectorAll(".trackBox, .recent-box").forEach(c => { c.checked = false; c.closest("label").classList.remove("selected"); });
-      // Apply
+      // Apply selection based on checked playlist boxes
       const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"));
       const allNumbers = new Set(selectedPlaylists.flatMap(cb => JSON.parse(cb.dataset.selection)));
       document.querySelectorAll(".trackBox").forEach(cb => {
-        const trackNum = parseInt(cb.value);
-        if (allNumbers.has(trackNum)) {
+        const tnum = parseInt(cb.value);
+        if (allNumbers.has(tnum)) {
           cb.checked = true;
           cb.closest("label").classList.add("selected");
         }
@@ -648,7 +847,86 @@ document.addEventListener("DOMContentLoaded", () => {
   // End of DOMContentLoaded
 });
 
-// Functions for UI controls
+// Mode toggle
+function toggleMode() {
+  isQuizMode = !isQuizMode;
+  if (quizControlsEl && regularControlsEl) {
+    quizControlsEl.classList.toggle('hidden', !isQuizMode);
+    quizControlsEl.classList.toggle('fade-in', isQuizMode);
+    quizControlsEl.classList.toggle('fade-out', !isQuizMode);
+    regularControlsEl.classList.toggle('hidden', isQuizMode);
+    regularControlsEl.classList.toggle('fade-out', isQuizMode);
+    regularControlsEl.classList.toggle('fade-in', !isQuizMode);
+  }
+  // Button label
+  const modeBtn = document.querySelector('button[onclick="toggleMode()"]');
+  if (modeBtn) {
+    modeBtn.innerHTML = `<i class="fa-solid fa-toggle-${isQuizMode ? 'on' : 'off'}"></i> ${isQuizMode ? 'Exit Quiz Mode' : 'Toggle to Quiz Mode'}`;
+  }
+  // Reset state
+  if (isQuizMode) {
+    try { audioPlayer.pause(); } catch(e) {}
+    try { audioPlayer.src = ''; } catch(e) {}
+    playlist = [];
+    currentIndex = 0;
+    document.getElementById('playFullBtn').classList.add('hidden');
+    if (document.getElementById('countdownBar')) document.getElementById('countdownBar').style.width = '100%';
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  } else {
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    if (autoPlayTimeout) { clearTimeout(autoPlayTimeout); autoPlayTimeout = null; }
+    document.getElementById('quizStatus').textContent = '';
+    document.getElementById('countdown').textContent = '';
+    document.getElementById('playFullBtn').classList.add('hidden');
+  }
+  updateGroupButtonSelection();
+}
+
+// Toggle Auto-Play
+function toggleAutoPlay() {
+  autoPlay = !autoPlay;
+  const btn = document.getElementById("autoPlayToggle");
+  btn.innerHTML = `<i class="fa-solid fa-toggle-${autoPlay ? 'on' : 'off'}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
+  btn.classList.toggle('btn-secondary', !autoPlay);
+  btn.classList.toggle('btn-green', autoPlay);
+}
+
+// Play full shloka
+function playFullShloka() {
+  if (playlist.length === 0) {
+    showToast("No playlist");
+    return;
+  }
+  // Play last played or first
+  const indexToPlay = (currentIndex > 0 && currentIndex <= playlist.length) ? currentIndex - 1 : 0;
+  const trackNum = playlist[indexToPlay];
+  if (trackNum == null || isNaN(trackNum)) {
+    showToast("Invalid track");
+    return;
+  }
+  const url = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+  audioPlayer.src = url;
+  audioPlayer.playbackRate = currentSpeed;
+  audioPlayer.play().catch(err => {
+    console.error("Play error:", err);
+    showToast("Failed to play");
+  });
+  document.getElementById('playFullBtn').classList.add('hidden');
+}
+
+// Change quiz time
+function changeQuizTime(t) {
+  currentQuizTime = t;
+  document.getElementById("quizTimeDisplay").textContent = `${t}s`;
+}
+
+// Change quiz delay
+function changeQuizDelay(d) {
+  currentQuizDelay = d;
+  document.getElementById("quizDelayDisplay").textContent = `${d}s`;
+}
+
+// Toggle group display
 function toggleGroupDisplay() {
   const groupsDiv = document.getElementById("groups");
   const hidden = groupsDiv.classList.toggle("hidden");
@@ -657,6 +935,7 @@ function toggleGroupDisplay() {
   icon.classList.toggle("fa-chevron-up", !hidden);
 }
 
+// Clear selections
 function clearSelection() {
   document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(el => el.classList.remove("selected"));
   document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => { cb.checked = false; });
@@ -672,12 +951,13 @@ function confirmClearSelection() {
 }
 
 function confirmClearHistory() {
-  showModal("Clear history?", () => { clearHistory(); showToast("History cleared"); });
+  showModal("Are you sure you want to clear your recently played history?", () => { clearHistory(); showToast("History cleared"); });
 }
 function confirmDeletePlaylist(name) {
   showModal(`Are you sure you want to delete "${name}"?`, () => { deletePlaylist(name); });
 }
 
+// Select range
 function selectRange() {
   const start = parseInt(document.getElementById("rangeStart").value);
   const end = parseInt(document.getElementById("rangeEnd").value);
@@ -695,6 +975,7 @@ function selectRange() {
   showToast(`Shlok ${start}-${end} selected`);
 }
 
+// Toggle group selection
 function toggleGroup(start, end, element) {
   const isSelected = !element.classList.contains('selected');
   element.classList.toggle('selected', isSelected);
@@ -709,14 +990,15 @@ function toggleGroup(start, end, element) {
   updateGroupButtonSelection();
 }
 
+// Change speed
 function changeSpeed(speed) {
   currentSpeed = speed;
   audioPlayer.playbackRate = currentSpeed;
   document.getElementById("speedDisplay").textContent = speed.toFixed(1);
 }
 
+// Play selected tracks
 function playSelected() {
-  // Collect selected playlists and tracks
   const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked")).map(cb => JSON.parse(cb.dataset.selection));
   const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
   let finalSelection = [];
@@ -903,7 +1185,6 @@ function deletePlaylist(name) {
   renderPersonalPlaylists();
 }
 
-// Save selection to recent
 function saveSelection(selection) {
   if (!localStorageEnabled) return;
   let history = [];
@@ -911,7 +1192,640 @@ function saveSelection(selection) {
     history = JSON.parse(localStorage.getItem("recentSelections")) || [];
   } catch(e) {}
   const selStr = selection.join(",");
-  // Remove duplicates
+  // Remove duplicate
+  history = [selStr, ...history.filter(h => h !== selStr)].slice(0, 5);
+  localStorage.setItem("recentSelections", JSON.stringify(history));
+  renderRecentSelections();
+}
+
+function clearHistory() {
+  if (!localStorageEnabled) return;
+  localStorage.removeItem("recentSelections");
+  renderRecentSelections();
+}
+
+function renderRecentSelections() {
+  if (!localStorageEnabled) return;
+  const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+  const ul = document.getElementById("recentList");
+  const recentDiv = document.getElementById("recentlyPlayed");
+  const recentEmpty = document.getElementById("recent-empty");
+  ul.innerHTML = "";
+  if (history.length === 0) {
+    recentDiv.classList.add("hidden");
+    recentEmpty.classList.remove("hidden");
+    return;
+  }
+  recentDiv.classList.remove("hidden");
+  recentEmpty.classList.add("hidden");
+  history.forEach(sel => {
+    const numbers = sel.split(",").map(n => parseInt(n.trim()));
+    let labelText = (numbers.length <= 6) ? "Shlok " + numbers.join(", ") : `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${numbers.length} total)`;
+    ul.innerHTML += `
+      <li>
+        <label class="recent-item block p-3 container-card cursor-pointer">
+          <input type="checkbox" class="recent-box" data-selection="${sel}"/>
+          <span class="ml-6">${labelText}</span>
+        </label>
+      </li>`;
+  });
+}
+
+// Restore last selection
+function restoreLastSelection() {
+  if (!localStorageEnabled) return;
+  const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+  if (history.length > 0) {
+    const lastSel = history[0].split(",").map(n => parseInt(n.trim()));
+    clearSelection();
+    lastSel.forEach(trackNum => {
+      const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+        checkbox.closest("label").classList.add("selected");
+      }
+    });
+    updateGroupButtonSelection();
+  }
+}
+
+function updateGroupButtonSelection() {
+  const selectedTracks = new Set(Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value)));
+  document.querySelectorAll(".group-btn").forEach(btn => {
+    const start = parseInt(btn.dataset.start);
+    const end = parseInt(btn.dataset.end);
+    if (isNaN(start) || isNaN(end)) return;
+    let isGroupSelected = true;
+    for (let i = start; i <= end; i++) {
+      if (!selectedTracks.has(i)) {
+        isGroupSelected = false;
+        break;
+      }
+    }
+    btn.classList.toggle('selected', isGroupSelected);
+    btn.setAttribute('aria-pressed', isGroupSelected);
+  });
+  if (savePlaylistBtnEl) {
+    savePlaylistBtnEl.classList.toggle('hidden', selectedTracks.size === 0 || isQuizMode);
+  }
+}
+
+// Generate group buttons
+function generateGroups() {
+  const container = document.getElementById("groups");
+  container.innerHTML = "";
+  for (let i = 1; i <= totalTracks; i += 10) {
+    const end = Math.min(i + 9, totalTracks);
+    const btn = document.createElement("button");
+    btn.className = "group-btn";
+    btn.setAttribute("tabindex", "0");
+    btn.setAttribute("aria-pressed", "false");
+    btn.dataset.start = i;
+    btn.dataset.end = end;
+    btn.innerHTML = `${i}–${end}<span class="checkmark">✓</span>`;
+    btn.onclick = () => toggleGroup(i, end, btn);
+    container.appendChild(btn);
+  }
+}
+
+// Generate track list
+function generateTracks() {
+  const ul = document.getElementById("trackList");
+  ul.innerHTML = "";
+  for (let i = 1; i <= totalTracks; i++) {
+    ul.innerHTML += `
+      <li>
+        <label class="track-item block p-3 text-white">
+          <input type="checkbox" value="${i}" class="trackBox"/>
+          <span class="ml-6">Shlok ${i}</span>
+        </label>
+      </li>`;
+  }
+}
+
+// Show modal
+function showModal(message, onConfirm = null) {
+  const container = document.getElementById('modal-container');
+  container.innerHTML = '';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+      <p class="mb-4">${message}</p>
+      ${onConfirm ? `
+        <div class="flex gap-4 justify-center">
+          <button class="px-4 py-3 btn-red text-white btn-rounded" id="modal-cancel">Cancel</button>
+          <button class="px-4 py-3 btn-primary text-white btn-rounded" id="modal-confirm">OK</button>
+        </div>` : `
+        <button onclick="this.closest('.modal').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">OK</button>
+      `}
+    </div>`;
+  container.appendChild(modal);
+  if (onConfirm) {
+    document.getElementById('modal-confirm').addEventListener('click', () => { onConfirm(); modal.remove(); });
+    document.getElementById('modal-cancel').addEventListener('click', () => modal.remove());
+  }
+  modal.querySelector('.modal-close').focus();
+}
+
+// Toast
+function showToast(msg) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// DOM ready
+document.addEventListener("DOMContentLoaded", () => {
+  // Element references
+  audioPlayer = document.getElementById("audioPlayer");
+  trackListEl = document.getElementById("trackList");
+  allShlokasTitleEl = document.getElementById("allShlokasTitle");
+  quizControlsEl = document.getElementById("quizControls");
+  regularControlsEl = document.getElementById("regularControls");
+  savePlaylistBtnEl = document.getElementById("savePlaylistBtn");
+
+  generateTracks();
+  generateGroups();
+
+  if (localStorageEnabled) {
+    restoreLastSelection();
+    renderRecentSelections();
+    renderPersonalPlaylists();
+  } else {
+    showToast("Local storage is disabled");
+  }
+
+  // Search input
+  document.getElementById("search").addEventListener("input", e => {
+    const term = e.target.value.trim().toLowerCase();
+    let found = false;
+    document.querySelectorAll("#trackList li").forEach(li => {
+      const val = li.querySelector('.trackBox').value;
+      if (!term || val.startsWith(term)) {
+        li.classList.remove("hidden");
+        found = true;
+      } else {
+        li.classList.add("hidden");
+      }
+    });
+    document.getElementById("search-feedback").classList.toggle("hidden", found);
+    document.getElementById("clearSearch").classList.toggle("hidden", term === "");
+  });
+  document.getElementById("clearSearch").addEventListener("click", () => {
+    document.getElementById("search").value = "";
+    document.getElementById("search").dispatchEvent(new Event('input'));
+  });
+
+  // Checkbox change for tracks
+  document.querySelectorAll(".trackBox").forEach(cb => {
+    cb.addEventListener("change", () => {
+      cb.closest("label").classList.toggle("selected", cb.checked);
+      updateGroupButtonSelection();
+    });
+  });
+
+  // Recent selection change
+  document.getElementById("recentList").addEventListener("change", e => {
+    if (e.target.classList.contains("recent-box")) {
+      // Clear all previous selections
+      document.querySelectorAll(".track-item.selected, .recent-item.selected").forEach(el => el.classList.remove("selected"));
+      document.querySelectorAll(".trackBox, .recent-box").forEach(c => { c.checked = false; c.closest("label").classList.remove("selected"); });
+      // Select based on checked recent boxes
+      const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
+      const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim()))));
+      document.querySelectorAll(".trackBox").forEach(cb => {
+        const tnum = parseInt(cb.value);
+        if (allNumbers.has(tnum)) {
+          cb.checked = true;
+          cb.closest("label").classList.add("selected");
+        }
+      });
+      selectedRecents.forEach(cb => cb.closest("label").classList.add("selected"));
+      updateGroupButtonSelection();
+    }
+  });
+
+  // Playlist selection change
+  document.getElementById("playlistList").addEventListener("change", e => {
+    if (e.target.classList.contains("playlist-box")) {
+      // Clear previous
+      document.querySelectorAll(".track-item.selected, .recent-item.selected").forEach(el => el.classList.remove("selected"));
+      document.querySelectorAll(".trackBox, .recent-box").forEach(c => { c.checked = false; c.closest("label").classList.remove("selected"); });
+      // Select based on playlist
+      const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"));
+      const allNumbers = new Set(selectedPlaylists.flatMap(cb => JSON.parse(cb.dataset.selection)));
+      document.querySelectorAll(".trackBox").forEach(cb => {
+        const tnum = parseInt(cb.value);
+        if (allNumbers.has(tnum)) {
+          cb.checked = true;
+          cb.closest("label").classList.add("selected");
+        }
+      });
+      selectedPlaylists.forEach(cb => cb.closest("label").classList.add("selected"));
+      updateGroupButtonSelection();
+    }
+  });
+
+  // Audio events
+  audioPlayer.addEventListener("error", () => {
+    showToast("Error loading audio");
+  });
+  audioPlayer.addEventListener("playing", () => {
+    if (isQuizMode && !hasQuizPaused) {
+      document.getElementById('playFullBtn').classList.add('hidden');
+      setTimeout(() => {
+        audioPlayer.pause();
+        hasQuizPaused = true;
+        document.getElementById('quizStatus').textContent = "Audio Paused. Your turn to recite!";
+        document.getElementById('playFullBtn').classList.remove('hidden');
+
+        let countdown = currentQuizTime;
+        const countdownEl = document.getElementById('countdown');
+        countdownEl.textContent = `(${countdown}s)`;
+        document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+
+        if (countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+          countdown--;
+          countdownEl.textContent = `(${countdown}s)`;
+          document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+          if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            countdownEl.textContent = '';
+            document.getElementById('quizStatus').textContent = '';
+            if (autoPlay) {
+              playNextQuizTrack();
+            }
+          }
+        }, 1000);
+      }, currentQuizDelay * 1000);
+    }
+  });
+  // End of DOMContentLoaded
+});
+
+// Mode toggle
+function toggleMode() {
+  isQuizMode = !isQuizMode;
+  if (quizControlsEl && regularControlsEl) {
+    quizControlsEl.classList.toggle('hidden', !isQuizMode);
+    quizControlsEl.classList.toggle('fade-in', isQuizMode);
+    quizControlsEl.classList.toggle('fade-out', !isQuizMode);
+    regularControlsEl.classList.toggle('hidden', isQuizMode);
+    regularControlsEl.classList.toggle('fade-out', isQuizMode);
+    regularControlsEl.classList.toggle('fade-in', !isQuizMode);
+  }
+  const modeBtn = document.querySelector('button[onclick="toggleMode()"]');
+  if (modeBtn) {
+    modeBtn.innerHTML = `<i class="fa-solid fa-toggle-${isQuizMode ? 'on' : 'off'}"></i> ${isQuizMode ? 'Exit Quiz Mode' : 'Toggle to Quiz Mode'}`;
+  }
+  if (isQuizMode) {
+    try { audioPlayer.pause(); } catch(e) {}
+    try { audioPlayer.src = ''; } catch(e) {}
+    playlist = [];
+    currentIndex = 0;
+    document.getElementById('playFullBtn').classList.add('hidden');
+    if (document.getElementById('countdownBar')) document.getElementById('countdownBar').style.width = '100%';
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  } else {
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    if (autoPlayTimeout) { clearTimeout(autoPlayTimeout); autoPlayTimeout = null; }
+    document.getElementById('quizStatus').textContent = '';
+    document.getElementById('countdown').textContent = '';
+    document.getElementById('playFullBtn').classList.add('hidden');
+  }
+  updateGroupButtonSelection();
+}
+
+// Toggle Auto-Play
+function toggleAutoPlay() {
+  autoPlay = !autoPlay;
+  const btn = document.getElementById("autoPlayToggle");
+  btn.innerHTML = `<i class="fa-solid fa-toggle-${autoPlay ? 'on' : 'off'}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
+  btn.classList.toggle('btn-secondary', !autoPlay);
+  btn.classList.toggle('btn-green', autoPlay);
+}
+
+// Play full shloka
+function playFullShloka() {
+  if (playlist.length === 0) {
+    showToast("No playlist");
+    return;
+  }
+  // Play the last track that was played (currentIndex - 1)
+  const indexToPlay = (currentIndex > 0 && currentIndex <= playlist.length) ? currentIndex - 1 : 0;
+  const trackNum = playlist[indexToPlay];
+  if (trackNum == null || isNaN(trackNum)) {
+    showToast("Invalid track");
+    return;
+  }
+  const url = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+  audioPlayer.src = url;
+  audioPlayer.playbackRate = currentSpeed;
+  audioPlayer.play().catch(err => {
+    console.error("Play error:", err);
+    showToast("Failed to play");
+  });
+  document.getElementById('playFullBtn').classList.add('hidden');
+}
+
+// Change quiz time
+function changeQuizTime(t) {
+  currentQuizTime = t;
+  document.getElementById("quizTimeDisplay").textContent = `${t}s`;
+}
+
+// Change quiz delay
+function changeQuizDelay(d) {
+  currentQuizDelay = d;
+  document.getElementById("quizDelayDisplay").textContent = `${d}s`;
+}
+
+// Toggle group display
+function toggleGroupDisplay() {
+  const groupsDiv = document.getElementById("groups");
+  const hidden = groupsDiv.classList.toggle("hidden");
+  const icon = document.getElementById("group-toggle-icon");
+  icon.classList.toggle("fa-chevron-down", hidden);
+  icon.classList.toggle("fa-chevron-up", !hidden);
+}
+
+// Clear selections
+function clearSelection() {
+  document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => { cb.checked = false; });
+  document.querySelectorAll(".group-btn.selected").forEach(btn => btn.classList.remove("selected"));
+  playlist = [];
+  currentIndex = 0;
+  updateGroupButtonSelection();
+  showToast("Selection cleared");
+}
+
+function confirmClearSelection() {
+  showModal("Are you sure you want to clear your current selection?", () => {
+    clearSelection();
+  });
+}
+
+function confirmClearHistory() {
+  showModal("Are you sure you want to clear your recently played history?", () => {
+    clearHistory();
+    showToast("History cleared");
+  });
+}
+function confirmDeletePlaylist(name) {
+  showModal(`Are you sure you want to delete "${name}"?`, () => {
+    deletePlaylist(name);
+  });
+}
+
+// Select range
+function selectRange() {
+  const start = parseInt(document.getElementById("rangeStart").value);
+  const end = parseInt(document.getElementById("rangeEnd").value);
+  if (isNaN(start) || isNaN(end) || start < 1 || end > totalTracks || start > end) {
+    showModal("Invalid range");
+    return;
+  }
+  document.querySelectorAll(".trackBox").forEach(cb => {
+    const val = parseInt(cb.value);
+    const checked = val >= start && val <= end;
+    cb.checked = checked;
+    cb.closest("label").classList.toggle("selected", checked);
+  });
+  updateGroupButtonSelection();
+  showToast(`Shlok ${start}-${end} selected`);
+}
+
+// Toggle group selection
+function toggleGroup(start, end, element) {
+  const isSelected = !element.classList.contains('selected');
+  element.classList.toggle('selected', isSelected);
+  element.setAttribute('aria-pressed', isSelected);
+  for (let i = start; i <= end; i++) {
+    const cb = document.querySelector(`.trackBox[value="${i}"]`);
+    if (cb) {
+      cb.checked = isSelected;
+      cb.closest("label").classList.toggle("selected", isSelected);
+    }
+  }
+  updateGroupButtonSelection();
+}
+
+// Change speed
+function changeSpeed(speed) {
+  currentSpeed = speed;
+  audioPlayer.playbackRate = currentSpeed;
+  document.getElementById("speedDisplay").textContent = speed.toFixed(1);
+}
+
+// Play selected
+function playSelected() {
+  const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked")).map(cb => JSON.parse(cb.dataset.selection));
+  const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
+  let finalSelection = [];
+
+  if (selectedPlaylists.length > 0) {
+    const setShlokas = new Set(selectedPlaylists.flatMap(p => p));
+    finalSelection = Array.from(setShlokas);
+  } else {
+    finalSelection = selectedTracks;
+  }
+
+  if (finalSelection.length === 0) {
+    showModal("Select at least one shlok");
+    return;
+  }
+
+  repeatEach = parseInt(document.getElementById("repeatCount").value) || 1;
+  playlist = [...finalSelection];
+  if (document.getElementById("shuffle").checked) {
+    playlist.sort(() => Math.random() - 0.5);
+  }
+  currentIndex = 0;
+  repeatCounter = 0;
+  if (localStorageEnabled) saveSelection(finalSelection);
+  playCurrent();
+  showToast("Playing");
+}
+
+// Play next in quiz mode
+function playNextQuizTrack() {
+  let selected = [];
+  const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked")).map(cb => JSON.parse(cb.dataset.selection));
+  const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked")).map(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim())));
+
+  if (selectedPlaylists.length > 0) {
+    const setShlokas = new Set(selectedPlaylists.flatMap(p => p));
+    selected = Array.from(setShlokas);
+  } else if (selectedRecents.length > 0) {
+    const setNums = new Set(selectedRecents.flat());
+    selected = Array.from(setNums);
+  } else {
+    selected = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
+  }
+
+  if (selected.length === 0) {
+    showModal("Select a group of shlokas or playlist");
+    return;
+  }
+
+  if (playlist.length === 0 || currentIndex >= playlist.length) {
+    playlist = [...selected].sort(() => Math.random() - 0.5);
+    currentIndex = 0;
+  }
+
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  if (autoPlayTimeout) { clearTimeout(autoPlayTimeout); autoPlayTimeout = null; }
+
+  document.getElementById('quizStatus').textContent = '';
+  document.getElementById('playFullBtn').classList.add('hidden');
+
+  const trackNum = playlist[currentIndex];
+  if (trackNum == null || isNaN(trackNum)) {
+    showToast("Invalid track");
+    return;
+  }
+
+  document.getElementById('currentShlokQuiz').textContent = `Now playing: Shlok ${trackNum}`;
+  audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+  audioPlayer.playbackRate = currentSpeed;
+  audioPlayer.play().catch(err => {
+    console.error("Play error:", err);
+    showToast("Failed to play");
+  });
+  currentIndex++;
+}
+
+// Save playlist
+function showSavePlaylistModal() {
+  if (!localStorageEnabled) {
+    showModal("Local storage not available");
+    return;
+  }
+  const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
+  if (selectedTracks.length === 0) {
+    showModal("Select at least one shlok");
+    return;
+  }
+  const container = document.getElementById('modal-container');
+  container.innerHTML = '';
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+      <h3 class="text-xl font-bold mb-4">Save Playlist</h3>
+      <p class="mb-2">Enter a name:</p>
+      <input type="text" id="playlistNameInput" class="w-full mb-4" placeholder="My playlist"/>
+      <div id="playlistNameFeedback" class="text-red-400 font-semibold hidden mb-4"></div>
+      <div class="flex gap-4 justify-end">
+        <button class="px-4 py-3 btn-secondary text-white btn-rounded" onclick="this.closest('.modal').remove()">Cancel</button>
+        <button class="px-4 py-3 btn-green text-white btn-rounded" id="savePlaylistConfirm">Save</button>
+      </div>
+    </div>`;
+  container.appendChild(modal);
+  const inputEl = document.getElementById('playlistNameInput');
+  const feedbackEl = document.getElementById('playlistNameFeedback');
+  document.getElementById('savePlaylistConfirm').addEventListener('click', () => {
+    const name = inputEl.value.trim();
+    if (!name) {
+      feedbackEl.textContent = "Name cannot be empty";
+      feedbackEl.classList.remove('hidden');
+      return;
+    }
+    let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+    if (playlists[name]) {
+      feedbackEl.textContent = "Name exists";
+      feedbackEl.classList.remove('hidden');
+      return;
+    }
+    playlists[name] = selectedTracks;
+    localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
+    renderPersonalPlaylists();
+    showToast(`Playlist "${name}" saved`);
+    modal.remove();
+  });
+  inputEl.focus();
+}
+
+// Render personal playlists
+function renderPersonalPlaylists() {
+  if (!localStorageEnabled) return;
+  const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+  const ul = document.getElementById("playlistList");
+  ul.innerHTML = "";
+  const names = Object.keys(playlists);
+  if (names.length === 0) {
+    document.getElementById("playlist-empty").classList.remove("hidden");
+  } else {
+    document.getElementById("playlist-empty").classList.add("hidden");
+  }
+  names.forEach(name => {
+    const shlokas = playlists[name];
+    ul.innerHTML += `
+      <li>
+        <label class="playlist-item block p-3 container-card cursor-pointer flex items-center justify-between">
+          <div class="flex items-center">
+            <input type="checkbox" class="playlist-box" data-selection='${JSON.stringify(shlokas)}'/>
+            <span class="ml-6 font-semibold">${name}</span>
+          </div>
+          <div class="flex items-center space-x-2 text-sm text-gray-400">
+            <span>(${shlokas.length} shlokas)</span>
+            <button onclick="loadPlaylist('${name.replace(/'/g, "\\'")}')" class="text-xs px-2 py-1 btn-secondary rounded-full">Load</button>
+            <button onclick="confirmDeletePlaylist('${name.replace(/'/g, "\\'")}')" class="text-xs px-2 py-1 btn-red rounded-full">Delete</button>
+          </div>
+        </label>
+      </li>`;
+  });
+}
+
+function loadPlaylist(name) {
+  if (!localStorageEnabled) return;
+  const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+  const shlokas = playlists[name];
+  if (shlokas) {
+    // Clear previous
+    clearSelection();
+    shlokas.forEach(trackNum => {
+      const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+        checkbox.closest("label").classList.add("selected");
+      }
+    });
+    updateGroupButtonSelection();
+    showToast(`Playlist "${name}" loaded`);
+  }
+}
+
+function deletePlaylist(name) {
+  if (!localStorageEnabled) return;
+  let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+  delete playlists[name];
+  localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
+  renderPersonalPlaylists();
+}
+
+function saveSelection(selection) {
+  if (!localStorageEnabled) return;
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+  } catch(e) {}
+  const selStr = selection.join(",");
+  // Remove duplicate
   history = [selStr, ...history.filter(h => h !== selStr)].slice(0, 5);
   localStorage.setItem("recentSelections", JSON.stringify(history));
   renderRecentSelections();
@@ -958,7 +1872,7 @@ function restoreLastSelection() {
     const lastSel = history[0].split(",").map(n => parseInt(n.trim()));
     // Clear previous
     clearSelection();
-    // Apply new
+    // Apply new selection
     lastSel.forEach(trackNum => {
       const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
       if (checkbox) {
@@ -986,13 +1900,12 @@ function updateGroupButtonSelection() {
     btn.classList.toggle('selected', isGroupSelected);
     btn.setAttribute('aria-pressed', isGroupSelected);
   });
-  // button hide/show
   if (savePlaylistBtnEl) {
     savePlaylistBtnEl.classList.toggle('hidden', selectedTracks.size === 0 || isQuizMode);
   }
 }
 
-// Generate group buttons
+// Generate groups
 function generateGroups() {
   const container = document.getElementById("groups");
   container.innerHTML = "";
@@ -1010,7 +1923,7 @@ function generateGroups() {
   }
 }
 
-// Generate tracks list
+// Generate track list
 function generateTracks() {
   const ul = document.getElementById("trackList");
   ul.innerHTML = "";
@@ -1024,6 +1937,520 @@ function generateTracks() {
       </li>`;
   }
 }
+
+// Show modal
+function showModal(message, onConfirm = null) {
+  const container = document.getElementById('modal-container');
+  container.innerHTML = '';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+      <p class="mb-4">${message}</p>
+      ${onConfirm ? `
+        <div class="flex gap-4 justify-center">
+          <button class="px-4 py-3 btn-red text-white btn-rounded" id="modal-cancel">Cancel</button>
+          <button class="px-4 py-3 btn-primary text-white btn-rounded" id="modal-confirm">OK</button>
+        </div>` : `
+        <button onclick="this.closest('.modal').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">OK</button>
+      `}
+    </div>`;
+  container.appendChild(modal);
+  if (onConfirm) {
+    document.getElementById('modal-confirm').addEventListener('click', () => { onConfirm(); modal.remove(); });
+    document.getElementById('modal-cancel').addEventListener('click', () => modal.remove());
+  }
+  modal.querySelector('.modal-close').focus();
+}
+
+// Toast
+function showToast(msg) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// Initialize
+document.addEventListener("DOMContentLoaded", () => {
+  // References
+  audioPlayer = document.getElementById("audioPlayer");
+  trackListEl = document.getElementById("trackList");
+  allShlokasTitleEl = document.getElementById("allShlokasTitle");
+  quizControlsEl = document.getElementById("quizControls");
+  regularControlsEl = document.getElementById("regularControls");
+  savePlaylistBtnEl = document.getElementById("savePlaylistBtn");
+
+  generateTracks();
+  generateGroups();
+
+  if (localStorageEnabled) {
+    restoreLastSelection();
+    renderRecentSelections();
+    renderPersonalPlaylists();
+  } else {
+    showToast("Local storage is disabled");
+  }
+
+  // Search input
+  document.getElementById("search").addEventListener("input", e => {
+    const term = e.target.value.trim().toLowerCase();
+    let found = false;
+    document.querySelectorAll("#trackList li").forEach(li => {
+      const val = li.querySelector('.trackBox').value;
+      if (!term || val.startsWith(term)) {
+        li.classList.remove("hidden");
+        found = true;
+      } else {
+        li.classList.add("hidden");
+      }
+    });
+    document.getElementById("search-feedback").classList.toggle("hidden", found);
+    document.getElementById("clearSearch").classList.toggle("hidden", term === "");
+  });
+  document.getElementById("clearSearch").addEventListener("click", () => {
+    document.getElementById("search").value = "";
+    document.getElementById("search").dispatchEvent(new Event('input'));
+  });
+
+  // Checkbox changes
+  document.querySelectorAll(".trackBox").forEach(cb => {
+    cb.addEventListener("change", () => {
+      cb.closest("label").classList.toggle("selected", cb.checked);
+      updateGroupButtonSelection();
+    });
+  });
+
+  // Recent selection change
+  document.getElementById("recentList").addEventListener("change", e => {
+    if (e.target.classList.contains("recent-box")) {
+      // Clear all
+      document.querySelectorAll(".track-item.selected, .recent-item.selected").forEach(el => el.classList.remove("selected"));
+      document.querySelectorAll(".trackBox, .recent-box").forEach(c => { c.checked = false; c.closest("label").classList.remove("selected"); });
+      // Apply selection
+      const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
+      const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim()))));
+      document.querySelectorAll(".trackBox").forEach(cb => {
+        const tnum = parseInt(cb.value);
+        if (allNumbers.has(tnum)) {
+          cb.checked = true;
+          cb.closest("label").classList.add("selected");
+        }
+      });
+      selectedRecents.forEach(cb => cb.closest("label").classList.add("selected"));
+      updateGroupButtonSelection();
+    }
+  });
+
+  // Playlist selection change
+  document.getElementById("playlistList").addEventListener("change", e => {
+    if (e.target.classList.contains("playlist-box")) {
+      // Clear previous
+      document.querySelectorAll(".track-item.selected, .recent-item.selected").forEach(el => el.classList.remove("selected"));
+      document.querySelectorAll(".trackBox, .recent-box").forEach(c => { c.checked = false; c.closest("label").classList.remove("selected"); });
+      // Apply selection
+      const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"));
+      const allNumbers = new Set(selectedPlaylists.flatMap(cb => JSON.parse(cb.dataset.selection)));
+      document.querySelectorAll(".trackBox").forEach(cb => {
+        const tnum = parseInt(cb.value);
+        if (allNumbers.has(tnum)) {
+          cb.checked = true;
+          cb.closest("label").classList.add("selected");
+        }
+      });
+      selectedPlaylists.forEach(cb => cb.closest("label").classList.add("selected"));
+      updateGroupButtonSelection();
+    }
+  });
+
+  // Audio events
+  audioPlayer.addEventListener("error", () => {
+    showToast("Error loading audio");
+  });
+  audioPlayer.addEventListener("playing", () => {
+    if (isQuizMode && !hasQuizPaused) {
+      document.getElementById('playFullBtn').classList.add('hidden');
+      setTimeout(() => {
+        audioPlayer.pause();
+        hasQuizPaused = true;
+        document.getElementById('quizStatus').textContent = "Audio Paused. Your turn to recite!";
+        document.getElementById('playFullBtn').classList.remove('hidden');
+
+        let countdown = currentQuizTime;
+        document.getElementById('countdown').textContent = `(${countdown}s)`;
+        document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+
+        if (countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+          countdown--;
+          document.getElementById('countdown').textContent = `(${countdown}s)`;
+          document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+          if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            document.getElementById('countdown').textContent = '';
+            document.getElementById('quizStatus').textContent = '';
+            if (autoPlay) {
+              playNextQuizTrack();
+            }
+          }
+        }, 1000);
+      }, currentQuizDelay * 1000);
+    }
+  });
+  // End of DOMContentLoaded
+});
+
+// Mode toggle
+function toggleMode() {
+  isQuizMode = !isQuizMode;
+  if (quizControlsEl && regularControlsEl) {
+    quizControlsEl.classList.toggle('hidden', !isQuizMode);
+    quizControlsEl.classList.toggle('fade-in', isQuizMode);
+    quizControlsEl.classList.toggle('fade-out', !isQuizMode);
+    regularControlsEl.classList.toggle('hidden', isQuizMode);
+    regularControlsEl.classList.toggle('fade-out', isQuizMode);
+    regularControlsEl.classList.toggle('fade-in', !isQuizMode);
+  }
+  const modeBtn = document.querySelector('button[onclick="toggleMode()"]');
+  if (modeBtn) {
+    modeBtn.innerHTML = `<i class="fa-solid fa-toggle-${isQuizMode ? 'on' : 'off'}"></i> ${isQuizMode ? 'Exit Quiz Mode' : 'Toggle to Quiz Mode'}`;
+  }
+  if (isQuizMode) {
+    try { audioPlayer.pause(); } catch(e) {}
+    try { audioPlayer.src = ''; } catch(e) {}
+    playlist = [];
+    currentIndex = 0;
+    document.getElementById('playFullBtn').classList.add('hidden');
+    if (document.getElementById('countdownBar')) document.getElementById('countdownBar').style.width = '100%';
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  } else {
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    if (autoPlayTimeout) { clearTimeout(autoPlayTimeout); autoPlayTimeout = null; }
+    document.getElementById('quizStatus').textContent = '';
+    document.getElementById('countdown').textContent = '';
+    document.getElementById('playFullBtn').classList.add('hidden');
+  }
+  updateGroupButtonSelection();
+}
+
+// Toggle Auto-Play
+function toggleAutoPlay() {
+  autoPlay = !autoPlay;
+  const btn = document.getElementById("autoPlayToggle");
+  btn.innerHTML = `<i class="fa-solid fa-toggle-${autoPlay ? 'on' : 'off'}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
+  btn.classList.toggle('btn-secondary', !autoPlay);
+  btn.classList.toggle('btn-green', autoPlay);
+}
+
+// Play full shloka
+function playFullShloka() {
+  if (playlist.length === 0) {
+    showToast("No playlist");
+    return;
+  }
+  // Play last played or first
+  const indexToPlay = (currentIndex > 0 && currentIndex <= playlist.length) ? currentIndex - 1 : 0;
+  const trackNum = playlist[indexToPlay];
+  if (trackNum == null || isNaN(trackNum)) {
+    showToast("Invalid track");
+    return;
+  }
+  const url = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+  audioPlayer.src = url;
+  audioPlayer.playbackRate = currentSpeed;
+  audioPlayer.play().catch(err => {
+    console.error("Play error:", err);
+    showToast("Failed to play");
+  });
+  document.getElementById('playFullBtn').classList.add('hidden');
+}
+
+// Change quiz time
+function changeQuizTime(t) {
+  currentQuizTime = t;
+  document.getElementById("quizTimeDisplay").textContent = `${t}s`;
+}
+
+// Change quiz delay
+function changeQuizDelay(d) {
+  currentQuizDelay = d;
+  document.getElementById("quizDelayDisplay").textContent = `${d}s`;
+}
+
+// Toggle group display
+function toggleGroupDisplay() {
+  const groupsDiv = document.getElementById("groups");
+  const hidden = groupsDiv.classList.toggle("hidden");
+  const icon = document.getElementById("group-toggle-icon");
+  icon.classList.toggle("fa-chevron-down", hidden);
+  icon.classList.toggle("fa-chevron-up", !hidden);
+}
+
+// Clear selections
+function clearSelection() {
+  document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => { cb.checked = false; });
+  document.querySelectorAll(".group-btn.selected").forEach(btn => btn.classList.remove("selected"));
+  playlist = [];
+  currentIndex = 0;
+  updateGroupButtonSelection();
+  showToast("Selection cleared");
+}
+
+function confirmClearSelection() {
+  showModal("Are you sure you want to clear your current selection?", () => {
+    clearSelection();
+  });
+}
+
+function confirmClearHistory() {
+  showModal("Are you sure you want to clear your recently played history?", () => {
+    clearHistory();
+    showToast("History cleared");
+  });
+}
+function confirmDeletePlaylist(name) {
+  showModal(`Are you sure you want to delete "${name}"?`, () => {
+    deletePlaylist(name);
+  });
+}
+
+// Select range
+function selectRange() {
+  const start = parseInt(document.getElementById("rangeStart").value);
+  const end = parseInt(document.getElementById("rangeEnd").value);
+  if (isNaN(start) || isNaN(end) || start < 1 || end > totalTracks || start > end) {
+    showModal("Invalid range");
+    return;
+  }
+  document.querySelectorAll(".trackBox").forEach(cb => {
+    const val = parseInt(cb.value);
+    const checked = val >= start && val <= end;
+    cb.checked = checked;
+    cb.closest("label").classList.toggle("selected", checked);
+  });
+  updateGroupButtonSelection();
+  showToast(`Shlok ${start}-${end} selected`);
+}
+
+// Toggle group selection
+function toggleGroup(start, end, element) {
+  const isSelected = !element.classList.contains('selected');
+  element.classList.toggle('selected', isSelected);
+  element.setAttribute('aria-pressed', isSelected);
+  for (let i = start; i <= end; i++) {
+    const cb = document.querySelector(`.trackBox[value="${i}"]`);
+    if (cb) {
+      cb.checked = isSelected;
+      cb.closest("label").classList.toggle("selected", isSelected);
+    }
+  }
+  updateGroupButtonSelection();
+}
+
+// Change speed
+function changeSpeed(speed) {
+  currentSpeed = speed;
+  audioPlayer.playbackRate = currentSpeed;
+  document.getElementById("speedDisplay").textContent = speed.toFixed(1);
+}
+
+// Play selected
+function playSelected() {
+  const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked")).map(cb => JSON.parse(cb.dataset.selection));
+  const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
+  let finalSelection = [];
+
+  if (selectedPlaylists.length > 0) {
+    const setShlokas = new Set(selectedPlaylists.flatMap(p => p));
+    finalSelection = Array.from(setShlokas);
+  } else {
+    finalSelection = selectedTracks;
+  }
+
+  if (finalSelection.length === 0) {
+    showModal("Select at least one shlok");
+    return;
+  }
+
+  repeatEach = parseInt(document.getElementById("repeatCount").value) || 1;
+  playlist = [...finalSelection];
+  if (document.getElementById("shuffle").checked) {
+    playlist.sort(() => Math.random() - 0.5);
+  }
+  currentIndex = 0;
+  repeatCounter = 0;
+  if (localStorageEnabled) saveSelection(finalSelection);
+  playCurrent();
+  showToast("Playing");
+}
+
+// Play next in quiz mode
+function playNextQuizTrack() {
+  let selected = [];
+  const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked")).map(cb => JSON.parse(cb.dataset.selection));
+  const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked")).map(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim())));
+
+  if (selectedPlaylists.length > 0) {
+    const setShlokas = new Set(selectedPlaylists.flatMap(p => p));
+    selected = Array.from(setShlokas);
+  } else if (selectedRecents.length > 0) {
+    const setNums = new Set(selectedRecents.flat());
+    selected = Array.from(setNums);
+  } else {
+    selected = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
+  }
+
+  if (selected.length === 0) {
+    showModal("Select a group of shlokas or playlist");
+    return;
+  }
+
+  if (playlist.length === 0 || currentIndex >= playlist.length) {
+    playlist = [...selected].sort(() => Math.random() - 0.5);
+    currentIndex = 0;
+  }
+
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  if (autoPlayTimeout) { clearTimeout(autoPlayTimeout); autoPlayTimeout = null; }
+
+  document.getElementById('quizStatus').textContent = '';
+  document.getElementById('playFullBtn').classList.add('hidden');
+
+  const trackNum = playlist[currentIndex];
+  if (trackNum == null || isNaN(trackNum)) {
+    showToast("Invalid track");
+    return;
+  }
+
+  document.getElementById('currentShlokQuiz').textContent = `Now playing: Shlok ${trackNum}`;
+  audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+  audioPlayer.playbackRate = currentSpeed;
+  audioPlayer.play().catch(err => {
+    console.error("Play error:", err);
+    showToast("Failed to play");
+  });
+  currentIndex++;
+}
+
+// Save playlist
+function showSavePlaylistModal() {
+  if (!localStorageEnabled) {
+    showModal("Local storage not available");
+    return;
+  }
+  const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value));
+  if (selectedTracks.length === 0) {
+    showModal("Select at least one shlok");
+    return;
+  }
+  const container = document.getElementById('modal-container');
+  container.innerHTML = '';
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+      <h3 class="text-xl font-bold mb-4">Save Playlist</h3>
+      <p class="mb-2">Enter a name:</p>
+      <input type="text" id="playlistNameInput" class="w-full mb-4" placeholder="My playlist"/>
+      <div id="playlistNameFeedback" class="text-red-400 font-semibold hidden mb-4"></div>
+      <div class="flex gap-4 justify-end">
+        <button class="px-4 py-3 btn-secondary text-white btn-rounded" onclick="this.closest('.modal').remove()">Cancel</button>
+        <button class="px-4 py-3 btn-green text-white btn-rounded" id="savePlaylistConfirm">Save</button>
+      </div>
+    </div>`;
+  container.appendChild(modal);
+  const inputEl = document.getElementById('playlistNameInput');
+  const feedbackEl = document.getElementById('playlistNameFeedback');
+  document.getElementById('savePlaylistConfirm').addEventListener('click', () => {
+    const name = inputEl.value.trim();
+    if (!name) {
+      feedbackEl.textContent = "Name cannot be empty";
+      feedbackEl.classList.remove('hidden');
+      return;
+    }
+    let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+    if (playlists[name]) {
+      feedbackEl.textContent = "Name exists";
+      feedbackEl.classList.remove('hidden');
+      return;
+    }
+    playlists[name] = selectedTracks;
+    localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
+    renderPersonalPlaylists();
+    showToast(`Playlist "${name}" saved`);
+    modal.remove();
+  });
+  inputEl.focus();
+}
+
+// Render personal playlists
+function renderPersonalPlaylists() {
+  if (!localStorageEnabled) return;
+  const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+  const ul = document.getElementById("playlistList");
+  ul.innerHTML = "";
+  const names = Object.keys(playlists);
+  if (names.length === 0) {
+    document.getElementById("playlist-empty").classList.remove("hidden");
+  } else {
+    document.getElementById("playlist-empty").classList.add("hidden");
+  }
+  names.forEach(name => {
+    const shlokas = playlists[name];
+    ul.innerHTML += `
+      <li>
+        <label class="playlist-item block p-3 container-card cursor-pointer flex items-center justify-between">
+          <div class="flex items-center">
+            <input type="checkbox" class="playlist-box" data-selection='${JSON.stringify(shlokas)}'/>
+            <span class="ml-6 font-semibold">${name}</span>
+          </div>
+          <div class="flex items-center space-x-2 text-sm text-gray-400">
+            <span>(${shlokas.length} shlokas)</span>
+            <button onclick="loadPlaylist('${name.replace(/'/g, "\\'")}')" class="text-xs px-2 py-1 btn-secondary rounded-full">Load</button>
+            <button onclick="confirmDeletePlaylist('${name.replace(/'/g, "\\'")}')" class="text-xs px-2 py-1 btn-red rounded-full">Delete</button>
+          </div>
+        </label>
+      </li>`;
+  });
+}
+
+function loadPlaylist(name) {
+  if (!localStorageEnabled) return;
+  const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+  const shlokas = playlists[name];
+  if (shlokas) {
+    clearSelection();
+    shlokas.forEach(trackNum => {
+      const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+        checkbox.closest("label").classList.add("selected");
+      }
+    });
+    updateGroupButtonSelection();
+    showToast(`Playlist "${name}" loaded`);
+  }
+}
+
+function deletePlaylist(name) {
+  if (!localStorageEnabled) return;
+  let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+  delete playlists[name];
+  localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
+  renderPersonalPlaylists();
+}
+
 </script>
 </body>
 </html>
