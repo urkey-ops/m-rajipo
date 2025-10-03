@@ -48,7 +48,7 @@ export function playCurrent() {
       DOM.audioPlayer.src = '';
       showToast('Playlist finished.');
       if (AppState.isQuizMode) {
-        setQuizMode(false); // Exit quiz mode
+        setQuizMode(false); 
       }
       return;
     }
@@ -56,12 +56,11 @@ export function playCurrent() {
 
   // 2. Play the current track
   const shlokaNum = AppState.playlist[AppState.currentIndex];
-  // CRITICAL FIX: Use the zero-padding helper
+  // CRITICAL FIX: Use the zero-padding helper for correct file path
   const formattedShlokaNum = formatShlokaNum(shlokaNum); 
   const src = `${CONFIG.audioBaseUrl}${formattedShlokaNum}.mp3`;
 
   DOM.audioPlayer.src = src;
-  // Use optional chaining for playbackRate to prevent errors if property is missing
   DOM.audioPlayer.playbackRate = AppState.currentSpeed;
   DOM.audioPlayer.play().catch(e => {
     console.error('Playback failed (possible autoplay block):', e);
@@ -85,7 +84,8 @@ function handleTrackEnded() {
   } 
   
   // 2. Handle repeat N times logic
-  if (DOM.repeatEach && DOM.repeatEach.checked) {
+  // CRITICAL FIX: Use repeatEachCheckbox for the check (updated to repeatEach in app.js cache)
+  if (DOM.repeatEach && DOM.repeatEach.checked) { 
     incrementRepeatCounter();
     if (AppState.repeatCounter < AppState.repeatEach) {
       DOM.audioPlayer.currentTime = 0;
@@ -144,7 +144,6 @@ function toggleSpeed() {
 
 /**
  * Sets up all listeners specific to the <audio> element and player controls.
- * CRITICAL FIX: Added checks to prevent 'addEventListener' on undefined elements.
  */
 export function setupPlayerEventListeners() {
   if (!DOM.audioPlayer) {
@@ -155,6 +154,7 @@ export function setupPlayerEventListeners() {
   // Audio Player Listeners
   DOM.audioPlayer.addEventListener('ended', handleTrackEnded);
   
+  // Use null checks on UI elements to prevent TypeErrors in case of partial HTML
   DOM.audioPlayer.addEventListener('play', () => {
     if (DOM.playIcon) toggleClass(DOM.playIcon, 'fa-play', false);
     if (DOM.playIcon) toggleClass(DOM.playIcon, 'fa-pause', true);
