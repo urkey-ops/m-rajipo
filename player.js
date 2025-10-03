@@ -19,10 +19,10 @@ export function playCurrent() {
 
   // 1. Check for playlist end
   if (AppState.currentIndex >= AppState.playlist.length) {
-    // *** STABILITY FIX: Add null check for DOM.repeatPlaylist ***
+    // STABILITY CHECK: Ensure repeatPlaylist element is cached before accessing .checked
     if (DOM.repeatPlaylist && DOM.repeatPlaylist.checked) { 
       setCurrentIndex(0);
-      playCurrent(); // Recurse to play the first track
+      playCurrent(); 
       return;
     } else {
       // Playlist finished
@@ -30,7 +30,7 @@ export function playCurrent() {
       DOM.audioPlayer.src = '';
       showToast('Playlist finished.');
       if (AppState.isQuizMode) {
-        setQuizMode(false);
+        setQuizMode(false); // Exit quiz mode
       }
       return;
     }
@@ -55,7 +55,7 @@ export function playCurrent() {
  */
 function handleTrackEnded() {
   // 1. Handle repeat single track logic
-  // *** STABILITY FIX: Add null check for DOM.repeatTrack ***
+  // STABILITY CHECK: Ensure repeatTrack element is cached
   if (DOM.repeatTrack && DOM.repeatTrack.checked) {
     DOM.audioPlayer.currentTime = 0;
     DOM.audioPlayer.play();
@@ -63,7 +63,7 @@ function handleTrackEnded() {
   } 
   
   // 2. Handle repeat N times logic
-  // *** STABILITY FIX: Add null check for DOM.repeatEach ***
+  // STABILITY CHECK: Ensure repeatEach element is cached
   if (DOM.repeatEach && DOM.repeatEach.checked) {
     incrementRepeatCounter();
     if (AppState.repeatCounter < AppState.repeatEach) {
@@ -78,11 +78,9 @@ function handleTrackEnded() {
 
   // 4. Handle Quiz Mode vs. Standard Playback
   if (AppState.isQuizMode) {
-    // Logic for quiz mode
     DOM.audioPlayer.pause();
     stopAllTimers(); 
-    showToast('Time for the next question!'); // Placeholder
-    // NOTE: Real quiz mode would start a timer here to auto-play next track.
+    showToast('Time for the next question!');
   } else {
     // Standard auto-advance
     playCurrent();
@@ -122,10 +120,8 @@ function toggleSpeed() {
  * Sets up all listeners specific to the <audio> element and player controls.
  */
 export function setupPlayerEventListeners() {
-  // Event: When current track finishes
   DOM.audioPlayer.addEventListener('ended', handleTrackEnded);
   
-  // Event: Update the play/pause button icon
   DOM.audioPlayer.addEventListener('play', () => {
     toggleClass(DOM.playIcon, 'fa-play', false);
     toggleClass(DOM.playIcon, 'fa-pause', true);
@@ -138,7 +134,6 @@ export function setupPlayerEventListeners() {
     DOM.playSelectedBtn.setAttribute('title', 'Play Selected');
   });
 
-  // Event: Error handling
   DOM.audioPlayer.addEventListener('error', (e) => {
     console.error("Audio playback error:", DOM.audioPlayer.error, e);
     showToast(`Error playing shloka ${AppState.playlist[AppState.currentIndex]}. Skipping to next.`);
@@ -147,6 +142,5 @@ export function setupPlayerEventListeners() {
     playCurrent();
   });
 
-  // Event: Speed button click
   DOM.speedBtn.addEventListener('click', toggleSpeed);
 }
