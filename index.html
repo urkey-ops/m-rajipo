@@ -1,153 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Rajipo - Refactored</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/20GQR+q1U/G1bYfQYy9kH9hT7p0uE/I8T2OQ+YQ+c2wJpC8XvPqjG6Jg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mission Rajipo - Refactored</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+<!-- Your custom styles -->
+<link rel="stylesheet" href="style.css" />
 </head>
 <body class="flex flex-col">
 
-    <main class="max-w-xl mx-auto p-4 flex flex-col flex-1 w-full">
-        <header class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-white">Mission Rajipo 🎵</h1>
-        </header>
-        
-        <section id="mainControls" class="space-y-3 mb-6 container-card" aria-labelledby="controls-heading">
-            <h2 id="controls-heading" class="sr-only">Main Controls</h2>
-            <div id="search-container" class="relative">
-                <label for="search" class="sr-only">Search shlok number</label>
-                <input id="search" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Search shlok number..." class="w-full pr-10">
-                <i id="clearSearch" class="fa-solid fa-xmark absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hidden"></i>
-            </div>
-            <div id="search-feedback" class="text-center text-red-400 font-semibold hidden" aria-live="polite">No matching shlokas found.</div>
-            <div class="flex gap-2">
-                <label for="rangeStart" class="sr-only">Range Start</label>
-                <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2">
-                <label for="rangeEnd" class="sr-only">Range End</label>
-                <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2">
-                <button id="selectRangeBtn" class="px-4 py-3 bg-gray-500 text-white rounded-lg flex items-center gap-1 btn-secondary">
-                    <i class="fa-solid fa-list-ol"></i> Range
-                </button>
-            </div>
-        </section>
+<main class="max-w-xl mx-auto p-4 flex flex-col flex-1 w-full">
+  <header class="text-center mb-6">
+    <h1 class="text-3xl font-bold text-white">Mission Rajipo 🎵</h1>
+  </header>
 
-        <section id="groups-container" class="mb-6 container-card" aria-labelledby="groups-heading">
-            <h2 id="groups-heading" class="sr-only">Shlok Groups</h2>
-            <button id="toggleGroupsBtn" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2 mb-3">
-                <i id="group-toggle-icon" class="fa-solid fa-chevron-down"></i> Groups
-            </button>
-            <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
-        </section>
-        
-        <section class="mb-6 container-card space-y-4" aria-labelledby="mode-heading">
-            <h2 id="mode-heading" class="sr-only">Playback and Quiz Mode Controls</h2>
-            <button id="toggleModeBtn" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
-                <i class="fa-solid fa-toggle-off"></i> Toggle to Quiz Mode
-            </button>
-        
-            <div id="dynamicControlsWrapper" class="relative min-h-[250px]">
-                <div id="quizControls" class="space-y-4 absolute w-full top-0 left-0 fade-out hidden">
-                    <h3 class="text-xl font-bold text-center">Quiz Mode 🧠</h3>
-                    <p id="currentShlokQuiz" class="text-lg font-semibold text-center text-gray-400">Shlok 0</p>
-                    <div class="countdown-bar-container"><div id="countdownBar" class="countdown-bar h-full"></div></div>
-                    <div class="min-h-[24px] flex justify-between items-center space-x-2">
-                        <p id="quizStatus" class="font-semibold text-green-400" aria-live="polite"></p>
-                        <span id="countdown" class="font-semibold text-white"></span>
-                    </div>
-                    <div class="flex items-center space-x-4 w-full">
-                        <label for="quizTimeSlider" class="text-sm text-gray-400 w-16">Pause:</label>
-                        <input type="range" id="quizTimeSlider" min="5" max="60" step="5" value="20" class="flex-1">
-                        <span id="quizTimeDisplay" class="font-semibold w-10 text-white">20s</span>
-                    </div>
-                    <div class="flex items-center space-x-4 w-full">
-                        <label for="quizDelaySlider" class="text-sm text-gray-400 w-16">Play Delay:</label>
-                        <input type="range" id="quizDelaySlider" min="1" max="10" step="1" value="3" class="flex-1">
-                        <span id="quizDelayDisplay" class="font-semibold w-10 text-white">3s</span>
-                    </div>
-                    <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                        <button id="autoPlayToggleBtn" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2">
-                            <i class="fa-solid fa-toggle-off"></i>Auto-Play: OFF
-                        </button>
-                        <button id="playFullBtn" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2 hidden">
-                            <i class="fa-solid fa-redo"></i> Play Full Shloka
-                        </button>
-                    </div>
-                    <button id="playNextQuizBtn" class="w-full py-3 btn-primary text-white btn-rounded">
-                        <i class="fa-solid fa-forward"></i> Play Next
-                    </button>
-                </div>
-                
-                <div id="regularControls" class="space-y-4 absolute w-full top-0 left-0 fade-in">
-                    <div class="flex flex-wrap justify-between items-center gap-4 text-sm text-gray-400">
-                        <label class="flex-1 flex items-center gap-2">
-                            <span class="text-gray-400">Repeat:</span>
-                            <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 text-center bg-transparent border-b-2 border-gray-600">
-                        </label>
-                        <label class="flex items-center gap-2">
-                            <input type="checkbox" id="shuffle" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600">
-                            Shuffle
-                        </label>
-                        <label class="flex items-center gap-2">
-                            <input type="checkbox" id="repeatPlaylist" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600">
-                            Repeat
-                        </label>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <label for="speedSlider" class="text-sm text-gray-400 w-12">Speed:</label>
-                        <input type="range" id="speedSlider" min="0.5" max="1.5" step="0.1" value="1.0" class="flex-1">
-                        <span id="speedDisplay" class="font-semibold w-8 text-white">1.0</span>x
-                    </div>
-                    <div class="flex flex-col gap-2 sm:flex-row">
-                        <button id="playSelectedBtn" class="flex-1 py-3 btn-primary text-white btn-rounded">
-                            <i class="fa-solid fa-play"></i> Play
-                        </button>
-                        <button id="clearSelectionBtn" class="flex-1 py-3 btn-red text-white btn-rounded">
-                            <i class="fa-solid fa-eraser"></i> Clear
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <section id="personalPlaylists" class="container-card" aria-labelledby="playlists-heading">
-            <h2 id="playlists-heading" class="text-lg font-bold mb-3 text-white">My Personal Playlists 💾</h2>
-            <p id="playlist-empty" class="text-gray-400 text-center mb-3 hidden">No saved playlists yet.</p>
-            <ul id="playlistList" class="space-y-3 mb-4"></ul>
-            <div id="savePlaylistContainer" class="hidden">
-                <button id="showSaveModalBtn" class="w-full py-3 btn-rounded btn-green text-white flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-plus-circle"></i> Save as Playlist
-                </button>
-            </div>
-        </section>
+  <!-- Main Controls Section -->
+  <section id="mainControls" class="space-y-3 mb-6 container-card" aria-labelledby="controls-heading">
+    <h2 id="controls-heading" class="sr-only">Main Controls</h2>
+    <!-- Search -->
+    <div id="search-container" class="relative">
+      <label for="search" class="sr-only">Search shlok number</label>
+      <input id="search" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Search shlok number..." class="w-full pr-10" />
+      <i id="clearSearch" class="fa-solid fa-xmark absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hidden"></i>
+    </div>
+    <div id="search-feedback" class="text-center text-red-400 font-semibold hidden" aria-live="polite">No matching shlokas found.</div>
+    <!-- Range selection -->
+    <div class="flex gap-2">
+      <label for="rangeStart" class="sr-only">Range Start</label>
+      <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2" />
+      <label for="rangeEnd" class="sr-only">Range End</label>
+      <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2" />
+      <button id="selectRangeBtn" class="px-4 py-3 bg-gray-500 text-white rounded-lg flex items-center gap-1 btn-secondary">
+        <i class="fa-solid fa-list-ol"></i> Range
+      </button>
+    </div>
+  </section>
 
-        <section id="recentlyPlayed" class="mt-6 hidden container-card" aria-labelledby="recents-heading">
-            <h2 id="recents-heading" class="text-lg font-bold mb-3 text-white">Recently Played</h2>
-            <ul id="recentList" class="space-y-3"></ul>
-            <p id="recent-empty" class="text-gray-400 text-center hidden">Your recently played selections will appear here.</p>
-            <button id="clearHistoryBtn" class="mt-4 w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
-                <i class="fa-solid fa-trash-can"></i> Clear History
-            </button>
-        </section>
+  <!-- Group Buttons -->
+  <section id="groups-container" class="mb-6 container-card" aria-labelledby="groups-heading">
+    <h2 id="groups-heading" class="sr-only">Shlok Groups</h2>
+    <button id="toggleGroupsBtn" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2 mb-3">
+      <i id="group-toggle-icon" class="fa-solid fa-chevron-down"></i> Groups
+    </button>
+    <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
+  </section>
 
-        <section class="mt-6" aria-labelledby="all-shlokas-heading">
-            <h2 id="all-shlokas-heading" class="text-lg font-bold mb-3 text-white">All Shlokas</h2>
-            <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></ul>
-        </section>
-    </main>
+  <!-- Playback and Quiz Mode Controls -->
+  <section class="mb-6 container-card space-y-4" aria-labelledby="mode-heading">
+    <h2 id="mode-heading" class="sr-only">Playback and Quiz Mode Controls</h2>
+    <button id="toggleModeBtn" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
+      <i class="fa-solid fa-toggle-off"></i> Toggle to Quiz Mode
+    </button>
 
-    <footer class="fixed bottom-0 left-0 right-0 shadow p-3 z-10 bg-[#1e1e1e]">
-        <audio id="audioPlayer" controls class="w-full"></audio>
-    </footer>
+    <!-- Dynamic Controls Wrapper -->
+    <div id="dynamicControlsWrapper" class="relative min-h-[250px]">
+      <!-- Quiz Controls -->
+      <div id="quizControls" class="space-y-4 absolute w-full top-0 left-0 fade-out hidden" aria-hidden="true">
+        <h3 class="text-xl font-bold text-center">Quiz Mode 🧠</h3>
+        <p id="currentShlokQuiz" class="text-lg font-semibold text-center text-gray-400">Shlok 0</p>
+        <div class="countdown-bar-container"><div id="countdownBar" class="countdown-bar h-full"></div></div>
+        <div class="min-h-[24px] flex justify-between items-center space-x-2">
+          <p id="quizStatus" class="font-semibold text-green-400" aria-live="polite"></p>
+          <span id="countdown" class="font-semibold text-white"></span>
+        </div>
+        <div class="flex items-center space-x-4 w-full">
+          <label for="quizTimeSlider" class="text-sm text-gray-400 w-16">Pause:</label>
+          <input type="range" id="quizTimeSlider" min="5" max="60" step="5" value="20" class="flex-1" />
+          <span id="quizTimeDisplay" class="font-semibold w-10 text-white">20s</span>
+        </div>
+        <div class="flex items-center space-x-4 w-full">
+          <label for="quizDelaySlider" class="text-sm text-gray-400 w-16">Play Delay:</label>
+          <input type="range" id="quizDelaySlider" min="1" max="10" step="1" value="3" class="flex-1" />
+          <span id="quizDelayDisplay" class="font-semibold w-10 text-white">3s</span>
+        </div>
+        <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+          <button id="autoPlayToggleBtn" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2">
+            <i class="fa-solid fa-toggle-off"></i>Auto-Play: OFF
+          </button>
+          <button id="playFullBtn" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2 hidden">
+            <i class="fa-solid fa-redo"></i> Play Full Shloka
+          </button>
+        </div>
+        <button id="playNextQuizBtn" class="w-full py-3 btn-primary text-white btn-rounded">
+          <i class="fa-solid fa-forward"></i> Play Next
+        </button>
+      </div>
 
-    <div id="toast-container" class="toast-container"></div>
-    <div id="modal-container"></div>
+      <!-- Regular Controls -->
+      <div id="regularControls" class="space-y-4 absolute w-full top-0 left-0 fade-in">
+        <div class="flex flex-wrap justify-between items-center gap-4 text-sm text-gray-400">
+          <label class="flex-1 flex items-center gap-2">
+            <span class="text-gray-400">Repeat:</span>
+            <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 text-center bg-transparent border-b-2 border-gray-600" />
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="shuffle" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600" />
+            Shuffle
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="repeatPlaylist" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600" />
+            Repeat
+          </label>
+        </div>
+        <div class="flex items-center space-x-4">
+          <label for="speedSlider" class="text-sm text-gray-400 w-12">Speed:</label>
+          <input type="range" id="speedSlider" min="0.5" max="1.5" step="0.1" value="1.0" class="flex-1" />
+          <span id="speedDisplay" class="font-semibold w-8 text-white">1.0</span>x
+        </div>
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <button id="playSelectedBtn" class="flex-1 py-3 btn-primary text-white btn-rounded">
+            <i class="fa-solid fa-play"></i> Play
+          </button>
+          <button id="clearSelectionBtn" class="flex-1 py-3 btn-red text-white btn-rounded">
+            <i class="fa-solid fa-eraser"></i> Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <script src="script.js"></script>
+  <!-- Personal Playlists -->
+  <section id="personalPlaylists" class="container-card" aria-labelledby="playlists-heading">
+    <h2 id="playlists-heading" class="text-lg font-bold mb-3 text-white">My Personal Playlists 💾</h2>
+    <p id="playlist-empty" class="text-gray-400 text-center mb-3 hidden">No saved playlists yet.</p>
+    <ul id="playlistList" class="space-y-3 mb-4"></ul>
+    <div id="savePlaylistContainer" class="hidden">
+      <button id="showSaveModalBtn" class="w-full py-3 btn-rounded btn-green text-white flex items-center justify-center gap-2">
+        <i class="fa-solid fa-plus-circle"></i> Save as Playlist
+      </button>
+    </div>
+  </section>
+
+  <!-- Recently Played -->
+  <section id="recentlyPlayed" class="mt-6 hidden container-card" aria-labelledby="recents-heading">
+    <h2 id="recents-heading" class="text-lg font-bold mb-3 text-white">Recently Played</h2>
+    <ul id="recentList" class="space-y-3"></ul>
+    <p id="recent-empty" class="text-gray-400 text-center hidden">Your recently played selections will appear here.</p>
+    <button id="clearHistoryBtn" class="mt-4 w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
+      <i class="fa-solid fa-trash-can"></i> Clear History
+    </button>
+  </section>
+
+  <!-- All Shlokas -->
+  <section class="mt-6" aria-labelledby="all-shlokas-heading">
+    <h2 id="all-shlokas-heading" class="text-lg font-bold mb-3 text-white">All Shlokas</h2>
+    <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></ul>
+  </section>
+</main>
+
+<!-- Fixed footer with audio player -->
+<footer class="fixed bottom-0 left-0 right-0 shadow p-3 z-10 bg-[#1e1e1e]">
+  <audio id="audioPlayer" controls class="w-full"></audio>
+</footer>
+
+<!-- Toast notifications container -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Modal container for dynamic modals -->
+<div id="modal-container"></div>
+
+<!-- Your script -->
+<script src="script.js"></script>
+
 </body>
 </html>
