@@ -1,7 +1,9 @@
-// state.js
+// state.js (Patched)
 
 /**
  * 1. CONFIG: Immutable Application Settings
+ * NOTE: Using Object.freeze for immutability and constants for magic numbers.
+ * @type {Readonly<object>}
  */
 export const CONFIG = Object.freeze({
   audioBaseUrl: 'https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_',
@@ -9,11 +11,14 @@ export const CONFIG = Object.freeze({
   maxRecentSelections: 5,
   toastDuration: 4000,
   quizAutoPlayDelay: 1500,
+  // New: Defined speeds for player.js
+  speeds: [1.0, 1.25, 1.5, 2.0], 
 });
 
 /**
  * 2. AppState: Mutable Runtime State
  * NOTE: This is the single source of truth for all application status.
+ * @type {object}
  */
 export const AppState = {
   playlist: [],
@@ -30,15 +35,19 @@ export const AppState = {
   currentQuizDelay: 3,
   localStorageEnabled: false,
   personalPlaylists: {},
+  // New: Added to prevent infinite error loops in player.js
+  errorCount: 0, 
+  maxErrorSkip: 3,
 };
 
-/**
- * 3. State Setter Functions (Encapsulated Mutation)
- * These are the ONLY ways other modules should change AppState.
- */
+// --- State Setter Functions (Encapsulated Mutation with Validation) ---
 
 export function setCurrentIndex(newIndex) {
   AppState.currentIndex = newIndex;
+  // Reset error count on successful index change
+  if (newIndex < AppState.playlist.length) {
+    AppState.errorCount = 0;
+  }
 }
 
 export function setPlaylist(newPlaylist) {
@@ -53,15 +62,29 @@ export function resetRepeatCounter() {
   AppState.repeatCounter = 0;
 }
 
+/**
+ * Sets repeat count with validation.
+ */
 export function setRepeatEach(count) {
-  AppState.repeatEach = count;
+  const num = parseInt(count, 10);
+  if (num > 0 && num <= 100) {
+    AppState.repeatEach = num;
+  } else {
+    console.warn(`Attempted to set invalid repeat count: ${count}`);
+  }
 }
 
+/**
+ * Sets playback speed with validation against CONFIG.speeds.
+ */
 export function setCurrentSpeed(speed) {
-  AppState.currentSpeed = speed;
+  if (CONFIG.speeds.includes(speed)) {
+    AppState.currentSpeed = speed;
+  } else {
+    console.warn(`Attempted to set invalid speed: ${speed}`);
+  }
 }
 
-// CRITICAL FIX: The setQuizMode function is key for the graceful toggle
 export function setQuizMode(mode) {
   AppState.isQuizMode = mode;
 }
@@ -74,25 +97,17 @@ export function setAutoPlay(mode) {
   AppState.autoPlay = mode;
 }
 
-export function setLocalStorageEnabled(enabled) {
-  AppState.localStorageEnabled = enabled;
-}
-
-export function setPersonalPlaylists(playlists) {
-  AppState.personalPlaylists = playlists;
-}
-
+// CRITICAL FIX: Use explicit null check to correctly clear ID 0.
 export function setAutoPlayTimeout(timeoutId) {
-  // Clear previous timeout to prevent unexpected side effects
-  if (AppState.autoPlayTimeout) {
+  if (AppState.autoPlayTimeout != null) {
     clearTimeout(AppState.autoPlayTimeout);
   }
   AppState.autoPlayTimeout = timeoutId;
 }
 
+// CRITICAL FIX: Use explicit null check to correctly clear ID 0.
 export function setCountdownInterval(intervalId) {
-  // Clear previous interval
-  if (AppState.countdownInterval) {
+  if (AppState.countdownInterval != null) {
     clearInterval(AppState.countdownInterval);
   }
   AppState.countdownInterval = intervalId;
@@ -102,4 +117,17 @@ export function setCountdownInterval(intervalId) {
 export function stopAllTimers() {
   setAutoPlayTimeout(null);
   setCountdownInterval(null);
+}
+
+export function setLocalStorageEnabled(enabled) {
+  AppState.localStorageEnabled = enabled;
+}
+
+export function setPersonalPlaylists(playlists) {
+  AppState.personalPlaylists = playlists;
+}
+
+// New helper for error tracking
+export function incrementErrorCount() {
+    AppState.errorCount += 1;
 }
