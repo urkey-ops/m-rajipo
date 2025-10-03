@@ -14,6 +14,8 @@
   <header class="text-center mb-6">
     <h1 class="text-3xl font-bold text-white">Mission Rajipo 🎵</h1>
   </header>
+  
+  <audio id="audio-player" class="sr-only"></audio> 
 
   <section id="mainControls" class="space-y-3 mb-6 container-card" aria-labelledby="controls-heading">
     <h2 id="controls-heading" class="sr-only">Main Controls</h2>
@@ -44,18 +46,18 @@
 
   <section class="mb-6 container-card space-y-4" aria-labelledby="mode-heading">
     <h2 id="mode-heading" class="sr-only">Playback and Quiz Mode Controls</h2>
-    <button id="toggle-mode-btn" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
+    <button id="quiz-toggle" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
       <i class="fa-solid fa-toggle-off"></i> Toggle to Quiz Mode
     </button>
 
     <div id="dynamicControlsWrapper" class="relative min-h-[250px]">
-      <div id="quiz-controls" class="space-y-4 absolute w-full top-0 left-0 fade-out hidden" aria-hidden="true"> 
+      <div id="quiz-display" class="space-y-4 absolute w-full top-0 left-0 fade-out hidden" aria-hidden="true"> 
         <h3 class="text-xl font-bold text-center">Quiz Mode 🧠</h3>
         <p id="current-shlok-quiz" class="text-lg font-semibold text-center text-gray-400">Shlok 0</p>
-        <div class="countdown-bar-container"><div id="countdown-bar" class="countdown-bar h-full"></div></div>
+        <div class="countdown-bar-container"><div id="quiz-progress-bar" class="countdown-bar h-full"></div></div>
         <div class="min-h-[24px] flex justify-between items-center space-x-2">
           <p id="quiz-status" class="font-semibold text-green-400" aria-live="polite"></p>
-          <span id="countdown" class="font-semibold text-white"></span>
+          <span id="quiz-progress-text" class="font-semibold text-white"></span>
         </div>
         <div class="flex items-center space-x-4 w-full">
           <label for="quiz-time-slider" class="text-sm text-gray-400 w-16">Pause:</label>
@@ -71,7 +73,7 @@
           <button id="autoplay-toggle-btn" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2">
             <i class="fa-solid fa-toggle-off"></i>Auto-Play: OFF
           </button>
-          <button id="play-full-btn" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2 hidden">
+          <button id="quiz-pause-btn" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2">
             <i class="fa-solid fa-redo"></i> Play Full Shloka
           </button>
         </div>
@@ -85,14 +87,14 @@
           <label class="flex-1 flex items-center gap-2">
             <span class="text-gray-400">Repeat Each (N):</span>
             <input id="repeat-each-input" type="number" min="1" value="1" class="w-16 p-1 text-center bg-transparent border-b-2 border-gray-600" />
-            <input type="checkbox" id="repeat-each-checkbox" class="h-0 w-0 absolute opacity-0" checked /> 
+            <input type="checkbox" id="repeatEachCheckbox" class="h-0 w-0 absolute opacity-0" checked /> 
           </label>
           <label class="flex items-center gap-2">
             <input type="checkbox" id="shuffle-checkbox" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600" /> 
             Shuffle
           </label>
           <label class="flex items-center gap-2">
-            <input type="checkbox" id="repeat-playlist-checkbox" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600" /> 
+            <input type="checkbox" id="repeatPlaylistCheckbox" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600" /> 
             Repeat Playlist
           </label>
         </div>
@@ -138,12 +140,11 @@
   </section>
 </main>
 
-<footer class="fixed bottom-0 left-0 right-0 shadow p-3 z-10 bg-[#1e1e1e]">
-  <audio id="audio-player" controls class="w-full"></audio>
+<footer class="fixed bottom-0 left-0 right-0 shadow p-3 z-10 bg-[#1e1e1e] text-center text-gray-500 text-xs">
+  Audio is managed by the custom player controls.
 </footer>
 
 <div id="toast-notification" class="toast-container"></div> 
-
 <div id="modal-container"></div>
 
 <script type="module" src="app.js"></script>
