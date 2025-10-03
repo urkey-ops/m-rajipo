@@ -16,15 +16,18 @@ import {
   toggleGroupSelection,
   renderGroupButtons, 
   generateTrackList,
-  updateQuizModeUI, // <-- NEW IMPORT for initial UI setup
+  updateQuizModeUI, // Imported for initial setup
 } from './selection.js'; 
 import { toggleClass } from './ui-helpers.js';
 
 
 // --- 1. DOM CACHE ---
-// Expose DOM object globally for use by other modules (e.g., player.js, ui-helpers.js)
 window.DOM = {};
 
+/**
+ * Caches all necessary DOM elements.
+ * FIX: All playback control IDs now correctly match 'index.html' camelCase.
+ */
 function cacheDOM() {
   // Main Player & Lists
   window.DOM.audioPlayer = document.getElementById('audio-player');
@@ -45,7 +48,7 @@ function cacheDOM() {
   window.DOM.playSelectedBtn = document.getElementById('play-selected-btn');
   window.DOM.playIcon = document.getElementById('play-icon');
   
-  // *** CRITICAL FIX: Update IDs to match 'index.html' camelCase ***
+  // *** CRITICAL FIX: Corrected IDs ***
   window.DOM.repeatTrack = document.getElementById('repeatTrackCheckbox');
   window.DOM.repeatPlaylist = document.getElementById('repeatPlaylistCheckbox');
   window.DOM.repeatEach = document.getElementById('repeatEachCheckbox');
@@ -59,14 +62,14 @@ function cacheDOM() {
   window.DOM.quizProgress = document.getElementById('quiz-progress-bar');
   window.DOM.quizProgressText = document.getElementById('quiz-progress-text');
   window.DOM.quizPauseBtn = document.getElementById('quiz-pause-btn');
-  // NOTE: Assuming your HTML has a main content area to toggle visibility for Quiz Mode
-  window.DOM.mainControls = document.getElementById('mainControls'); // Used for hiding in Quiz Mode
-
+  window.DOM.mainControls = document.getElementById('mainControls');
+  
   // Playlist Management
   window.DOM.savePlaylistBtn = document.getElementById('save-playlist-btn');
   window.DOM.playlistList = document.getElementById('playlist-list');
   window.DOM.recentSelectionsList = document.getElementById('recent-selections-list');
   window.DOM.clearHistoryBtn = document.getElementById('clear-history-btn');
+  window.DOM.recentEmpty = document.getElementById('recent-empty');
 }
 
 
@@ -84,7 +87,7 @@ function generateTrackListAndGroups() {
 // --- 3. EVENT LISTENERS ---
 
 function setupEventListeners() {
-  // Global listener for track/playlist/recent selection
+  // Global listener for selection changes
   document.addEventListener('change', (e) => {
     if (e.target.type === 'checkbox' && (e.target.classList.contains('trackBox') || e.target.classList.contains('playlist-box') || e.target.classList.contains('recent-box'))) {
       handleTrackSelection(e.target);
@@ -94,7 +97,7 @@ function setupEventListeners() {
   // Listener for play button
   window.DOM.playSelectedBtn?.addEventListener('click', playSelected);
   
-  // Listener for group selection buttons (delegation)
+  // Listener for group selection buttons
   window.DOM.groups?.addEventListener('click', (e) => {
     const target = e.target.closest('.group-btn');
     if (target && target.dataset.group) {
@@ -107,8 +110,6 @@ function setupEventListeners() {
   window.DOM.selectRangeBtn?.addEventListener('click', () => {
     const start = parseInt(window.DOM.rangeStart.value, 10);
     const end = parseInt(window.DOM.rangeEnd.value, 10);
-    
-    // NOTE: Hardcoded 315 limit assumes CONFIG.totalTracks is 315.
     const isValid = !isNaN(start) && !isNaN(end) && start > 0 && end <= 315 && start <= end;
 
     if (isValid) {
@@ -117,11 +118,8 @@ function setupEventListeners() {
       for (let i = start; i <= end; i++) {
         const checkbox = document.getElementById(`track-box-${i}`);
         if (checkbox) {
-          const shouldBeChecked = i >= start && i <= end;
-          if (checkbox.checked !== shouldBeChecked) {
-            checkbox.checked = shouldBeChecked;
-            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-          }
+          checkbox.checked = true;
+          checkbox.dispatchEvent(new Event('change', { bubbles: true }));
         }
       }
       window.DOM.rangeStart.value = '';
@@ -145,20 +143,18 @@ function setupEventListeners() {
       setRepeatEach(count);
     } else {
       alert('Repeat count must be between 1 and 100.');
-      e.target.value = AppState.repeatEach; // Revert to current state
+      e.target.value = AppState.repeatEach; 
     }
   });
   
-  // Search/Clear Search listeners
+  // Search/Clear Search listeners (Placeholder for full search logic)
   window.DOM.search?.addEventListener('input', () => {
-    // Search/filter logic would be called here: filterTracks(window.DOM.search.value)
     if (!window.DOM.search.value) {
       window.DOM.searchFeedback.textContent = '';
     }
   });
   window.DOM.clearSearch?.addEventListener('click', () => {
     window.DOM.search.value = '';
-    // Call search/filter logic here to reset the view: filterTracks('');
     window.DOM.searchFeedback.textContent = '';
   });
 }
@@ -174,10 +170,9 @@ function init() {
     return;
   }
   
-  // Initialize internal states and persistence
   initializeLocalStorage(); 
   
-  // *** FIX: Generate UI before restoration ***
+  // *** CRITICAL FIX: Generate UI (tracks/groups) so elements exist ***
   generateTrackListAndGroups(); 
 
   // *** CRITICAL FIX: Restore Last Selection ***
@@ -195,11 +190,11 @@ function init() {
       });
     } catch(e) {
       console.error("Failed to parse last selection from storage:", e);
-      localStorage.removeItem('lastSelection'); // Clear corrupt data
+      localStorage.removeItem('lastSelection'); 
     }
   }
 
-  renderRecentSelections(); // Ensure recents list is built
+  renderRecentSelections(); 
   
   // Set up all listeners
   setupEventListeners(); 
@@ -211,7 +206,6 @@ function init() {
   updateGroupButtonSelection(); 
   updateSavePlaylistButtonVisibility(); 
   
-  // Set initial speed display
   if (window.DOM.speedBtn) {
     window.DOM.speedBtn.textContent = `${AppState.currentSpeed.toFixed(2)}x`;
   }
