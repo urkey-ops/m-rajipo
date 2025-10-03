@@ -16,7 +16,7 @@ import {
   toggleGroupSelection,
   renderGroupButtons, 
   generateTrackList,
-  updateQuizModeUI, // Imported for initial setup
+  updateQuizModeUI,
 } from './selection.js'; 
 import { toggleClass } from './ui-helpers.js';
 
@@ -26,7 +26,6 @@ window.DOM = {};
 
 /**
  * Caches all necessary DOM elements.
- * FIX: All playback control IDs now correctly match 'index.html' camelCase.
  */
 function cacheDOM() {
   // Main Player & Lists
@@ -48,7 +47,6 @@ function cacheDOM() {
   window.DOM.playSelectedBtn = document.getElementById('play-selected-btn');
   window.DOM.playIcon = document.getElementById('play-icon');
   
-  // *** CRITICAL FIX: Corrected IDs ***
   window.DOM.repeatTrack = document.getElementById('repeatTrackCheckbox');
   window.DOM.repeatPlaylist = document.getElementById('repeatPlaylistCheckbox');
   window.DOM.repeatEach = document.getElementById('repeatEachCheckbox');
@@ -119,7 +117,8 @@ function setupEventListeners() {
         const checkbox = document.getElementById(`track-box-${i}`);
         if (checkbox) {
           checkbox.checked = true;
-          checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+          // Dispatch 'change' event to trigger selection.js logic (highlighting, group updates)
+          checkbox.dispatchEvent(new Event('change', { bubbles: true })); 
         }
       }
       window.DOM.rangeStart.value = '';
@@ -165,17 +164,18 @@ function setupEventListeners() {
 function init() {
   cacheDOM();
   
-  if (!window.DOM.audioPlayer || !window.DOM.trackList) {
-    console.error('Core DOM elements missing. Cannot initialize application.');
-    return;
+  // We allow the app to continue even if core elements are missing,
+  // relying on the new robustness checks in player.js.
+  if (!window.DOM.audioPlayer) {
+     console.error('CRITICAL: Audio Player element (id="audio-player") is missing from HTML. Playback will fail.');
   }
   
   initializeLocalStorage(); 
   
-  // *** CRITICAL FIX: Generate UI (tracks/groups) so elements exist ***
+  // 1. Generate UI (tracks/groups) so elements exist for the next step
   generateTrackListAndGroups(); 
 
-  // *** CRITICAL FIX: Restore Last Selection ***
+  // 2. Restore Last Selection
   const lastSelectionStr = localStorage.getItem('lastSelection');
   if (lastSelectionStr) {
     try {
@@ -194,14 +194,15 @@ function init() {
     }
   }
 
+  // 3. Render Recents
   renderRecentSelections(); 
   
-  // Set up all listeners
+  // 4. Set up all listeners
   setupEventListeners(); 
-  setupPlayerEventListeners(); 
+  setupPlayerEventListeners(); // <-- Now safely guarded in player.js
   
-  // Initial UI updates
-  updateQuizModeUI(); // <-- CRITICAL FIX: Set initial Quiz/Standard mode UI
+  // 5. Initial UI updates
+  updateQuizModeUI(); 
   updatePlayerDisplay(); 
   updateGroupButtonSelection(); 
   updateSavePlaylistButtonVisibility(); 
