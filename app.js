@@ -16,25 +16,21 @@ import {
   toggleGroupSelection,
   generateTrackListAndGroups,
   updateQuizModeUI,
-  // NEW: Functions to implement the logic extracted from app.js
-  handleRangeSelection, // Assumed to handle validation, selection, and UI updates
-  handleSearchInput,    // Assumed to handle filtering/feedback logic
-  handleClearSearch,    // Assumed to clear selection/filter/feedback
+  // NEW: Extracted event handlers (must be in selection.js)
+  handleRangeSelection, 
+  handleSearchInput,    
+  handleClearSearch,    
 } from './selection.js'; 
 import { toggleClass } from './ui-helpers.js';
 
 
 // --- 1. DOM CACHE ---
-/**
- * CRITICAL NOTE: window.DOM is used for cross-module access (e.g., in player.js) 
- * but represents a global scope pollution issue. For full clean-up, other modules 
- * should be refactored to import DOM elements from this module instead of using window.
- */
+// CRITICAL: window.DOM is necessary for backward compatibility with all other modules
 window.DOM = {};
 
 /**
  * Caches all necessary DOM elements.
- * This is robust against the previous ID mismatch errors.
+ * FIX: Ensures all IDs match the index.html.
  */
 function cacheDOM() {
   // Main Player & Lists
@@ -111,15 +107,13 @@ function setupEventListeners() {
     }
   });
   
-  // CRITIQUE FIX 1: Extracted range selection logic to selection.js
+  // CRITIQUE FIX: Range selection logic delegated to selection.js
   window.DOM.selectRangeBtn?.addEventListener('click', () => {
     const start = parseInt(window.DOM.rangeStart.value, 10);
     const end = parseInt(window.DOM.rangeEnd.value, 10);
     
-    // Call dedicated handler
     handleRangeSelection(start, end);
 
-    // Clear the inputs
     window.DOM.rangeStart.value = '';
     window.DOM.rangeEnd.value = '';
   });
@@ -136,7 +130,7 @@ function setupEventListeners() {
     setRepeatEach(count);
   });
   
-  // CRITIQUE FIX 2: Extracted search/clear logic to selection.js
+  // CRITIQUE FIX: Search logic delegated to selection.js
   window.DOM.search?.addEventListener('input', (e) => {
     handleSearchInput(e.target.value);
   });
@@ -175,17 +169,15 @@ function init() {
   // 3. Initialize internal states and persistence
   initializeLocalStorage(); 
 
-  // 4. Restore Last Selection (Must run AFTER track boxes are generated in step 2)
+  // 4. Restore Last Selection
   const lastSelectionStr = localStorage.getItem('lastSelection');
   if (lastSelectionStr) {
     try {
       const lastSelection = JSON.parse(lastSelectionStr);
       lastSelection.forEach(trackId => {
-        // NOTE: This hardcoded ID pattern is marked for improvement in the critique.
         const checkbox = document.getElementById(`track-box-${trackId}`); 
         if (checkbox) {
           checkbox.checked = true;
-          // Dispatch 'change' event to trigger selection.js logic
           checkbox.dispatchEvent(new Event('change', { bubbles: true })); 
         }
       });
