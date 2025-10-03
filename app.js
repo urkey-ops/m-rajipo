@@ -24,9 +24,6 @@ import { toggleClass } from './ui-helpers.js';
 // --- 1. DOM CACHE ---
 window.DOM = {};
 
-/**
- * Caches all necessary DOM elements.
- */
 function cacheDOM() {
   // Main Player & Lists
   window.DOM.audioPlayer = document.getElementById('audio-player');
@@ -49,17 +46,17 @@ function cacheDOM() {
   
   window.DOM.repeatTrack = document.getElementById('repeatTrackCheckbox');
   window.DOM.repeatPlaylist = document.getElementById('repeatPlaylistCheckbox');
-  window.DOM.repeatEach = document.getElementById('repeatEachCheckbox');
+  window.DOM.repeatEach = document.getElementById('repeatEachCheckbox'); // Matches new HTML ID
   
   window.DOM.repeatEachInput = document.getElementById('repeat-each-input');
   window.DOM.speedBtn = document.getElementById('speed-btn');
 
   // Quiz Mode
-  window.DOM.quizToggle = document.getElementById('quiz-toggle');
+  window.DOM.quizToggle = document.getElementById('quiz-toggle'); // Matches new HTML ID
   window.DOM.quizDisplay = document.getElementById('quiz-display');
   window.DOM.quizProgress = document.getElementById('quiz-progress-bar');
   window.DOM.quizProgressText = document.getElementById('quiz-progress-text');
-  window.DOM.quizPauseBtn = document.getElementById('quiz-pause-btn');
+  window.DOM.quizPauseBtn = document.getElementById('quiz-pause-btn'); // Matches new HTML ID
   window.DOM.mainControls = document.getElementById('mainControls');
   
   // Playlist Management
@@ -68,6 +65,10 @@ function cacheDOM() {
   window.DOM.recentSelectionsList = document.getElementById('recent-selections-list');
   window.DOM.clearHistoryBtn = document.getElementById('clear-history-btn');
   window.DOM.recentEmpty = document.getElementById('recent-empty');
+
+  // Misc
+  window.DOM.clearSelectionBtn = document.getElementById('clear-selection-btn');
+  window.DOM.toggleGroupsBtn = document.getElementById('toggle-groups-btn');
 }
 
 
@@ -156,24 +157,40 @@ function setupEventListeners() {
     window.DOM.search.value = '';
     window.DOM.searchFeedback.textContent = '';
   });
+
+  // Clear Selection Button
+  window.DOM.clearSelectionBtn?.addEventListener('click', confirmClearSelection);
+
+  // Toggle Groups Button (Placeholder for collapse logic)
+  window.DOM.toggleGroupsBtn?.addEventListener('click', () => {
+    if (window.DOM.groups) {
+        toggleClass(window.DOM.groups, 'hidden');
+        const icon = document.getElementById('group-toggle-icon');
+        if (icon) {
+            toggleClass(icon, 'fa-chevron-down', window.DOM.groups.classList.contains('hidden'));
+            toggleClass(icon, 'fa-chevron-up', !window.DOM.groups.classList.contains('hidden'));
+        }
+    }
+  });
 }
 
 
 // --- 4. INIT FUNCTION ---
 
 function init() {
+  // CRITICAL STEP: Cache the DOM first
   cacheDOM();
   
-  // We allow the app to continue even if core elements are missing,
-  // relying on the new robustness checks in player.js.
+  // Check for the absolute critical elements and log if missing
   if (!window.DOM.audioPlayer) {
      console.error('CRITICAL: Audio Player element (id="audio-player") is missing from HTML. Playback will fail.');
   }
-  
-  initializeLocalStorage(); 
-  
-  // 1. Generate UI (tracks/groups) so elements exist for the next step
+
+  // Generate the track list and group buttons so they exist in the DOM
   generateTrackListAndGroups(); 
+  
+  // Initialize internal states and persistence
+  initializeLocalStorage(); 
 
   // 2. Restore Last Selection
   const lastSelectionStr = localStorage.getItem('lastSelection');
@@ -196,17 +213,18 @@ function init() {
 
   // 3. Render Recents
   renderRecentSelections(); 
-  
-  // 4. Set up all listeners
+
+  // Set up all listeners
   setupEventListeners(); 
-  setupPlayerEventListeners(); // <-- Now safely guarded in player.js
-  
-  // 5. Initial UI updates
+  setupPlayerEventListeners(); // Now safe because it checks DOM.audioPlayer
+
+  // Initial UI updates
   updateQuizModeUI(); 
   updatePlayerDisplay(); 
   updateGroupButtonSelection(); 
   updateSavePlaylistButtonVisibility(); 
   
+  // Set initial speed display
   if (window.DOM.speedBtn) {
     window.DOM.speedBtn.textContent = `${AppState.currentSpeed.toFixed(2)}x`;
   }
