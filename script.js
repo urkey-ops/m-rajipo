@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Playlists & Recents
         playlistList: null,
         playlistEmpty: null,
-        savePlaylistContainer: null, // Corrected variable name
+        savePlaylistContainer: null,
         showSaveModalBtn: null,
         recentlyPlayed: null,
         recentList: null,
@@ -100,11 +100,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 2. INITIALIZATION ---
     function initApp() {
         cacheDOMElements();
-        checkLocalStorage();
-        initEventListeners();
+        
+        // FIX: Ensure content generation runs immediately after DOM caching
         generateTrackList();
         generateGroups();
 
+        checkLocalStorage();
+        initEventListeners();
+        
         if (AppState.localStorageEnabled) {
             restoreLastSelection();
             renderRecentSelections();
@@ -228,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 3. UI GENERATION & UPDATES ---
     function generateTrackList() {
+        if (!DOM.trackList) return; // Safety check for null element
         const fragment = document.createDocumentFragment();
         for (let i = 1; i <= CONFIG.totalTracks; i++) {
             const li = document.createElement('li');
@@ -253,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function generateGroups() {
+        if (!DOM.groups) return; // Safety check for null element
         const fragment = document.createDocumentFragment();
 
         for (let i = 1; i <= CONFIG.totalTracks; i += 10) {
@@ -272,6 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleGroupDisplay() {
+        if (!DOM.groups || !DOM.groupToggleIcon) return;
         const isHidden = DOM.groups.classList.toggle('hidden');
         toggleClass(DOM.groupToggleIcon, 'fa-chevron-down', isHidden);
         toggleClass(DOM.groupToggleIcon, 'fa-chevron-up', !isHidden);
@@ -537,8 +543,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 6. SELECTION & UI HANDLERS ---
-
-    // CRITICAL FIX: Unified selection handler to manage visual state and cross-list clearing
     function handleTrackSelection(event) {
         const target = event.target;
         if (target.type !== 'checkbox') return;
@@ -569,12 +573,81 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
-        // Note: Recent selections are generally for quiz mode only and can coexist with track/playlist selection for quiz source.
     }
     
-    // Placeholder functions (previously missing or causing errors) that need to be defined
-    function restoreLastSelection() { /* Logic for restoring selection */ }
-    function renderRecentSelections() { /* Logic for rendering recents */ }
+    // FIX: Placeholder functions implementation
+    function restoreLastSelection() { 
+        if (!AppState.localStorageEnabled) return;
+        const lastSelection = localStorage.getItem('lastSelection');
+        if (lastSelection) {
+             const trackNums = lastSelection.split(',').map(n => parseInt(n.trim(), 10));
+             trackNums.forEach(trackNum => {
+                const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    toggleClass(checkbox.closest('label'), 'selected', true);
+                }
+            });
+             updateGroupButtonSelection();
+             updateSavePlaylistButtonVisibility();
+        }
+    }
+    
+    function renderRecentSelections() { 
+        if (!DOM.recentlyPlayed || !DOM.recentList || !AppState.localStorageEnabled) return;
+        
+        let recents = [];
+        try {
+            recents = JSON.parse(localStorage.getItem('recentSelections')) || [];
+        } catch (e) {
+            recents = [];
+        }
+
+        DOM.recentList.innerHTML = ''; 
+        toggleClass(DOM.recentlyPlayed, 'hidden', recents.length === 0);
+        toggleClass(DOM.recentEmpty, 'hidden', recents.length > 0);
+        
+        recents.forEach(selectionString => {
+            const shlokas = selectionString.split(',').map(n => parseInt(n.trim(), 10));
+            if (shlokas.length === 0) return;
+
+            const li = document.createElement('li');
+            
+            const labelEl = document.createElement('label');
+            labelEl.className = 'selectable-item recent-item block p-3 container-card cursor-pointer flex items-center justify-between';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            // CRITICAL: Ensure class is present for quiz selection logic
+            checkbox.className = 'recent-box mr-2'; 
+            checkbox.setAttribute('data-selection', selectionString);
+
+            let content;
+            if (shlokas.length === 1) {
+                content = `Shlok ${shlokas[0]}`;
+            } else if (shlokas.every((val, i, arr) => i === 0 || val === arr[i-1] + 1)) {
+                content = `Range: ${shlokas[0]} - ${shlokas[shlokas.length - 1]}`;
+            } else {
+                content = `Custom (${shlokas.length} shlokas)`;
+            }
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'ml-6 font-semibold';
+            nameSpan.textContent = content;
+
+            labelEl.appendChild(checkbox);
+            labelEl.appendChild(nameSpan);
+            
+            const countSpan = document.createElement('div');
+            countSpan.className = 'text-sm text-gray-400';
+            countSpan.textContent = `(${shlokas.length})`;
+
+            labelEl.appendChild(countSpan);
+            li.appendChild(labelEl);
+            DOM.recentList.appendChild(li);
+        });
+    }
+    
     function confirmClearSelection() {
         showModal("Are you sure you want to clear your current selection?", clearSelection);
     }
@@ -598,9 +671,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     function saveSelection(selection) {
-        // Simple logic for saving the current selection to "Recent"
         if (!AppState.localStorageEnabled) return;
 
+        // Save for "Restore Last Selection" feature
+        localStorage.setItem('lastSelection', selection.join(','));
+
+        // Save for "Recently Played" list
         let recents = [];
         try {
             recents = JSON.parse(localStorage.getItem('recentSelections')) || [];
@@ -646,23 +722,52 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.setAttribute('aria-pressed', shouldCheck.toString());
         updateSavePlaylistButtonVisibility();
     }
-    // End Placeholder functions 
+    
+    function confirmDeletePlaylist(name) {
+        showModal(`Are you sure you want to delete the playlist "${name}"?`, () => deletePlaylist(name));
+    }
+    
+    function handleSearch() {
+        const query = DOM.search.value.trim();
+        const num = parseInt(query, 10);
+        
+        toggleClass(DOM.clearSearch, 'hidden', query.length === 0);
+        toggleClass(DOM.searchFeedback, 'hidden', true);
+
+        const trackItems = DOM.trackList.querySelectorAll('li');
+        let found = false;
+
+        trackItems.forEach(li => {
+            const checkbox = li.querySelector('.trackBox');
+            const shlokNum = parseInt(checkbox.value, 10);
+            const isMatch = shlokNum === num || (query.length === 0);
+            
+            toggleClass(li, 'hidden', !isMatch);
+            if (isMatch) {
+                found = true;
+            }
+        });
+        
+        toggleClass(DOM.searchFeedback, 'hidden', found);
+    }
 
     function getActiveSelection(mode = 'regular') {
-        // handle playlist box
+        // Quiz mode must prioritize recents and tracks/playlists separately
+        if (mode === 'quiz') {
+            const selectedRecents = Array.from(document.querySelectorAll('.recent-box:checked')).map(cb => cb.dataset.selection.split(',').map(n => parseInt(n.trim(), 10)));
+            const selectedTracks = Array.from(document.querySelectorAll('.trackBox:checked')).map(cb => parseInt(cb.value, 10));
+            const selectedPlaylists = Array.from(document.querySelectorAll('.playlist-box:checked')).map(cb => JSON.parse(cb.dataset.selection));
+            
+            // Combine all unique selections for the quiz pool
+            const allSelections = new Set([...selectedTracks, ...selectedPlaylists.flat(), ...selectedRecents.flat()]);
+            return Array.from(allSelections);
+        }
+
+        // Regular mode logic (only one of track/playlist is typically used)
         const selectedPlaylists = Array.from(document.querySelectorAll('.playlist-box:checked')).map(cb => JSON.parse(cb.dataset.selection));
         if (selectedPlaylists.length > 0) {
             const playlistShlokas = new Set(selectedPlaylists.flat());
             return Array.from(playlistShlokas);
-        }
-
-        // handle recent box
-        if (mode === 'quiz') {
-            const selectedRecents = Array.from(document.querySelectorAll('.recent-box:checked')).map(cb => cb.dataset.selection.split(',').map(n => parseInt(n.trim(), 10)));
-            if (selectedRecents.length > 0) {
-                const recentShlokas = new Set(selectedRecents.flat());
-                return Array.from(recentShlokas);
-            }
         }
 
         // default track box
@@ -687,7 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPersonalPlaylists() {
-        if (!AppState.localStorageEnabled) return;
+        if (!AppState.localStorageEnabled || !DOM.playlistList) return;
         let playlists = {};
         try {
             playlists = JSON.parse(localStorage.getItem('personalPlaylists')) || {};
@@ -756,36 +861,6 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.playlistList.appendChild(li);
         });
     }
-    
-    // Missing handler definitions
-    function confirmDeletePlaylist(name) {
-        showModal(`Are you sure you want to delete the playlist "${name}"?`, () => deletePlaylist(name));
-    }
-    
-    function handleSearch() {
-        const query = DOM.search.value.trim();
-        const num = parseInt(query, 10);
-        
-        toggleClass(DOM.clearSearch, 'hidden', query.length === 0);
-        toggleClass(DOM.searchFeedback, 'hidden', true);
-
-        const trackItems = DOM.trackList.querySelectorAll('li');
-        let found = false;
-
-        trackItems.forEach(li => {
-            const checkbox = li.querySelector('.trackBox');
-            const shlokNum = parseInt(checkbox.value, 10);
-            const isMatch = shlokNum === num || (query.length === 0);
-            
-            toggleClass(li, 'hidden', !isMatch);
-            if (isMatch) {
-                found = true;
-            }
-        });
-        
-        toggleClass(DOM.searchFeedback, 'hidden', found);
-    }
-    // End Missing handler definitions
 
     function loadPlaylist(name) {
         if (!AppState.localStorageEnabled) return;
@@ -925,7 +1000,9 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.setAttribute('role', 'status');
         toast.setAttribute('aria-live', 'polite');
         toast.textContent = message;
-        DOM.toastContainer.appendChild(toast);
+        if(DOM.toastContainer) {
+             DOM.toastContainer.appendChild(toast);
+        }
         setTimeout(() => {
             toggleClass(toast, 'fadeOut', true);
             toast.addEventListener('animationend', () => toast.remove());
@@ -933,6 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showModal(message, onConfirm = null) {
+        if (!DOM.modalContainer) return;
         DOM.modalContainer.innerHTML = '';
 
         const modal = document.createElement('div');
