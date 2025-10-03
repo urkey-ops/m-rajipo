@@ -43,13 +43,11 @@ export function playCurrent() {
   DOM.audioPlayer.src = src;
   DOM.audioPlayer.playbackRate = AppState.currentSpeed;
   DOM.audioPlayer.play().catch(e => {
-    // Autoplay blocked handling
     console.error('Playback failed (possible autoplay block):', e);
     showToast('Playback requires user interaction or was blocked.');
   });
   
-  resetRepeatCounter(); // Reset counter for the new track
-  // Note: UI updates for current track (highlighting, display) would happen here
+  resetRepeatCounter(); 
 }
 
 /**
@@ -84,6 +82,7 @@ function handleTrackEnded() {
     DOM.audioPlayer.pause();
     stopAllTimers(); 
     showToast('Time for the next question!'); // Placeholder
+    // NOTE: Real quiz mode would start a timer here to auto-play next track.
   } else {
     // Standard auto-advance
     playCurrent();
@@ -144,7 +143,6 @@ export function setupPlayerEventListeners() {
     console.error("Audio playback error:", DOM.audioPlayer.error, e);
     showToast(`Error playing shloka ${AppState.playlist[AppState.currentIndex]}. Skipping to next.`);
     
-    // Attempt to skip to the next track on error
     setCurrentIndex(AppState.currentIndex + 1);
     playCurrent();
   });
