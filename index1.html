@@ -3,69 +3,326 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Satsang Diksha Audio Player</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <title>Shloka Audio Player & Quiz Utility</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7fafc; /* Light gray background */
-            color: #1a202c; /* Dark text */
+        /* Base styles using a simple, modern look */
+        :root {
+            --primary-color: #4CAF50; /* Green */
+            --secondary-color: #607D8B; /* Blue Grey */
+            --red-color: #F44336; /* Red */
+            --bg-color: #2c2c2c; /* Dark background */
+            --card-color: #3b3b3b; /* Slightly lighter card color */
+            --text-color: #ffffff;
+            --border-radius: 8px;
+            --focus-glow: 0 0 0 3px rgba(76, 175, 80, 0.5);
         }
-        .container-card {
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-            padding: 1.5rem;
-            border: 1px solid #e2e8f0;
-        }
-        /* Custom Button Styles */
-        .btn-primary { background-color: #4c51bf; color: white; transition: background-color 0.15s; }
-        .btn-primary:hover { background-color: #3f45a8; }
-        .btn-green { background-color: #38a169; color: white; transition: background-color 0.15s; }
-        .btn-green:hover { background-color: #2f855a; }
-        .btn-red { background-color: #e53e3e; color: white; transition: background-color 0.15s; }
-        .btn-red:hover { background-color: #c53030; }
-        .btn-secondary { background-color: #718096; color: white; transition: background-color 0.15s; }
-        .btn-secondary:hover { background-color: #5d687b; }
-        .btn-rounded { border-radius: 9999px; }
 
-        /* Group Button Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--card-color);
+            margin-bottom: 20px;
+        }
+
+        /* Utility classes (simulating Tailwind for consistency with previous context) */
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .flex { display: flex; }
+        .gap-4 { gap: 1rem; }
+        .justify-center { justify-content: center; }
+        .justify-end { justify-content: flex-end; }
+        .items-center { align-items: center; }
+        .space-x-2 > * + * { margin-left: 0.5rem; }
+        .space-y-2 > * + * { margin-top: 0.5rem; }
+        .block { display: block; }
+        .w-full { width: 100%; }
+        .hidden { display: none !important; }
+        .text-white { color: var(--text-color); }
+        .text-red-400 { color: #f87171; }
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        .text-xl { font-size: 1.25rem; }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .rounded-full { border-radius: 9999px; }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .mr-2 { margin-right: 0.5rem; }
+        .ml-6 { margin-left: 1.5rem; }
+        .p-3 { padding: 0.75rem; }
+        .cursor-pointer { cursor: pointer; }
+
+        /* Custom Components */
+        .container-card {
+            background-color: var(--card-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border: 1px solid #444;
+        }
+
+        .input-group input, .input-group button {
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            border: none;
+        }
+
+        .input-group {
+            display: flex;
+            margin-bottom: 1rem;
+        }
+
+        .input-group input {
+            flex-grow: 1;
+            padding: 10px;
+            background-color: #555;
+            color: var(--text-color);
+            border-radius: var(--border-radius) 0 0 var(--border-radius);
+            outline: none;
+        }
+
+        .input-group input:focus {
+            box-shadow: var(--focus-glow);
+        }
+        
+        button, .btn-rounded {
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            transition: background-color 0.2s;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #43A047;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #546E7A;
+        }
+
+        .btn-red {
+            background-color: var(--red-color);
+            color: var(--text-color);
+        }
+
+        .btn-red:hover {
+            background-color: #E53935;
+        }
+
+        .btn-green {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+        }
+        
+        /* Groups */
+        #groups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
         .group-btn {
-            @apply px-3 py-1 text-sm font-semibold rounded-full bg-gray-200 text-gray-700 transition duration-150 ease-in-out border border-transparent;
-            min-width: 65px;
-            margin: 4px;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border: 1px solid #444;
+            padding: 6px 10px;
+            border-radius: 50px;
+            font-size: 0.85rem;
             position: relative;
         }
+
         .group-btn:hover {
-            @apply bg-gray-300;
+            background-color: #546E7A;
         }
+
         .group-btn.selected {
-            @apply bg-indigo-500 text-white border-indigo-700;
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
         }
+
         .group-btn .checkmark {
             display: none;
             position: absolute;
-            top: 0;
-            right: 4px;
-            font-size: 10px;
+            top: -4px;
+            right: -4px;
+            font-size: 0.7rem;
+            line-height: 1;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            text-align: center;
+            border: 1px solid var(--bg-color);
         }
+
         .group-btn.selected .checkmark {
             display: block;
         }
-        /* Track/Item Selection Styles */
-        .track-item, .recent-item, .playlist-item {
-            @apply transition duration-100 ease-in-out border-2 border-transparent;
+        
+        /* Track List */
+        #trackList {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
         }
-        .track-item:hover, .recent-item:hover, .playlist-item:hover {
-            @apply bg-gray-50;
+
+        .track-item {
+            background-color: var(--card-color);
+            border-radius: var(--border-radius);
+            transition: background-color 0.15s;
         }
+
+        .trackBox, .recent-box, .playlist-box {
+            position: absolute; /* Hide the native checkbox */
+            opacity: 0;
+        }
+
         .track-item.selected, .recent-item.selected, .playlist-item.selected {
-            @apply border-indigo-500 bg-indigo-50;
+            background-color: #5b5b5b; /* A darker shade to indicate selection */
+            outline: 2px solid var(--primary-color);
+            outline-offset: -2px;
         }
+
+        .track-item input[type="checkbox"] + span::before,
+        .recent-item input[type="checkbox"] + span::before,
+        .playlist-item input[type="checkbox"] + span::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border: 1px solid #999;
+            background-color: #fff;
+            border-radius: 3px;
+        }
+
+        .track-item input[type="checkbox"]:checked + span::before,
+        .recent-item input[type="checkbox"]:checked + span::before,
+        .playlist-item input[type="checkbox"]:checked + span::before {
+            content: '✓';
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            text-align: center;
+            line-height: 15px;
+            font-size: 12px;
+            border-color: var(--primary-color);
+        }
+        
+        .track-item, .recent-item, .playlist-item {
+            position: relative;
+            padding-left: 35px !important; /* Make room for the custom checkbox */
+        }
+
+        .track-item span, .recent-item span, .playlist-item span {
+            display: inline-block;
+        }
+
+        /* Audio Player */
+        #audioControls {
+            position: sticky;
+            bottom: 0;
+            background-color: var(--card-color);
+            padding: 10px 20px;
+            border-top: 2px solid var(--primary-color);
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #audioPlayer {
+            width: 100%;
+            max-width: 400px;
+            margin-right: 1rem;
+        }
+
+        /* Quiz Mode */
+        .mode-toggle {
+            background-color: var(--secondary-color);
+            display: flex;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            flex-grow: 1;
+            padding: 10px 20px;
+            background: transparent;
+            color: var(--text-color);
+            border: none;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .mode-btn.active {
+            background-color: var(--primary-color);
+        }
+
+        #quizControls {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        #currentShlok, #currentShlokQuiz {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* Countdown Bar */
+        #countdownBarContainer {
+            width: 100%;
+            background-color: #555;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        #countdownBar {
+            height: 10px;
+            width: 100%;
+            background-color: var(--red-color);
+            transition: width 1s linear;
+        }
+        
         /* Modal Styles */
         #modal-container {
             position: fixed;
@@ -73,558 +330,341 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
+
         .modal {
-            background-color: white;
+            background-color: var(--card-color);
             padding: 20px;
-            border-radius: 8px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
             width: 90%;
-            max-width: 450px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
             position: relative;
         }
+
+        .modal-content {
+            position: relative;
+        }
+
         .modal-close {
             position: absolute;
-            top: 10px;
-            right: 20px;
+            top: 0px;
+            right: 0px;
             font-size: 24px;
+            font-weight: bold;
+            color: #aaa;
             cursor: pointer;
-            color: #4a5568;
+            padding: 5px;
+            line-height: 1;
         }
+
         /* Toast Styles */
         #toast-container {
             position: fixed;
-            bottom: 20px;
+            bottom: 60px; /* Above audio bar */
             right: 20px;
-            z-index: 1001;
+            z-index: 900;
         }
+
         .toast {
-            background-color: #333;
+            background-color: rgba(76, 175, 80, 0.9);
             color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 10px 20px;
+            border-radius: 50px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        /* Settings Section */
+        #settings label {
+            display: block;
             margin-top: 10px;
-            opacity: 0;
-            animation: fadeIn 0.5s forwards, fadeOut 0.5s 3.5s forwards;
+            font-weight: bold;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        #settings input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
         }
-        @keyframes fadeOut {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(20px); }
+        
+        .slider-value {
+            font-weight: normal;
+            margin-left: 10px;
+            color: var(--primary-color);
+        }
+        
+        /* Media Query for smaller screens */
+        @media (max-width: 600px) {
+            #audioControls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #audioPlayer {
+                margin: 0 0 10px 0;
+                max-width: none;
+            }
+            #trackList {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+            #groups {
+                justify-content: space-around;
+            }
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div id="app" class="max-w-4xl mx-auto space-y-6">
+<body>
 
-        <!-- Header and Controls -->
-        <header class="text-center mb-6">
-            <h1 class="text-3xl font-extrabold text-indigo-700">Satsang Diksha Audio Player</h1>
-            <p class="text-gray-600">Select Shlokas to Play or Quiz Yourself</p>
-            <audio id="audioPlayer" controls class="w-full mt-4 rounded-lg shadow-lg"></audio>
-        </header>
+    <div class="container">
+        <div class="header">
+            <h1>Shloka Study Tool</h1>
+            <p>Select tracks below to start listening or quizzing.</p>
+        </div>
 
-        <!-- Main Mode Toggle -->
-        <div class="flex justify-center mb-6">
-            <button id="modeToggle" class="px-6 py-3 text-lg font-bold btn-primary btn-rounded shadow-md hover:shadow-lg transition duration-200">
-                <i class="fa-solid fa-graduation-cap"></i> Start Quiz Mode
-            </button>
+        <div class="mode-toggle">
+            <button id="mode-play" class="mode-btn active" onclick="setMode('play')">🎧 Listen Mode</button>
+            <button id="mode-quiz" class="mode-btn" onclick="setMode('quiz')">🧠 Quiz Mode</button>
         </div>
         
-        <!-- Controls Section -->
-        <div id="controls" class="space-y-6">
+        <div id="settings" class="container-card mb-4">
+            <h2 class="text-xl font-bold mb-2">Settings</h2>
+            
+            <label for="speedSlider">Playback Speed: <span id="speedValue" class="slider-value">1.0x</span></label>
+            <input type="range" id="speedSlider" min="0.5" max="2" value="1" step="0.25">
 
-            <!-- Regular Play Controls -->
-            <div id="regularControls" class="container-card space-y-4">
-                <h2 class="text-xl font-bold border-b pb-2 mb-4">Playback Settings</h2>
+            <div id="quizSettings">
+                <label for="quizDelaySlider">Audio Play Delay (before pause): <span id="quizDelayValue" class="slider-value">3s</span></label>
+                <input type="range" id="quizDelaySlider" min="1" max="10" value="3" step="1">
                 
-                <div class="flex flex-wrap items-center gap-4">
-                    <div class="flex-grow">
-                        <label for="repeatCount" class="block text-sm font-medium text-gray-700">Repeat Each Shlok:</label>
-                        <input type="number" id="repeatCount" value="1" min="1" max="10" class="w-full md:w-20 p-2 border rounded-lg mt-1">
-                    </div>
-                    
-                    <div class="flex-grow">
-                        <label for="speedSlider" class="block text-sm font-medium text-gray-700">Playback Speed: <span id="speedDisplay">1.0</span>x</label>
-                        <input type="range" id="speedSlider" min="0.5" max="2.0" value="1.0" step="0.1" class="w-full mt-1">
-                    </div>
+                <label for="quizTimeSlider">Recite Time (Quiz Pause): <span id="quizTimeValue" class="slider-value">10s</span></label>
+                <input type="range" id="quizTimeSlider" min="5" max="30" value="10" step="5">
+                
+                <label for="repeatEach">Repeat Each Shlok: <span id="repeatEachValue" class="slider-value">1 time</span></label>
+                <input type="range" id="repeatEach" min="1" max="5" value="1" step="1">
 
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center">
-                            <input type="checkbox" id="shuffle" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                            <label for="shuffle" class="ml-2 text-sm text-gray-700">Shuffle</label>
-                        </div>
-                        <button id="autoPlayToggle" class="px-4 py-2 btn-secondary btn-rounded text-sm" onclick="toggleAutoPlay()">
-                            <i class="fa-solid fa-toggle-off"></i> Auto-Play: OFF
-                        </button>
-                    </div>
-                </div>
-
-                <div class="pt-4 border-t">
-                    <button class="px-6 py-3 btn-green btn-rounded text-lg font-semibold w-full md:w-auto shadow-lg" onclick="playSelected()">
-                        <i class="fa-solid fa-play"></i> Play Selected
-                    </button>
+                <div class="mt-4 flex items-center">
+                    <input type="checkbox" id="autoPlayToggle" checked>
+                    <label for="autoPlayToggle" class="ml-2 font-semibold cursor-pointer">Auto-play next track after quiz time ends</label>
                 </div>
             </div>
-
-            <!-- Quiz Controls (Hidden by default) -->
-            <div id="quizControls" class="container-card space-y-4 hidden">
-                <h2 class="text-xl font-bold border-b pb-2 mb-4">Quiz Settings</h2>
-                <div id="quizStatus" class="text-lg font-semibold text-center text-indigo-600 mb-2">Quiz Mode Active</div>
-                <div class="flex justify-center mb-4">
-                    <div id="countdownBarContainer" class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div id="countdownBar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 100%"></div>
-                    </div>
-                </div>
-                <p id="currentShlokQuiz" class="text-center font-bold text-gray-800">Ready to start</p>
-                <div id="countdown" class="text-3xl font-extrabold text-red-500 text-center"></div>
-
-                <div class="flex flex-wrap items-center justify-center gap-6 pt-4 border-t">
-                    <div>
-                        <label for="quizTimeSlider" class="block text-sm font-medium text-gray-700 text-center">Answer Time: <span id="quizTimeDisplay">10s</span></label>
-                        <input type="range" id="quizTimeSlider" min="5" max="30" value="10" step="5" class="w-full mt-1" oninput="changeQuizTime(parseInt(this.value))">
-                    </div>
-                    <div>
-                        <label for="quizDelaySlider" class="block text-sm font-medium text-gray-700 text-center">Next Delay: <span id="quizDelayDisplay">5s</span></label>
-                        <input type="range" id="quizDelaySlider" min="2" max="15" value="5" step="1" class="w-full mt-1" oninput="changeQuizDelay(parseInt(this.value))">
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-4 justify-center pt-4">
-                    <button class="px-6 py-3 btn-green btn-rounded font-semibold shadow-lg" onclick="playNextQuizTrack()">
-                        <i class="fa-solid fa-forward"></i> Next Shlok
-                    </button>
-                    <button id="pauseQuizBtn" class="px-6 py-3 btn-secondary btn-rounded font-semibold shadow-lg" onclick="pauseQuiz()">
-                        <i class="fa-solid fa-pause"></i> Pause Quiz
-                    </button>
-                    <button id="playFullBtn" class="px-6 py-3 btn-primary btn-rounded font-semibold shadow-lg hidden" onclick="playFullShloka()">
-                        <i class="fa-solid fa-volume-up"></i> Play Full Shlok
-                    </button>
-                </div>
-            </div>
-
         </div>
 
-        <!-- Selection Area -->
-        <div id="selectionArea" class="container-card">
-            <!-- FIX 1: Added span with ID for robust title updating -->
-            <h2 id="allShlokasTitle" class="text-xl font-bold border-b pb-2 flex justify-between items-center">
-                <span id="shlokas-label">All Shlokas (1–170)</span>
-                <button onclick="toggleGroupDisplay()" class="text-sm px-3 py-1 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200 transition">
-                    Groups <i id="group-toggle-icon" class="fa-solid fa-chevron-down ml-1"></i>
-                </button>
-            </h2>
-
-            <!-- Groups -->
-            <div id="groups" class="flex flex-wrap justify-center py-4 border-b mb-4 hidden">
-                <!-- Group buttons generated here -->
-            </div>
-
-            <!-- Range Selection -->
-            <div class="flex flex-wrap items-center gap-4 mb-4 border-b pb-4">
-                <input type="number" id="rangeStart" placeholder="Start" min="1" max="170" class="w-20 p-2 border rounded-lg">
-                <span class="font-bold">-</span>
-                <input type="number" id="rangeEnd" placeholder="End" min="1" max="170" class="w-20 p-2 border rounded-lg">
-                <button class="px-4 py-2 btn-primary btn-rounded text-sm" onclick="selectRange()">Select Range</button>
-                <button class="px-4 py-2 btn-red btn-rounded text-sm" onclick="confirmClearSelection()">Clear Selection</button>
-            </div>
-
-            <!-- Shloka List -->
-            <div class="max-h-96 overflow-y-auto">
-                <input type="text" id="search" placeholder="Search by Shlok number..." class="w-full p-2 border rounded-lg mb-4 sticky top-0 bg-white z-10">
-                <button id="clearSearch" class="px-3 py-1 btn-secondary btn-rounded text-xs hidden absolute right-3 top-2.5">Clear</button>
-                <div id="search-feedback" class="text-red-500 font-semibold text-center hidden mb-4">No shlokas found matching your search.</div>
-
-                <ul id="trackList" class="space-y-1">
-                    <!-- Tracks generated here -->
+        <div id="personalPlaylists" class="container-card mb-4 hidden">
+            <h2 class="text-xl font-bold mb-2">Your Playlists</h2>
+            <p id="playlist-empty" class="text-sm hidden">No playlists saved yet. Select tracks and click "Save Selection as Playlist".</p>
+            <ul id="playlistList" class="space-y-2">
                 </ul>
-            </div>
         </div>
         
-        <!-- Saved Playlists and History -->
-        <div id="extraFeatures" class="flex flex-col md:flex-row gap-6">
-
-            <!-- Playlists -->
-            <div id="personalPlaylists" class="container-card flex-1 hidden">
-                <h3 class="text-xl font-bold border-b pb-2 mb-4 flex justify-between items-center">
-                    Saved Playlists
-                    <button id="savePlaylistBtn" class="px-3 py-1 btn-green btn-rounded text-sm hidden" onclick="showSavePlaylistModal()">
-                        <i class="fa-solid fa-save"></i> Save Current
-                    </button>
-                </h3>
-                <p id="playlist-empty" class="text-gray-500 text-center py-4">No playlists saved yet.</p>
-                <ul id="playlistList" class="space-y-2">
-                    <!-- Playlists rendered here -->
+        <div id="recentlyPlayed" class="container-card mb-4 hidden">
+            <h2 class="text-xl font-bold mb-2 flex items-center justify-between">
+                <span>Recently Played (Quick Select)</span>
+                <button class="text-xs px-2 py-1 btn-red rounded-full" onclick="clearHistory()">Clear History</button>
+            </h2>
+            <ul id="recentList" class="space-y-2">
                 </ul>
-            </div>
-
-            <!-- Recently Played -->
-            <div id="recentlyPlayed" class="container-card flex-1 hidden">
-                <h3 class="text-xl font-bold border-b pb-2 mb-4 flex justify-between items-center">
-                    Recently Played
-                    <button class="px-3 py-1 btn-red btn-rounded text-sm" onclick="confirmClearHistory()">
-                        <i class="fa-solid fa-trash"></i> Clear History
-                    </button>
-                </h3>
-                <p id="recent-empty" class="text-gray-500 text-center py-4">No history recorded yet.</p>
-                <ul id="recentList" class="space-y-2">
-                    <!-- Recent selections rendered here -->
-                </ul>
-                <div class="mt-4 border-t pt-4">
-                    <button class="px-4 py-2 btn-secondary btn-rounded text-sm w-full" onclick="restoreLastSelection()">
-                        Restore Last Selection
-                    </button>
-                </div>
-            </div>
+            <p id="recent-empty" class="text-sm mt-2 hidden">No recent selections saved.</p>
         </div>
 
+
+        <div class="container-card mb-4">
+            <h2 id="allShlokasTitle" class="text-xl font-bold mb-2">Select Individual Shlokas</h2>
+            
+            <button id="clearAllBtn" class="px-4 py-3 btn-secondary text-white btn-rounded mb-4" onclick="clearSelection()">Clear All Selections</button>
+            <button id="savePlaylistBtn" class="px-4 py-3 btn-green text-white btn-rounded mb-4 hidden" onclick="showSavePlaylistModal()">Save Selection as Playlist</button>
+            
+            <div id="groups" class="mt-2">
+                </div>
+
+            <div class="input-group">
+                <input type="number" id="search" placeholder="Filter by Shlok number (e.g., 55)">
+                <button id="clearSearch" class="btn-secondary hidden" style="border-radius: 0 8px 8px 0;">Clear</button>
+            </div>
+            <p id="search-feedback" class="text-red-400 font-semibold hidden mb-4 text-center">No shlokas found matching the filter.</p>
+            
+            <ul id="trackList">
+                </ul>
+        </div>
+        
     </div>
 
-    <!-- Modals and Toasts Containers -->
-    <div id="modal-container"></div>
-    <div id="toast-container"></div>
-    
-    <!-- JavaScript Logic -->
+    <div id="audioControls">
+        <div id="regularControls">
+            <div id="currentShlok">Nothing selected.</div>
+            <button class="px-4 py-3 btn-primary text-white btn-rounded" onclick="playSelected()">▶️ Start/Restart Playback</button>
+        </div>
+        
+        <div id="quizControls" class="hidden flex items-center gap-4 w-full">
+            <div class="flex-grow">
+                <div id="currentShlokQuiz" class="text-left">Start the Quiz to begin.</div>
+                <div id="quizStatus" class="text-sm text-red-400 font-semibold"></div>
+                <div id="countdownBarContainer">
+                    <div id="countdownBar"></div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <span id="countdown"></span>
+                <button class="px-4 py-3 btn-primary text-white btn-rounded" onclick="playNextQuizTrack()">➡️ Next</button>
+                <button id="playFullBtn" class="px-4 py-3 btn-secondary text-white btn-rounded hidden" onclick="playFullAudio()">👂 Hint</button>
+            </div>
+        </div>
+
+        <audio id="audioPlayer" controls></audio>
+    </div>
+
+    <div id="modal-container">
+        </div>
+
+    <div id="toast-container">
+        </div>
+
     <script>
-        // Global State Variables (Required for all functions to work)
-        let autoPlay = false;
+        // --- GLOBAL STATE ---
+        let audioPlayer;
+        let isQuizMode = false;
         let playlist = [];
         let currentIndex = 0;
+        let currentSpeed = 1.0;
         let repeatEach = 1;
         let repeatCounter = 0;
-        let currentSpeed = 1.0;
-        let currentQuizTime = 10; 
-        let currentQuizDelay = 5; 
-        let isQuizMode = false;
+        let currentQuizTime = 10;
+        let currentQuizDelay = 3;
         let hasQuizPaused = false;
         let countdownInterval = null;
         let autoPlayTimeout = null;
-        const totalTracks = 170; // Total number of shlokas
-        const audioBaseUrl = "https://ia601703.us.archive.org/35/items/satsang_diksha/";
-
-        // Element References (Initialized in DOMContentLoaded)
-        let audioPlayer, trackListEl, quizControlsEl, regularControlsEl, savePlaylistBtnEl;
+        let autoPlay = true;
+        let totalTracks = 315;
+        let localStorageEnabled = typeof localStorage !== 'undefined';
         
-        const localStorageEnabled = typeof localStorage !== 'undefined';
-        
-        // Helper function to format track number for URL
-        function getTrackUrl(trackNum) {
-            return `${audioBaseUrl}sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
-        }
+        // DOM element references (to be assigned in DOMContentLoaded)
+        let trackListEl;
+        let allShlokasTitleEl;
+        let quizControlsEl;
+        let regularControlsEl;
+        let savePlaylistBtnEl;
 
-        // --- Core Playback Logic (Preserved) ---
-        function playCurrent() {
-            if (currentIndex >= playlist.length) {
-                // End of playlist
-                if (autoPlay) {
-                    showToast("Playlist finished. Repeating all tracks.");
-                    currentIndex = 0;
-                } else {
-                    showToast("Playlist finished.");
-                    return;
-                }
-            }
 
-            const trackNum = playlist[currentIndex];
-            audioPlayer.src = getTrackUrl(trackNum);
-            audioPlayer.playbackRate = currentSpeed;
-            
-            // Highlight the currently playing track
-            document.querySelectorAll(".track-item").forEach(el => el.classList.remove("playing"));
-            const currentLabel = document.querySelector(`.trackBox[value="${trackNum}"]`)?.closest("label");
-            if(currentLabel) currentLabel.classList.add("playing");
+        // --- CORE LOGIC ---
 
-            audioPlayer.play().catch(err => {
-                showToast("Playback blocked by browser autoplay policy. Please interact with the page.");
-                console.log("Play error:", err);
-            });
-            
-            // This is the main play loop logic
-            audioPlayer.onended = () => {
-                repeatCounter++;
-                if (repeatCounter < repeatEach) {
-                    // Repeat the current track
-                    audioPlayer.play();
-                } else {
-                    // Move to the next track
-                    currentIndex++;
-                    repeatCounter = 0;
-                    playCurrent();
-                }
-            };
-        }
-        
-        function toggleAutoPlay() {
-            autoPlay = !autoPlay;
-            const button = document.getElementById("autoPlayToggle");
-            button.innerHTML = `<i class="fa-solid fa-toggle-${autoPlay ? 'on' : 'off'}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
-            button.classList.toggle('btn-secondary', !autoPlay);
-            button.classList.toggle('btn-green', autoPlay);
-        }
-
-        // --- Quiz Mode Logic (Preserved) ---
-
-        function toggleQuizMode() {
-            isQuizMode = !isQuizMode;
-            const modeToggleBtn = document.getElementById("modeToggle");
-            const shlokasLabel = document.getElementById('shlokas-label'); // Get the specific label element
-
-            if (isQuizMode) {
-                // Enter Quiz Mode
-                modeToggleBtn.innerHTML = '<i class="fa-solid fa-volume-up"></i> Exit Quiz Mode';
-                modeToggleBtn.classList.remove('btn-primary');
-                modeToggleBtn.classList.add('btn-red');
-                regularControlsEl.classList.add('hidden');
-                quizControlsEl.classList.remove('hidden');
-                savePlaylistBtnEl.classList.add('hidden'); // Cannot save during quiz
-                
-                // FIX 2: Correctly target the dedicated span element
-                if (shlokasLabel) shlokasLabel.textContent = "Quiz Selection"; 
-
-                showToast("Quiz Mode Activated. Select Shlokas/Playlists to begin.");
-                
-                audioPlayer.pause();
-                playlist = []; // Reset playlist for quiz
-                currentIndex = 0;
-
-                // Set up onended for quiz mode
-                audioPlayer.onended = () => {
-                    if (isQuizMode) {
-                        startCountdown();
-                    } else {
-                        // Re-attach standard onended logic if quiz mode is false
-                        playCurrent();
-                    }
-                };
-
-            } else {
-                // Exit Quiz Mode
-                modeToggleBtn.innerHTML = '<i class="fa-solid fa-graduation-cap"></i> Start Quiz Mode';
-                modeToggleBtn.classList.remove('btn-red');
-                modeToggleBtn.classList.add('btn-primary');
-                regularControlsEl.classList.remove('hidden');
-                quizControlsEl.classList.add('hidden');
-                savePlaylistBtnEl.classList.remove('hidden'); // Show save button again
-                
-                // FIX 2: Correctly target the dedicated span element
-                if (shlokasLabel) shlokasLabel.textContent = "All Shlokas (1–170)";
-
-                if (countdownInterval) clearInterval(countdownInterval);
-                clearTimeout(autoPlayTimeout);
-                document.getElementById('countdown').textContent = '';
-                document.getElementById('quizStatus').textContent = '';
-                document.getElementById('playFullBtn').classList.add('hidden');
-
-                audioPlayer.onended = playCurrent; // Restore standard handler
-            }
-        }
-        
-        function startCountdown() {
-            if (!isQuizMode || hasQuizPaused) return;
-
-            document.getElementById('quizStatus').textContent = 'Time to guess the shlok...';
-            document.getElementById('playFullBtn').classList.remove('hidden');
-
-            let timeRemaining = currentQuizTime;
-            const countdownEl = document.getElementById('countdown');
-            const countdownBar = document.getElementById('countdownBar');
-            
-            countdownEl.textContent = timeRemaining;
-            countdownBar.style.transition = `width ${currentQuizTime}s linear`;
-            countdownBar.style.width = '0%';
-
-            countdownInterval = setInterval(() => {
-                timeRemaining--;
-                countdownEl.textContent = timeRemaining;
-
-                if (timeRemaining <= 0) {
-                    clearInterval(countdownInterval);
-                    document.getElementById('quizStatus').textContent = 'Time\'s up!';
-                    
-                    // Start next shlok after delay
-                    autoPlayTimeout = setTimeout(() => {
-                        playNextQuizTrack();
-                    }, currentQuizDelay * 1000);
-                }
-            }, 1000);
-        }
-        
-        function pauseQuiz() {
-            hasQuizPaused = !hasQuizPaused;
-            const pauseBtn = document.getElementById('pauseQuizBtn');
-            if (hasQuizPaused) {
-                if (countdownInterval) clearInterval(countdownInterval);
-                clearTimeout(autoPlayTimeout);
-                audioPlayer.pause();
-                pauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Resume Quiz';
-                pauseBtn.classList.remove('btn-secondary');
-                pauseBtn.classList.add('btn-primary');
-                document.getElementById('quizStatus').textContent = 'Quiz Paused';
-            } else {
-                audioPlayer.play();
-                pauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause Quiz';
-                pauseBtn.classList.remove('btn-primary');
-                pauseBtn.classList.add('btn-secondary');
-                document.getElementById('quizStatus').textContent = 'Resuming...';
-                
-                // If it was paused during countdown, restart countdown
-                if (parseInt(document.getElementById('countdown').textContent) > 0) {
-                     startCountdown();
-                } else {
-                    // If it was paused after time's up, jump to next track
-                    playNextQuizTrack();
-                }
-            }
-        }
-
-        function playFullShloka() {
-            const trackNum = playlist[currentIndex > 0 ? currentIndex - 1 : 0]; // Play the last track that was paused
-            audioPlayer.src = getTrackUrl(trackNum);
-            audioPlayer.playbackRate = currentSpeed;
-            
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-            }
-            clearTimeout(autoPlayTimeout);
-            document.getElementById('quizStatus').textContent = 'Playing full shlok...';
-            document.getElementById('countdown').textContent = '';
-            document.getElementById('playFullBtn').classList.add('hidden');
-
-            audioPlayer.play().catch(err => {
-                showToast("Failed to play track. Please check your connection.");
-                console.log("Play error:", err);
-            });
-            
-            // After playing full shlok, resume quiz flow after it finishes
-            audioPlayer.onended = () => {
-                if (isQuizMode) {
-                    // Wait for delay before starting next track
-                    document.getElementById('quizStatus').textContent = 'Waiting for next shlok...';
-                    autoPlayTimeout = setTimeout(() => {
-                        playNextQuizTrack();
-                    }, currentQuizDelay * 1000);
-                }
-            }
-        }
-        
-        function changeQuizTime(time) {
-            currentQuizTime = time;
-            document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
-        }
-
-        function changeQuizDelay(delay) {
-            currentQuizDelay = delay;
-            document.getElementById("quizDelayDisplay").textContent = `${currentQuizDelay}s`;
-        }
-        
-        // --- UI/Utility Functions (Preserved) ---
-        
-        function toggleGroupDisplay() {
-            const groupsDiv = document.getElementById("groups");
-            const isHidden = groupsDiv.classList.toggle("hidden");
-            const groupToggleIcon = document.getElementById("group-toggle-icon");
-            groupToggleIcon.classList.toggle("fa-chevron-down", isHidden);
-            groupToggleIcon.classList.toggle("fa-chevron-up", !isHidden);
-        }
-
-        function clearSelection() {
-            document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(item => item.classList.remove("selected"));
-            document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => cb.checked = false);
-            document.querySelectorAll(".group-btn.selected").forEach(btn => btn.classList.remove("selected"));
-            playlist = [];
-            currentIndex = 0;
-            updateGroupButtonSelection();
-            showToast("Selection cleared.");
-        }
-
-        function confirmClearSelection() {
-            showModal("Are you sure you want to clear your current selection?", () => {
-                clearSelection();
-            });
-        }
-
-        function confirmClearHistory() {
-            showModal("Are you sure you want to clear your recently played history? This action cannot be undone.", () => {
-                clearHistory();
-            });
-        }
-        
-        function confirmDeletePlaylist(playlistName) {
-            showModal(`Are you sure you want to delete the playlist "${playlistName}"? This action cannot be undone.`, () => {
-                deletePlaylist(playlistName);
-            });
-        }
-        
-        function selectRange() {
-            const start = parseInt(document.getElementById("rangeStart").value, 10);
-            const end = parseInt(document.getElementById("rangeEnd").value, 10);
-            if (!isNaN(start) && !isNaN(end) && start >= 1 && end <= totalTracks && start <= end) {
-                document.querySelectorAll(".trackBox").forEach(cb => {
-                    const val = parseInt(cb.value, 10);
-                    const isChecked = val >= start && val <= end;
-                    cb.checked = isChecked;
-                    cb.closest("label").classList.toggle("selected", isChecked);
-                });
-                updateGroupButtonSelection();
-                showToast(`Shlokas ${start}–${end} selected.`);
-            } else {
-                showModal("Please enter a valid shlok range (e.g., 1-170).");
-            }
-        }
-
-        function toggleGroup(start, end, element) {
-            const isSelected = !element.classList.contains('selected');
-            element.classList.toggle('selected', isSelected);
-            element.setAttribute('aria-pressed', isSelected.toString());
-            for (let i = start; i <= end; i++) {
-                const checkbox = document.querySelector(`.trackBox[value="${i}"]`);
-                if (checkbox) {
-                    checkbox.checked = isSelected;
-                    checkbox.closest("label").classList.toggle("selected", isSelected);
-                }
-            }
-            updateGroupButtonSelection();
-        }
-        
         function changeSpeed(speed) {
             currentSpeed = speed;
             audioPlayer.playbackRate = currentSpeed;
-            document.getElementById("speedDisplay").textContent = currentSpeed.toFixed(1);
+            document.getElementById("speedValue").textContent = `${speed}x`;
+            if (localStorageEnabled) localStorage.setItem("playbackSpeed", speed);
         }
 
-        // --- Core Utility: Get Selected Tracks (Robustness Refactor) ---
+        function changeQuizTime(time) {
+            currentQuizTime = time;
+            document.getElementById("quizTimeValue").textContent = `${time}s`;
+            if (localStorageEnabled) localStorage.setItem("quizTime", time);
+        }
+        
+        function changeQuizDelay(delay) {
+            currentQuizDelay = delay;
+            document.getElementById("quizDelayValue").textContent = `${delay}s`;
+            if (localStorageEnabled) localStorage.setItem("quizDelay", delay);
+        }
+
+        function changeRepeatEach(times) {
+            repeatEach = times;
+            document.getElementById("repeatEachValue").textContent = `${times} time${times > 1 ? 's' : ''}`;
+            if (localStorageEnabled) localStorage.setItem("repeatEach", times);
+        }
+        
+        document.getElementById('autoPlayToggle').addEventListener('change', (e) => {
+            autoPlay = e.target.checked;
+            if (localStorageEnabled) localStorage.setItem("autoPlay", autoPlay);
+        });
+        
+        document.getElementById('repeatEach').addEventListener('input', function() {
+            changeRepeatEach(parseInt(this.value));
+        });
+        
+        function setMode(mode) {
+            const isQuiz = mode === 'quiz';
+            isQuizMode = isQuiz;
+            document.getElementById('mode-play').classList.toggle('active', !isQuiz);
+            document.getElementById('mode-quiz').classList.toggle('active', isQuiz);
+            
+            allShlokasTitleEl.textContent = isQuiz ? "Select Shlokas for Quiz Source" : "Select Individual Shlokas";
+            quizControlsEl.classList.toggle('hidden', !isQuiz);
+            regularControlsEl.classList.toggle('hidden', isQuiz);
+            document.getElementById('quizSettings').classList.toggle('hidden', !isQuiz);
+            document.getElementById('clearAllBtn').textContent = isQuiz ? "Clear Quiz Selection" : "Clear All Selections";
+            
+            // Re-evaluate save button visibility
+            const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked"));
+            savePlaylistBtnEl.classList.toggle('hidden', selectedTracks.length === 0 || isQuiz);
+            
+            // Clear any active playback/quiz state
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (autoPlayTimeout) clearTimeout(autoPlayTimeout);
+            audioPlayer.pause();
+            audioPlayer.src = "";
+            document.getElementById('currentShlok').textContent = "Nothing selected.";
+            document.getElementById('currentShlokQuiz').textContent = "Start the Quiz to begin.";
+            document.getElementById('quizStatus').textContent = "";
+            document.getElementById('countdown').textContent = "";
+            document.getElementById('playFullBtn').classList.add('hidden');
+            document.getElementById('countdownBar').style.width = '100%';
+
+            // Reset playlist state
+            playlist = [];
+            currentIndex = 0;
+            repeatCounter = 0;
+        }
+
+        function playFullAudio() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            document.getElementById('countdown').textContent = '';
+            document.getElementById('quizStatus').textContent = 'Playing full shlok...';
+            document.getElementById('playFullBtn').classList.add('hidden');
+            
+            const trackNum = playlist[currentIndex - 1]; // Current track index is already incremented
+            
+            // Play the track from the start
+            audioPlayer.currentTime = 0;
+            audioPlayer.play();
+
+            // Set a flag to prevent the short-play logic from running on the full playback
+            hasQuizPaused = false;
+            
+            // Listen for 'ended' event to automatically proceed
+            function onEnded() {
+                audioPlayer.removeEventListener('ended', onEnded);
+                document.getElementById('quizStatus').textContent = '';
+                if (autoPlay) {
+                    playNextQuizTrack();
+                }
+            }
+            audioPlayer.addEventListener('ended', onEnded);
+        }
+
+        // ----------------------------------------------------------------------------------------------------
+        // NEW UTILITY FUNCTION: Consolidate Track Selection Logic (Robustness Update #2)
+        // ----------------------------------------------------------------------------------------------------
         function getSelectedTracks(includeRecents = false) {
-            // 1. Check for selected Playlists
+            // 1. Check for selected Playlists (highest priority)
             const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"))
-                .flatMap(cb => {
-                    try {
-                        return JSON.parse(cb.dataset.selection);
-                    } catch (e) {
-                        console.error("Error parsing playlist selection data:", e);
-                        return [];
-                    }
-                });
+                .flatMap(cb => JSON.parse(cb.dataset.selection));
 
             if (selectedPlaylists.length > 0) {
-                // Return unique tracks from selected playlists
                 return Array.from(new Set(selectedPlaylists));
             }
             
-            // 2. Check for selected Recents (only if requested, e.g., in Quiz Mode)
+            // 2. Check for selected Recent Selections (if flag is true)
             if (includeRecents) {
                 const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"))
-                    .flatMap(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim(), 10)));
+                    .flatMap(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim())));
                     
                 if (selectedRecents.length > 0) {
-                    // Return unique tracks from selected recents
                     return Array.from(new Set(selectedRecents));
                 }
             }
@@ -633,76 +673,204 @@
             return Array.from(document.querySelectorAll(".trackBox:checked"))
                 .map(cb => parseInt(cb.value, 10));
         }
+        // ----------------------------------------------------------------------------------------------------
 
-        function playSelected() {
-            // Logic updated to use the new utility function (false = do not check recents)
-            let finalSelection = getSelectedTracks(false);
-
-            if (finalSelection.length === 0) {
-                showModal("Please select at least one shlok or a playlist to play.");
-                return;
-            }
-
-            repeatEach = parseInt(document.getElementById("repeatCount").value, 10) || 1;
-            playlist = [...finalSelection];
-            if (document.getElementById("shuffle").checked) {
-                playlist = playlist.sort(() => Math.random() - 0.5);
-            }
-            currentIndex = 0;
-            repeatCounter = 0;
-            
-            if (localStorageEnabled) {
-                saveSelection(finalSelection);
-            }
-            
-            // Ensure audio handler is back to standard
-            audioPlayer.onended = playCurrent;
-
-            playCurrent();
-            showToast("Playback started.");
-        }
-
+        // ----------------------------------------------------------------------------------------------------
+        // UPDATED playNextQuizTrack: Using getSelectedTracks(true) (Robustness Update #2)
+        // ----------------------------------------------------------------------------------------------------
         function playNextQuizTrack() {
-            // Logic updated to use the new utility function (true = check recents if no playlist is selected)
-            let selected = getSelectedTracks(true);
+            const selected = getSelectedTracks(true); // Refactored to use new utility function
             
             if (selected.length === 0) {
                 showModal("Please select a group of shlokas or a playlist to quiz yourself on first!");
                 return;
             }
 
-            // If the current quiz playlist is empty or exhausted, refill and shuffle it
+            // Shuffle/Reload playlist if exhausted or uninitialized
             if (playlist.length === 0 || currentIndex >= playlist.length) {
+                // Save this selection to history for quick recall (only save when starting a new full cycle)
+                saveSelection(selected); 
                 playlist = [...selected].sort(() => Math.random() - 0.5);
                 currentIndex = 0;
+                showToast(`Starting new quiz session with ${playlist.length} unique shlokas!`);
             }
 
             if (countdownInterval) {
                 clearInterval(countdownInterval);
             }
             clearTimeout(autoPlayTimeout);
-            document.getElementById('quizStatus').textContent = 'Playing fragment...';
+            document.getElementById('quizStatus').textContent = '';
             document.getElementById('playFullBtn').classList.add('hidden');
             document.getElementById('countdown').textContent = '';
 
             const trackNum = playlist[currentIndex];
-            document.getElementById('currentShlokQuiz').textContent = `Now playing: Shlok ${trackNum}`;
-            audioPlayer.src = getTrackUrl(trackNum);
+            document.getElementById('currentShlokQuiz').textContent = `Now playing hint for: Shlok ${trackNum}`;
+            
+            // Prepare audio
+            audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
             audioPlayer.playbackRate = currentSpeed;
             
             hasQuizPaused = false;
-            document.getElementById('countdownBar').style.transition = 'none';
             document.getElementById('countdownBar').style.width = '100%';
-            
             audioPlayer.play().catch(err => {
-                showToast("Failed to play track. Please check your connection.");
+                showToast("Failed to play track. Please check your connection or try again.");
                 console.log("Play error:", err);
             });
 
             currentIndex++;
         }
+        // ----------------------------------------------------------------------------------------------------
 
-        // --- Local Storage Functions (Preserved) ---
+        // Regular Playback Mode
+        // ----------------------------------------------------------------------------------------------------
+        function playSelected() {
+            if (isQuizMode) {
+                playNextQuizTrack(); // Delegate to quiz function if mode is mistakenly left on
+                return;
+            }
+
+            // Use getSelectedTracks(false) for regular play, prioritizing playlists > individual tracks
+            const finalSelection = getSelectedTracks(false); 
+
+            if (finalSelection.length === 0) {
+                showModal("Please select at least one shloka, a group, or a playlist to start playback.");
+                return;
+            }
+            
+            // Save the selection to history
+            saveSelection(finalSelection);
+
+            // Re-initialize playlist for linear playback
+            playlist = [...finalSelection].sort((a, b) => a - b);
+            currentIndex = 0;
+            repeatCounter = 0;
+            
+            playCurrent();
+        }
+
+        function playCurrent() {
+            if (playlist.length === 0) {
+                audioPlayer.pause();
+                document.getElementById('currentShlok').textContent = "Playlist finished or empty.";
+                showToast("Playlist finished.");
+                return;
+            }
+
+            if (currentIndex >= playlist.length) {
+                showToast("Playlist ended! Restarting from the beginning.");
+                currentIndex = 0;
+            }
+            
+            const trackNum = playlist[currentIndex];
+            const currentRepeat = repeatCounter + 1;
+
+            document.getElementById('currentShlok').textContent = `Shlok ${trackNum} (Repeat ${currentRepeat}/${repeatEach})`;
+            
+            audioPlayer.src = `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+            audioPlayer.playbackRate = currentSpeed;
+            audioPlayer.play().catch(err => {
+                document.getElementById('currentShlok').textContent = `Failed to play Shlok ${trackNum}.`;
+                showToast("Failed to play track. Skipping to next.");
+                currentIndex++; // Skip to next track on error
+                repeatCounter = 0;
+                playCurrent();
+            });
+        }
+        // ----------------------------------------------------------------------------------------------------
+
+
+        function clearSelection() {
+            document.querySelectorAll(".trackBox").forEach(cb => {
+                cb.checked = false;
+                cb.closest("label").classList.remove("selected");
+            });
+            document.querySelectorAll(".recent-box, .playlist-box").forEach(cb => {
+                cb.checked = false;
+                cb.closest("label").classList.remove("selected");
+            });
+            updateGroupButtonSelection();
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (autoPlayTimeout) clearTimeout(autoPlayTimeout);
+            audioPlayer.pause();
+            audioPlayer.src = "";
+            document.getElementById('currentShlok').textContent = "Nothing selected.";
+            document.getElementById('currentShlokQuiz').textContent = "Start the Quiz to begin.";
+            document.getElementById('quizStatus').textContent = "";
+            document.getElementById('countdown').textContent = "";
+            document.getElementById('playFullBtn').classList.add('hidden');
+        }
+
+        // ----------------------------------------------------------------------------------------------------
+        // UPDATED showModal: Fix Cross-Site Scripting (XSS) Vulnerability (Security Update #1)
+        // ----------------------------------------------------------------------------------------------------
+        function showModal(message, onConfirm = null) {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = '';
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+
+            // --- Start Security Fix ---
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+
+            // Insert close button using insertAdjacentHTML (since it's static HTML)
+            modalContent.innerHTML = `<span class="modal-close" onclick="this.closest('.modal').remove()" tabindex="0" role="button" aria-label="Close modal">&times;</span>`;
+
+            // Create a paragraph element for the message and use textContent for safety
+            const messageEl = document.createElement('p');
+            messageEl.className = 'mb-4';
+            messageEl.textContent = message; // SAFELY inserts text only (XSS Fix)
+            modalContent.appendChild(messageEl);
+
+            // Add the appropriate buttons based on onConfirm state
+            if (onConfirm) {
+                modalContent.insertAdjacentHTML('beforeend', `
+                    <div class="flex gap-4 justify-center">
+                        <button class="px-4 py-3 btn-red text-white btn-rounded" id="modal-cancel">Cancel</button>
+                        <button class="px-4 py-3 btn-primary text-white btn-rounded" id="modal-confirm">OK</button>
+                    </div>
+                `);
+            } else {
+                modalContent.insertAdjacentHTML('beforeend', `
+                    <button onclick="this.closest('.modal').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">OK</button>
+                `);
+            }
+            
+            modal.appendChild(modalContent);
+            modalContainer.appendChild(modal);
+            // --- End Security Fix ---
+
+            if (onConfirm) {
+                modal.querySelector('#modal-confirm').addEventListener('click', () => {
+                    onConfirm();
+                    modal.remove();
+                });
+                modal.querySelector('#modal-cancel').addEventListener('click', () => modal.remove());
+            }
+            
+            // Focus on a confirmation or close button for accessibility
+            const focusTarget = modal.querySelector('#modal-confirm') || modal.querySelector('.modal-close') || modal.querySelector('button');
+            if(focusTarget) focusTarget.focus();
+        }
+        // ----------------------------------------------------------------------------------------------------
+
+        function showToast(message) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.setAttribute('role', 'status');
+            toast.setAttribute('aria-live', 'polite');
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        // --- PLAYLIST & HISTORY MANAGEMENT ---
 
         function showSavePlaylistModal() {
             if (!localStorageEnabled) {
@@ -724,44 +892,35 @@
             modal.className = 'modal';
             modal.setAttribute('role', 'dialog');
             modal.setAttribute('aria-modal', 'true');
-            
-            const modalContent = document.createElement('div');
-            modalContent.className = 'modal-content text-left';
-            
-            // Static content structure
-            modalContent.innerHTML = `
-                <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
-                <h3 class="text-xl font-bold mb-4">Save Playlist</h3>
-                <p class="mb-2">Enter a name for your playlist:</p>
-                <input type="text" id="playlistNameInput" class="w-full mb-4 p-2 border rounded-lg" placeholder="My new playlist">
-                <div id="playlistNameFeedback" class="text-red-500 font-semibold hidden mb-4"></div>
-                <div class="flex gap-4 justify-end">
-                    <button class="px-4 py-3 btn-secondary text-white btn-rounded" onclick="this.closest('.modal').remove()">Cancel</button>
-                    <button class="px-4 py-3 btn-green text-white btn-rounded" id="savePlaylistConfirm">Save</button>
+            // Using template literal for this complex modal's static structure is acceptable, but the input value must be safe.
+            modal.innerHTML = `
+                <div class="modal-content text-left">
+                    <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+                    <h3 class="text-xl font-bold mb-4">Save Playlist</h3>
+                    <p class="mb-2">Enter a name for your playlist:</p>
+                    <input type="text" id="playlistNameInput" class="w-full mb-4" placeholder="My new playlist">
+                    <div id="playlistNameFeedback" class="text-red-400 font-semibold hidden mb-4"></div>
+                    <div class="flex gap-4 justify-end">
+                        <button class="px-4 py-3 btn-secondary text-white btn-rounded" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button class="px-4 py-3 btn-green text-white btn-rounded" id="savePlaylistConfirm">Save</button>
+                    </div>
                 </div>
             `;
-
-            modal.appendChild(modalContent);
             modalContainer.appendChild(modal);
-
             const inputEl = document.getElementById('playlistNameInput');
             const saveBtnEl = document.getElementById('savePlaylistConfirm');
             const feedbackEl = document.getElementById('playlistNameFeedback');
 
             function savePlaylist() {
-                const playlistName = inputEl.value.trim();
+                // Sanitize input name before using it
+                const playlistName = inputEl.value.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+                
                 if (playlistName === "") {
                     feedbackEl.textContent = "Playlist name cannot be empty.";
                     feedbackEl.classList.remove('hidden');
                     return;
                 }
-                let playlists = {};
-                try {
-                    playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
-                } catch (e) {
-                    console.error("Error loading playlists from localStorage:", e);
-                }
-
+                let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
                 if (playlists[playlistName]) {
                     feedbackEl.textContent = "A playlist with this name already exists.";
                     feedbackEl.classList.remove('hidden');
@@ -782,12 +941,16 @@
             });
             inputEl.focus();
         }
+        
+        function confirmDeletePlaylist(name) {
+            showModal(`Are you sure you want to delete the playlist "${name}"?`, () => deletePlaylist(name));
+        }
 
         function renderPersonalPlaylists() {
-            if (!localStorageEnabled) return;
-            let playlists = {};
-            try { playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {}; } catch (e) { playlists = {}; }
-            
+            if (!localStorageEnabled) {
+                return;
+            }
+            const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
             const playlistList = document.getElementById("playlistList");
             const personalPlaylistsDiv = document.getElementById("personalPlaylists");
             const emptyMessage = document.getElementById("playlist-empty");
@@ -795,10 +958,11 @@
             playlistList.innerHTML = "";
             const names = Object.keys(playlists);
             
-            personalPlaylistsDiv.classList.remove("hidden");
             if (names.length === 0) {
+                personalPlaylistsDiv.classList.remove("hidden");
                 emptyMessage.classList.remove("hidden");
             } else {
+                personalPlaylistsDiv.classList.remove("hidden");
                 emptyMessage.classList.add("hidden");
             }
             
@@ -806,18 +970,21 @@
                 const shlokas = playlists[name];
                 const li = document.createElement("li");
                 li.className = "space-y-2";
+                // Note: The `name` is sanitized via input filter on save, and here in the load/delete functions.
+                // Using replace for basic safety in this context.
+                const safeName = name.replace(/'/g, "\\'"); 
                 li.innerHTML = `
                     <label class="playlist-item block p-3 container-card cursor-pointer flex items-center justify-between">
                         <div class="flex items-center">
                             <input type="checkbox" class="playlist-box mr-2" data-selection='${JSON.stringify(shlokas)}'>
                             <span class="ml-6 font-semibold">${name}</span>
-                        </div>
+                            </div>
                         <div class="flex items-center space-x-2 text-sm text-gray-400">
                             <span>(${shlokas.length} shlokas)</span>
-                            <button onclick="loadPlaylist('${name.replace(/'/g, "\\'")}')" class="text-xs px-2 py-1 btn-secondary rounded-full">
+                            <button onclick="loadPlaylist('${safeName}')" class="text-xs px-2 py-1 btn-secondary rounded-full" aria-label="Load playlist ${name}">
                                 Load
                             </button>
-                            <button onclick="confirmDeletePlaylist('${name.replace(/'/g, "\\'")}')" class="text-xs px-2 py-1 btn-red rounded-full">
+                            <button onclick="confirmDeletePlaylist('${safeName}')" class="text-xs px-2 py-1 btn-red rounded-full" aria-label="Delete playlist ${name}">
                                 Delete
                             </button>
                         </div>
@@ -829,12 +996,24 @@
 
         function loadPlaylist(name) {
             if (!localStorageEnabled) return;
-            let playlists = {};
-            try { playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {}; } catch (e) { return; }
-            
+            let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
             const shlokas = playlists[name];
             if (shlokas) {
-                clearSelection();
+                // Clear all other selection types
+                document.querySelectorAll(".trackBox, .recent-box, .playlist-box").forEach(cb => {
+                    cb.checked = false;
+                    cb.closest("label").classList.remove("selected");
+                });
+
+                // Set the current playlist item as selected
+                document.querySelectorAll('.playlist-box').forEach(cb => {
+                    if (cb.closest('label').querySelector('.font-semibold').textContent === name) {
+                        cb.checked = true;
+                        cb.closest('label').classList.add('selected');
+                    }
+                });
+
+                // Load tracks into individual boxes (for visual feedback)
                 shlokas.forEach(trackNum => {
                     const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
                     if (checkbox) {
@@ -849,16 +1028,15 @@
 
         function deletePlaylist(name) {
             if (!localStorageEnabled) return;
-            let playlists = {};
-            try { playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {}; } catch (e) { return; }
-            
+            let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
             delete playlists[name];
             localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
             renderPersonalPlaylists();
+            showToast(`Playlist "${name}" deleted.`);
         }
 
         function saveSelection(selection) {
-            if (!localStorageEnabled) return;
+            if (!localStorageEnabled || isQuizMode) return;
             let history = [];
             try { history = JSON.parse(localStorage.getItem("recentSelections")) || []; } catch (e) { history = []; }
             const selString = selection.join(",");
@@ -869,29 +1047,31 @@
 
         function clearHistory() {
             if (!localStorageEnabled) return;
-            localStorage.removeItem("recentSelections");
-            renderRecentSelections();
+            showModal("Are you sure you want to clear your recently played history?", () => {
+                localStorage.removeItem("recentSelections");
+                renderRecentSelections();
+                showToast("Recently played history cleared.");
+            });
         }
 
         function renderRecentSelections() {
-            if (!localStorageEnabled) return;
-            let history = [];
-            try { history = JSON.parse(localStorage.getItem("recentSelections")) || []; } catch (e) { history = []; }
-            
+            if (!localStorageEnabled) {
+                return;
+            }
+            const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
             const recentDiv = document.getElementById("recentlyPlayed");
             const recentList = document.getElementById("recentList");
             const recentEmpty = document.getElementById("recent-empty");
             recentList.innerHTML = "";
-            
-            recentDiv.classList.remove("hidden");
             if (history.length === 0) { 
+                recentDiv.classList.add("hidden"); 
                 recentEmpty.classList.remove("hidden");
                 return; 
             }
+            recentDiv.classList.remove("hidden");
             recentEmpty.classList.add("hidden");
-            
             history.forEach((sel) => {
-                const numbers = sel.split(",").map(n => parseInt(n.trim(), 10));
+                const numbers = sel.split(",").map(n => parseInt(n.trim()));
                 let labelText = numbers.length <= 6 ? "Shlok " + numbers.join(", ") : `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${numbers.length} total)`;
                 const li = document.createElement("li");
                 li.className = "space-y-2";
@@ -910,39 +1090,41 @@
             let history = [];
             try { history = JSON.parse(localStorage.getItem("recentSelections")) || []; } catch (e) { history = []; }
             if (history.length > 0) {
-                const lastSel = history[0].split(",").map(n => parseInt(n.trim(), 10));
-                document.querySelectorAll(".trackBox").forEach(cb => {
-                    const isChecked = lastSel.includes(parseInt(cb.value, 10));
-                    cb.checked = isChecked;
-                    cb.closest("label").classList.toggle("selected", isChecked);
+                const lastSel = history[0].split(",").map(n => parseInt(n.trim()));
+                lastSel.forEach(trackNum => {
+                    const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        checkbox.closest("label").classList.add("selected");
+                    }
                 });
                 updateGroupButtonSelection();
-                showToast("Last selection restored.");
-            } else {
-                showToast("No selection history found.");
             }
         }
         
         function updateGroupButtonSelection() {
-            const selectedTracks = new Set(Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value, 10)));
+            const selectedTracks = new Set(Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value)));
             document.querySelectorAll(".group-btn").forEach(btn => {
-                const start = parseInt(btn.dataset.start, 10);
-                const end = parseInt(btn.dataset.end, 10);
-                if (isNaN(start) || isNaN(end)) {
-                    return;
-                }
+                const start = parseInt(btn.dataset.start);
+                const end = parseInt(btn.dataset.end);
+                
                 let isGroupSelected = true;
                 for(let i = start; i <= end; i++) {
+                    // Check if *all* tracks in the group are selected
                     if (!selectedTracks.has(i)) {
                         isGroupSelected = false;
                         break;
                     }
                 }
+                
                 btn.classList.toggle('selected', isGroupSelected);
                 btn.setAttribute('aria-pressed', isGroupSelected);
             });
+            // Also update the visibility of the Save Playlist button
             savePlaylistBtnEl.classList.toggle('hidden', selectedTracks.size === 0 || isQuizMode);
         }
+
+        // --- UI GENERATION ---
 
         function generateGroups() {
             const groupDiv = document.getElementById("groups");
@@ -951,134 +1133,114 @@
                 const btn = document.createElement("button");
                 btn.className = "group-btn";
                 btn.setAttribute("tabindex", "0");
-                btn.setAttribute("aria-pressed", "false");
+                btn.setAttribute("aria-pressed", "false"); 
                 btn.dataset.start = i;
                 btn.dataset.end = end;
                 btn.innerHTML = `${i}–${end}<span class="checkmark">✓</span>`;
-                btn.onclick = () => toggleGroup(i, end, btn);
+                btn.onclick = () => toggleGroup(i, end, btn); 
                 groupDiv.appendChild(btn);
             }
         }
+        
+        function toggleGroup(start, end, btn) {
+            // Determine the current state of the button (which should reflect if the group is fully selected)
+            const isGroupSelected = btn.classList.contains('selected');
+
+            // Clear other selection types (Recent/Playlists) to prevent conflict
+            document.querySelectorAll(".recent-box, .playlist-box").forEach(cb => {
+                cb.checked = false;
+                cb.closest("label").classList.remove("selected");
+            });
+
+            // Toggle the selection state for all tracks in the group
+            for (let i = start; i <= end; i++) {
+                const checkbox = document.querySelector(`.trackBox[value="${i}"]`);
+                if (checkbox) {
+                    // If the group was already selected (isGroupSelected is true), we deselect them.
+                    // If the group was not fully selected (isGroupSelected is false), we select them.
+                    checkbox.checked = !isGroupSelected;
+                    checkbox.closest("label").classList.toggle("selected", !isGroupSelected);
+                }
+            }
+
+            // Update the visual state of the group button itself
+            btn.classList.toggle('selected', !isGroupSelected);
+            btn.setAttribute('aria-pressed', !isGroupSelected);
+
+            // Update all group buttons and the Save Playlist button status based on the new individual track selection
+            updateGroupButtonSelection();
+        }
+
 
         function generateTracks() {
             for (let i = 1; i <= totalTracks; i++) {
                 const li = document.createElement("li");
                 li.innerHTML = `
-                    <label class="track-item block p-3">
-                        <input type="checkbox" value="${i}" class="trackBox mr-2 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 align-middle"> 
-                        <span class="ml-6 align-middle">Shlok ${i}</span>
+                    <label class="track-item block p-3 text-white">
+                        <input type="checkbox" value="${i}" class="trackBox mr-2"> <span class="ml-6">Shlok ${i}</span>
                     </label>`;
                 trackListEl.appendChild(li);
             }
         }
-
-        // --- Core Utility: Show Modal (Security Fix) ---
-        function showModal(message, onConfirm = null) {
-            const modalContainer = document.getElementById('modal-container');
-            modalContainer.innerHTML = '';
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.setAttribute('role', 'dialog');
-            modal.setAttribute('aria-modal', 'true');
-            
-            const modalContent = document.createElement('div');
-            modalContent.className = 'modal-content';
-
-            // 1. Add Close Button (using innerHTML as it's hardcoded static HTML)
-            modalContent.innerHTML = `<span class="modal-close" onclick="this.closest('.modal').remove()" tabindex="0">&times;</span>`;
-            
-            // 2. Add Message (SAFELY using textContent)
-            const messageEl = document.createElement('p');
-            messageEl.className = 'mb-4 text-gray-700';
-            messageEl.textContent = message; 
-            modalContent.appendChild(messageEl);
-
-            // 3. Add Buttons (using insertAdjacentHTML for the button block)
-            if (onConfirm) {
-                modalContent.insertAdjacentHTML('beforeend', `
-                    <div class="flex gap-4 justify-center">
-                        <button class="px-4 py-3 btn-red text-white btn-rounded" id="modal-cancel">Cancel</button>
-                        <button class="px-4 py-3 btn-primary text-white btn-rounded" id="modal-confirm">OK</button>
-                    </div>
-                `);
-            } else {
-                modalContent.insertAdjacentHTML('beforeend', `
-                    <button onclick="this.closest('.modal').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">
-                        OK
-                    </button>
-                `);
-            }
-            
-            modal.appendChild(modalContent);
-            modalContainer.appendChild(modal);
-
-            if (onConfirm) {
-                modal.querySelector('#modal-confirm').addEventListener('click', () => {
-                    onConfirm();
-                    modal.remove();
-                });
-                modal.querySelector('#modal-cancel').addEventListener('click', () => modal.remove());
-                // Focus on the confirm button for primary action
-                modal.querySelector('#modal-confirm').focus(); 
-            } else {
-                // Focus on the OK button
-                modal.querySelector('button.btn-primary').focus();
-            }
-        }
-
-        function showToast(message) {
-            const toastContainer = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.setAttribute('role', 'status');
-            toast.setAttribute('aria-live', 'polite');
-            toast.textContent = message;
-            toastContainer.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 4000);
-        }
-
-        // --- Event Listeners and Initialization ---
+        
+        // --- INITIALIZATION ---
 
         document.addEventListener("DOMContentLoaded", function () {
-            audioPlayer = document.getElementById("audioPlayer");
-            const searchInput = document.getElementById("search");
-            
             // Assign global element references
+            audioPlayer = document.getElementById("audioPlayer");
             trackListEl = document.getElementById("trackList");
+            allShlokasTitleEl = document.getElementById("allShlokasTitle");
             quizControlsEl = document.getElementById("quizControls");
             regularControlsEl = document.getElementById("regularControls");
             savePlaylistBtnEl = document.getElementById("savePlaylistBtn");
-            // allShlokasTitleEl assignment removed as its function is now handled by the dedicated span ID.
-
+            
+            const searchInput = document.getElementById("search");
+            const trackListContainer = document.getElementById("trackList");
             const clearSearchBtn = document.getElementById("clearSearch");
             const searchFeedbackEl = document.getElementById("search-feedback");
 
-            // Initial generation of tracks and groups
-            generateGroups();
-            generateTracks();
-            renderPersonalPlaylists();
-            renderRecentSelections();
-            
-            // Initialize event listeners
-            document.getElementById("modeToggle").addEventListener("click", toggleQuizMode);
+            // Load saved settings
+            currentSpeed = parseFloat(localStorage.getItem("playbackSpeed") || 1.0);
+            currentQuizTime = parseInt(localStorage.getItem("quizTime") || 10);
+            currentQuizDelay = parseInt(localStorage.getItem("quizDelay") || 3);
+            repeatEach = parseInt(localStorage.getItem("repeatEach") || 1);
+            autoPlay = localStorage.getItem("autoPlay") !== "false"; // Default to true if not set
 
-            // Speed slider
-            document.getElementById("speedSlider").addEventListener("input", function() {
+            // Initialize UI from saved settings
+            const speedSlider = document.getElementById("speedSlider");
+            const quizTimeSlider = document.getElementById("quizTimeSlider");
+            const quizDelaySlider = document.getElementById("quizDelaySlider");
+            const repeatEachSlider = document.getElementById("repeatEach");
+            const autoPlayToggle = document.getElementById('autoPlayToggle');
+
+            speedSlider.value = currentSpeed;
+            document.getElementById("speedValue").textContent = `${currentSpeed}x`;
+            audioPlayer.playbackRate = currentSpeed;
+            
+            quizTimeSlider.value = currentQuizTime;
+            document.getElementById("quizTimeValue").textContent = `${currentQuizTime}s`;
+            
+            quizDelaySlider.value = currentQuizDelay;
+            document.getElementById("quizDelayValue").textContent = `${currentQuizDelay}s`;
+            
+            repeatEachSlider.value = repeatEach;
+            document.getElementById("repeatEachValue").textContent = `${repeatEach} time${repeatEach > 1 ? 's' : ''}`;
+            
+            autoPlayToggle.checked = autoPlay;
+
+
+            // Bind settings listeners
+            speedSlider.addEventListener("input", function() {
                 changeSpeed(parseFloat(this.value));
             });
-            
-            // Quiz sliders (already have inline oninput, but adding change listeners for consistency)
-            document.getElementById("quizTimeSlider").addEventListener("change", function() {
+            quizTimeSlider.addEventListener("input", function() {
                 changeQuizTime(parseInt(this.value));
             });
-            document.getElementById("quizDelaySlider").addEventListener("change", function() {
+            quizDelaySlider.addEventListener("input", function() {
                 changeQuizDelay(parseInt(this.value));
             });
-            
-            // Search functionality
+
+            // Search/Filter logic
             clearSearchBtn.addEventListener("click", () => {
                 searchInput.value = "";
                 searchInput.dispatchEvent(new Event('input'));
@@ -1089,8 +1251,7 @@
                 let found = false;
                 document.querySelectorAll("#trackList li").forEach(li => {
                     const trackNumber = li.querySelector(".trackBox").value;
-                    // Check if it's the start of the number or an exact match
-                    if (!term || trackNumber.startsWith(term)) { 
+                    if (!term || trackNumber.startsWith(term)) {
                         li.classList.remove("hidden");
                         found = true;
                     } else {
@@ -1100,16 +1261,15 @@
                 searchFeedbackEl.classList.toggle("hidden", found);
                 clearSearchBtn.classList.toggle("hidden", term === "");
             });
-            
-            // Track selection change listener (for styling and unchecking other lists)
-            trackListEl.addEventListener("change", function(event) {
+
+            // Centralized change listener for individual tracks
+            trackListContainer.addEventListener("change", function(event) {
                 if (event.target.classList.contains("trackBox")) {
                     const label = event.target.closest("label");
                     const isChecked = event.target.checked;
                     label.classList.toggle("selected", isChecked);
                     updateGroupButtonSelection();
-                    
-                    // Uncheck other selection sources when a track is manually checked
+                    // Deselect any active playlist/recent items when individual tracks are changed
                     document.querySelectorAll(".recent-box, .playlist-box").forEach(cb => {
                         cb.checked = false;
                         cb.closest("label").classList.remove("selected");
@@ -1117,41 +1277,129 @@
                 }
             });
             
-            // Recent/Playlist list change listeners (uncheck tracks/other lists)
+            // Centralized change listener for Recent selections
             document.getElementById("recentList").addEventListener("change", function(event) {
                 if (event.target.classList.contains("recent-box")) {
+                    // Clear individual track and playlist selections
                     document.querySelectorAll(".track-item.selected, .playlist-item.selected").forEach(item => item.classList.remove("selected"));
                     document.querySelectorAll(".trackBox, .playlist-box").forEach(cb => cb.checked = false);
 
-                    // Ensure only one recent item can be selected at a time if that was the intended behavior
-                    // If multiple selection is intended, remove this part:
-                    document.querySelectorAll(".recent-box").forEach(cb => {
-                        if (cb !== event.target) cb.checked = false;
+                    const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
+                    
+                    // Update visual state of recent selections
+                    document.querySelectorAll(".recent-item").forEach(item => {
+                         item.classList.toggle("selected", item.querySelector(".recent-box").checked);
                     });
+
+                    // Update individual tracks for visual feedback
+                    const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(Number)));
+                    document.querySelectorAll(".trackBox").forEach(cb => {
+                        const trackNum = parseInt(cb.value);
+                        const isChecked = allNumbers.has(trackNum);
+                        cb.checked = isChecked;
+                        cb.closest("label").classList.toggle("selected", isChecked);
+                    });
+                    
+                    updateGroupButtonSelection();
                 }
             });
-            
+
+            // Centralized change listener for Playlists
             document.getElementById("playlistList").addEventListener("change", function(event) {
                 if (event.target.classList.contains("playlist-box")) {
+                    // Clear individual track and recent selections
                     document.querySelectorAll(".track-item.selected, .recent-item.selected").forEach(item => item.classList.remove("selected"));
                     document.querySelectorAll(".trackBox, .recent-box").forEach(cb => cb.checked = false);
 
-                    // Ensure only one playlist can be selected at a time if that was the intended behavior
-                    // If multiple selection is intended, remove this part:
-                    document.querySelectorAll(".playlist-box").forEach(cb => {
-                        if (cb !== event.target) cb.checked = false;
+                    const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"));
+                    
+                    // Update visual state of playlists
+                    document.querySelectorAll(".playlist-item").forEach(item => {
+                         item.classList.toggle("selected", item.querySelector(".playlist-box").checked);
                     });
+
+                    // Update individual tracks for visual feedback
+                    const allNumbers = new Set(selectedPlaylists.flatMap(cb => JSON.parse(cb.dataset.selection)));
+                    document.querySelectorAll(".trackBox").forEach(cb => {
+                        const trackNum = parseInt(cb.value);
+                        const isChecked = allNumbers.has(trackNum);
+                        cb.checked = isChecked;
+                        cb.closest("label").classList.toggle("selected", isChecked);
+                    });
+                    
+                    updateGroupButtonSelection();
                 }
             });
 
-            // Restore initial onended handler for standard play
-            audioPlayer.onended = playCurrent;
+            // Audio event listeners
+            audioPlayer.addEventListener("error", (e) => {
+                showToast("An error occurred while loading the audio.");
+            });
 
-            // Update save playlist button state on load
-            updateGroupButtonSelection();
+            audioPlayer.addEventListener("playing", () => {
+                if (isQuizMode && !hasQuizPaused) {
+                    document.getElementById('playFullBtn').classList.add('hidden');
+                    // Set timeout for the quiz delay before pause
+                    autoPlayTimeout = setTimeout(() => {
+                        audioPlayer.pause();
+                        hasQuizPaused = true;
+                        document.getElementById('quizStatus').textContent = "Audio Paused. Your turn to recite!";
+                        document.getElementById('playFullBtn').classList.remove('hidden');
+
+                        let countdown = currentQuizTime;
+                        const countdownEl = document.getElementById('countdown');
+                        countdownEl.textContent = `(${countdown}s)`;
+                        
+                        if (countdownInterval) {
+                            clearInterval(countdownInterval);
+                        }
+                        
+                        document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+
+                        // Start countdown timer
+                        countdownInterval = setInterval(() => {
+                            countdown--;
+                            countdownEl.textContent = `(${countdown}s)`;
+                            document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+                            if (countdown <= 0) {
+                                clearInterval(countdownInterval);
+                                countdownEl.textContent = '';
+                                document.getElementById('quizStatus').textContent = 'Time up!';
+                                document.getElementById('playFullBtn').classList.add('hidden');
+                                if (autoPlay) {
+                                    playNextQuizTrack();
+                                }
+                            }
+                        }, 1000);
+                    }, currentQuizDelay * 1000); 
+                }
+            });
+
+            audioPlayer.addEventListener("ended", () => {
+                if (!isQuizMode) {
+                    // Regular Playback Mode: Handle repeating the current track
+                    repeatCounter++;
+                    if (repeatCounter >= repeatEach) {
+                        repeatCounter = 0;
+                        currentIndex++; // Move to the next track
+                    }
+                    playCurrent();
+                } else if (isQuizMode && !hasQuizPaused) {
+                    // This case handles when 'playFullAudio' finishes playing the full track.
+                    // The auto-advance logic is handled within playFullAudio for immediate cleanup.
+                }
+            });
             
-            // Show status
-            showToast("Player loaded successfully!");
+            // --- FINAL SETUP ---
+            generateGroups();
+            generateTracks();
+            if (localStorageEnabled) {
+                restoreLastSelection();
+                renderRecentSelections();
+                renderPersonalPlaylists();
+            } else {
+                showToast("Local storage is disabled. Playlists and history will not be saved.");
+            }
         });
     </script>
 </body>
