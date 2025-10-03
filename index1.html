@@ -3,15 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shloka Audio Player & Quiz Utility</title>
-    
+    <title>Mission Rajipo - Apple Music UI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/20GQR+q1U/G1bYfQYy9kH9hT7p0uE/I8T2OQ+YQ+c2wJpC8XvPqjG6Jg==' crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    
     <style>
         :root {
             --bg-color: #1c1c1e; /* Darkest Background */
@@ -180,12 +177,10 @@
             <p class="text-secondary-text">Select tracks below to start listening or quizzing.</p>
         </div>
 
-        <div class="flex bg-gray-700 p-1 rounded-lg mb-6">
-            <button id="mode-play" class="flex-grow py-2 text-center text-sm font-semibold rounded-lg transition-colors bg-primary-color" onclick="setMode('play')">
-                <i class="fas fa-headphones mr-2"></i> Listen Mode
-            </button>
-            <button id="mode-quiz" class="flex-grow py-2 text-center text-sm font-semibold rounded-lg transition-colors" onclick="setMode('quiz')">
-                <i class="fas fa-brain mr-2"></i> Quiz Mode
+        <div class="flex justify-center mb-6">
+            <button class="px-6 py-2 bg-primary-color hover:bg-green-600 text-white rounded-full font-bold transition-colors shadow-lg" onclick="toggleMode()">
+                <i id="mode-icon" class="fa-solid fa-toggle-off mr-2"></i> 
+                <span id="mode-text">Toggle to Quiz Mode</span>
             </button>
         </div>
         
@@ -196,7 +191,7 @@
                 <label class="block font-medium">Playback Speed: <span id="speedValue" class="text-primary-color ml-2">1.0x</span></label>
                 <input type="range" id="speedSlider" min="0.5" max="2" value="1" step="0.25" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
 
-                <div id="quizSettings" class="space-y-4">
+                <div id="quizSettings" class="space-y-4 hidden">
                     <hr class="border-gray-700">
                     <label class="block font-medium">Audio Play Delay (before pause): <span id="quizDelayValue" class="text-primary-color ml-2">3s</span></label>
                     <input type="range" id="quizDelaySlider" min="1" max="10" value="3" step="1" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
@@ -206,7 +201,6 @@
                     
                     <label class="block font-medium">Repeat Each Shlok: <span id="repeatEachValue" class="text-primary-color ml-2">1 time</span></label>
                     <input type="range" id="repeatEach" min="1" max="5" value="1" step="1" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
-
                     <div class="flex items-center pt-2">
                         <input type="checkbox" id="autoPlayToggle" checked class="form-checkbox h-5 w-5 text-primary-color rounded border-gray-500 bg-gray-700">
                         <label for="autoPlayToggle" class="ml-3 text-sm font-medium cursor-pointer">Auto-play next track after quiz time ends</label>
@@ -307,7 +301,7 @@
         let playlist = [];
         let currentIndex = 0;
         let currentSpeed = 1.0;
-        let repeatEach = 1;
+        let repeatEach = 1; // Added repeat setting
         let repeatCounter = 0;
         let currentQuizTime = 10;
         let currentQuizDelay = 3;
@@ -325,6 +319,8 @@
         let regularControlsEl;
         let savePlaylistBtnEl;
         let modalContainerEl;
+        let modeIconEl;
+        let modeTextEl;
 
         // --- CORE LOGIC ---
 
@@ -346,7 +342,8 @@
             document.getElementById("quizDelayValue").textContent = `${delay}s`;
             if (localStorageEnabled) localStorage.setItem("quizDelay", delay);
         }
-
+        
+        // Added repeat each function
         function changeRepeatEach(times) {
             repeatEach = times;
             document.getElementById("repeatEachValue").textContent = `${times} time${times > 1 ? 's' : ''}`;
@@ -361,28 +358,24 @@
         document.getElementById('repeatEach').addEventListener('input', function() {
             changeRepeatEach(parseInt(this.value));
         });
-        
-        function setMode(mode) {
-            const isQuiz = mode === 'quiz';
-            isQuizMode = isQuiz;
-            document.getElementById('mode-play').classList.toggle('bg-primary-color', !isQuiz);
-            document.getElementById('mode-play').classList.toggle('text-white', !isQuiz);
-            document.getElementById('mode-quiz').classList.toggle('bg-primary-color', isQuiz);
-            document.getElementById('mode-quiz').classList.toggle('text-white', isQuiz);
-            document.getElementById('mode-play').classList.toggle('bg-transparent', isQuiz);
-            document.getElementById('mode-quiz').classList.toggle('bg-transparent', !isQuiz);
-            document.getElementById('mode-play').classList.toggle('text-secondary-text', isQuiz);
-            document.getElementById('mode-quiz').classList.toggle('text-secondary-text', !isQuiz);
+
+        // ToggleMode function for the ORIGINAL SINGLE BUTTON UI
+        function toggleMode() {
+            isQuizMode = !isQuizMode;
             
-            allShlokasTitleEl.textContent = isQuiz ? "Select Shlokas for Quiz Source" : "Select Individual Shlokas";
-            quizControlsEl.classList.toggle('hidden', !isQuiz);
-            regularControlsEl.classList.toggle('hidden', isQuiz);
-            document.getElementById('quizSettings').classList.toggle('hidden', !isQuiz);
-            document.getElementById('clearAllBtn').textContent = isQuiz ? "Clear Quiz Selection" : "Clear All Selections";
+            // UI updates for the single button
+            modeIconEl.className = `fa-solid fa-toggle-${isQuizMode ? 'on' : 'off'} mr-2`;
+            modeTextEl.textContent = isQuizMode ? 'Exit Quiz Mode' : 'Toggle to Quiz Mode';
+            
+            allShlokasTitleEl.textContent = isQuizMode ? "Select Shlokas for Quiz Source" : "Select Individual Shlokas";
+            quizControlsEl.classList.toggle('hidden', !isQuizMode);
+            regularControlsEl.classList.toggle('hidden', isQuizMode);
+            document.getElementById('quizSettings').classList.toggle('hidden', !isQuizMode);
+            document.getElementById('clearAllBtn').textContent = isQuizMode ? "Clear Quiz Selection" : "Clear All Selections";
             
             // Re-evaluate save button visibility
             const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked"));
-            savePlaylistBtnEl.classList.toggle('hidden', selectedTracks.length === 0 || isQuiz);
+            savePlaylistBtnEl.classList.toggle('hidden', selectedTracks.length === 0 || isQuizMode);
             
             // Clear any active playback/quiz state
             if (countdownInterval) clearInterval(countdownInterval);
@@ -427,7 +420,7 @@
             audioPlayer.addEventListener('ended', onEnded);
         }
 
-        // NEW UTILITY FUNCTION: Consolidate Track Selection Logic (Robustness Update #2)
+        // === LOGIC UPDATE #1: Robust Track Selection ===
         function getSelectedTracks(includeRecents = false) {
             // 1. Check for selected Playlists (highest priority)
             const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"))
@@ -452,9 +445,8 @@
                 .map(cb => parseInt(cb.value, 10));
         }
 
-        // UPDATED playNextQuizTrack: Using getSelectedTracks(true) (Robustness Update #2)
         function playNextQuizTrack() {
-            const selected = getSelectedTracks(true); // Refactored to use new utility function
+            const selected = getSelectedTracks(true); // Uses the robust selection logic
             
             if (selected.length === 0) {
                 showModal("Please select a group of shlokas or a playlist to quiz yourself on first!");
@@ -494,6 +486,7 @@
 
             currentIndex++;
         }
+        // === END LOGIC UPDATE #1 ===
 
         // Regular Playback Mode
         function playSelected() {
@@ -573,7 +566,7 @@
             modalContainerEl.classList.add('hidden');
         }
 
-        // UPDATED showModal: Fix Cross-Site Scripting (XSS) Vulnerability (Security Update #1)
+        // === SECURITY UPDATE #2: XSS FIX ===
         function showModal(message, onConfirm = null) {
             modalContainerEl.innerHTML = '';
             modalContainerEl.classList.remove('hidden');
@@ -583,20 +576,17 @@
             modal.setAttribute('role', 'dialog');
             modal.setAttribute('aria-modal', 'true');
 
-            // --- Start Security Fix ---
             const modalContent = document.createElement('div');
             modalContent.className = 'modal-content';
 
-            // Insert close button using insertAdjacentHTML (since it's static HTML)
             modalContent.innerHTML = `<span class="modal-close" onclick="this.closest('#modal-container').classList.add('hidden'); this.closest('.modal').remove()" tabindex="0" role="button" aria-label="Close modal" style="position: absolute; top: 10px; right: 20px; font-size: 24px; font-weight: bold; color: var(--secondary-text); cursor: pointer;">&times;</span>`;
 
-            // Create a paragraph element for the message and use textContent for safety
+            // Use textContent for safety here
             const messageEl = document.createElement('p');
             messageEl.className = 'mb-6 text-lg text-center';
-            messageEl.textContent = message; // SAFELY inserts text only (XSS Fix)
+            messageEl.textContent = message; 
             modalContent.appendChild(messageEl);
 
-            // Add the appropriate buttons based on onConfirm state
             if (onConfirm) {
                 modalContent.insertAdjacentHTML('beforeend', `
                     <div class="flex gap-4 justify-center pt-2">
@@ -614,7 +604,6 @@
             
             modal.appendChild(modalContent);
             modalContainerEl.appendChild(modal);
-            // --- End Security Fix ---
 
             if (onConfirm) {
                 modal.querySelector('#modal-confirm').addEventListener('click', () => {
@@ -625,10 +614,10 @@
                 modal.querySelector('#modal-cancel').addEventListener('click', () => modalContainerEl.classList.add('hidden'));
             }
             
-            // Focus on a confirmation or close button for accessibility
             const focusTarget = modal.querySelector('#modal-confirm') || modal.querySelector('.modal-close') || modal.querySelector('button');
             if(focusTarget) focusTarget.focus();
         }
+        // === END SECURITY UPDATE #2 ===
 
         function showToast(message) {
             const toastContainer = document.getElementById('toast-container');
@@ -667,7 +656,6 @@
             modal.setAttribute('role', 'dialog');
             modal.setAttribute('aria-modal', 'true');
 
-            // Use string concatenation for complex, static HTML here (not accepting user input directly)
             modal.innerHTML = `
                 <div class="modal-content text-left">
                     <span class="modal-close" onclick="this.closest('#modal-container').classList.add('hidden'); this.closest('.modal').remove()" tabindex="0" role="button" aria-label="Close modal" style="position: absolute; top: 10px; right: 20px; font-size: 24px; font-weight: bold; color: var(--secondary-text); cursor: pointer;">&times;</span>
@@ -687,7 +675,6 @@
             const feedbackEl = document.getElementById('playlistNameFeedback');
 
             function savePlaylist() {
-                // Sanitize input name before using it
                 const playlistName = inputEl.value.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
                 
                 if (playlistName === "") {
@@ -963,6 +950,8 @@
             regularControlsEl = document.getElementById("regularControls");
             savePlaylistBtnEl = document.getElementById("savePlaylistBtn");
             modalContainerEl = document.getElementById("modal-container");
+            modeIconEl = document.getElementById("mode-icon");
+            modeTextEl = document.getElementById("mode-text");
             
             const searchInput = document.getElementById("search");
             const trackListContainer = document.getElementById("trackList");
@@ -973,14 +962,14 @@
             currentSpeed = parseFloat(localStorage.getItem("playbackSpeed") || 1.0);
             currentQuizTime = parseInt(localStorage.getItem("quizTime") || 10);
             currentQuizDelay = parseInt(localStorage.getItem("quizDelay") || 3);
-            repeatEach = parseInt(localStorage.getItem("repeatEach") || 1);
+            repeatEach = parseInt(localStorage.getItem("repeatEach") || 1); // Load new setting
             autoPlay = localStorage.getItem("autoPlay") !== "false"; // Default to true if not set
 
             // Initialize UI from saved settings
             const speedSlider = document.getElementById("speedSlider");
             const quizTimeSlider = document.getElementById("quizTimeSlider");
             const quizDelaySlider = document.getElementById("quizDelaySlider");
-            const repeatEachSlider = document.getElementById("repeatEach");
+            const repeatEachSlider = document.getElementById("repeatEach"); // Reference to new slider
             const autoPlayToggle = document.getElementById('autoPlayToggle');
 
             speedSlider.value = currentSpeed;
@@ -992,8 +981,8 @@
             
             quizDelaySlider.value = currentQuizDelay;
             document.getElementById("quizDelayValue").textContent = `${currentQuizDelay}s`;
-            
-            repeatEachSlider.value = repeatEach;
+
+            repeatEachSlider.value = repeatEach; // Set new slider value
             document.getElementById("repeatEachValue").textContent = `${repeatEach} time${repeatEach > 1 ? 's' : ''}`;
             
             autoPlayToggle.checked = autoPlay;
