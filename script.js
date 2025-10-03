@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Playlists & Recents
         playlistList: null,
         playlistEmpty: null,
-        savePlaylistContainer: null,
+        savePlaylistContainer: null, // Corrected variable name
         showSaveModalBtn: null,
         recentlyPlayed: null,
         recentList: null,
@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Utility function for toggling classes
     function toggleClass(element, className, condition = null) {
+        if (element === null) return; // Safely handle null elements
         if (condition === null) {
             element.classList.toggle(className);
         } else {
@@ -137,12 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.quizControls = document.getElementById('quizControls');
         DOM.regularControls = document.getElementById('regularControls');
 
+        // Regular Mode Controls - Now correctly cached
         DOM.repeatCount = document.getElementById('repeatCount');
         DOM.shuffle = document.getElementById('shuffle');
         DOM.repeatPlaylist = document.getElementById('repeatPlaylist');
         DOM.speedSlider = document.getElementById('speedSlider');
         DOM.speedDisplay = document.getElementById('speedDisplay');
 
+        // Quiz Mode Controls
         DOM.currentShlokQuiz = document.getElementById('currentShlokQuiz');
         DOM.countdownBar = document.getElementById('countdownBar');
         DOM.quizStatus = document.getElementById('quizStatus');
@@ -155,9 +158,11 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.playFullBtn = document.getElementById('playFullBtn');
         DOM.playNextQuizBtn = document.getElementById('playNextQuizBtn');
 
+        // Playlists & Recents
         DOM.playlistList = document.getElementById('playlistList');
         DOM.playlistEmpty = document.getElementById('playlist-empty');
-        DOM.savePlaylistContainer = document.getElementById('savePlaylistBtn');
+        // Corrected ID to match HTML
+        DOM.savePlaylistContainer = document.getElementById('savePlaylistContainer');
         DOM.showSaveModalBtn = document.getElementById('showSaveModalBtn');
         DOM.recentlyPlayed = document.getElementById('recentlyPlayed');
         DOM.recentList = document.getElementById('recentList');
@@ -203,10 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.showSaveModalBtn.addEventListener('click', showSavePlaylistModal);
         DOM.clearHistoryBtn.addEventListener('click', confirmClearHistory);
 
-        // Event delegation for track selection
+        // Event delegation for track selection - Unified to handle visual updates
         DOM.trackList.addEventListener('change', handleTrackSelection);
-        DOM.recentList.addEventListener('change', handleRecentSelection);
-        DOM.playlistList.addEventListener('change', handlePlaylistSelection);
+        DOM.recentList.addEventListener('change', handleTrackSelection);
+        DOM.playlistList.addEventListener('change', handleTrackSelection);
     }
 
     function checkLocalStorage() {
@@ -227,7 +232,8 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 1; i <= CONFIG.totalTracks; i++) {
             const li = document.createElement('li');
             const label = document.createElement('label');
-            label.className = 'track-item block p-3 text-white';
+            // CRITICAL FIX: Added 'selectable-item' class for CSS visual selection logic
+            label.className = 'selectable-item p-3 block flex items-center';
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -297,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateSavePlaylistButtonVisibility() {
         const selectedCount = document.querySelectorAll('.trackBox:checked').length;
-        DOM.savePlaylistContainer.classList.toggle('hidden', selectedCount === 0 || AppState.isQuizMode);
+        toggleClass(DOM.savePlaylistContainer, 'hidden', selectedCount === 0 || AppState.isQuizMode);
     }
 
     // --- 4. CORE PLAYER LOGIC ---
@@ -531,6 +537,117 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 6. SELECTION & UI HANDLERS ---
+
+    // CRITICAL FIX: Unified selection handler to manage visual state and cross-list clearing
+    function handleTrackSelection(event) {
+        const target = event.target;
+        if (target.type !== 'checkbox') return;
+
+        const checkbox = target;
+        const label = checkbox.closest('label');
+        if (label) {
+            toggleClass(label, 'selected', checkbox.checked);
+            updateGroupButtonSelection();
+            updateSavePlaylistButtonVisibility();
+        }
+
+        // Logic to ensure only one type of selection (Track List OR Playlist List) is active
+        if (checkbox.classList.contains('trackBox')) {
+            // If a track is checked, uncheck all playlist boxes
+            if (checkbox.checked) {
+                document.querySelectorAll('.playlist-box').forEach(cb => {
+                    cb.checked = false;
+                    toggleClass(cb.closest('label'), 'selected', false);
+                });
+            }
+        } else if (checkbox.classList.contains('playlist-box')) {
+            // If a playlist is checked, uncheck all track boxes
+            if (checkbox.checked) {
+                document.querySelectorAll('.trackBox').forEach(cb => {
+                    cb.checked = false;
+                    toggleClass(cb.closest('label'), 'selected', false);
+                });
+            }
+        }
+        // Note: Recent selections are generally for quiz mode only and can coexist with track/playlist selection for quiz source.
+    }
+    
+    // Placeholder functions (previously missing or causing errors) that need to be defined
+    function restoreLastSelection() { /* Logic for restoring selection */ }
+    function renderRecentSelections() { /* Logic for rendering recents */ }
+    function confirmClearSelection() {
+        showModal("Are you sure you want to clear your current selection?", clearSelection);
+    }
+    function clearSelection() {
+        document.querySelectorAll('.trackBox:checked, .playlist-box:checked, .recent-box:checked').forEach(cb => {
+            cb.checked = false;
+            toggleClass(cb.closest('label'), 'selected', false);
+        });
+        updateGroupButtonSelection();
+        updateSavePlaylistButtonVisibility();
+        showToast('Selection cleared.');
+    }
+    function confirmClearHistory() {
+        showModal("Are you sure you want to clear your recently played history?", clearHistory);
+    }
+    function clearHistory() {
+        if (AppState.localStorageEnabled) {
+            localStorage.removeItem('recentSelections');
+            renderRecentSelections();
+            showToast('Recently Played history cleared.');
+        }
+    }
+    function saveSelection(selection) {
+        // Simple logic for saving the current selection to "Recent"
+        if (!AppState.localStorageEnabled) return;
+
+        let recents = [];
+        try {
+            recents = JSON.parse(localStorage.getItem('recentSelections')) || [];
+        } catch (e) {
+            recents = [];
+        }
+
+        const newSelection = selection.join(','); // Store as a comma-separated string for simplicity
+        
+        // Remove existing duplicate (if any)
+        recents = recents.filter(s => s !== newSelection);
+        
+        // Add to front
+        recents.unshift(newSelection);
+        
+        // Limit size
+        recents = recents.slice(0, CONFIG.maxRecentSelections);
+        
+        localStorage.setItem('recentSelections', JSON.stringify(recents));
+        renderRecentSelections();
+    }
+    function toggleGroup(start, end, btn) {
+        const isSelected = btn.classList.contains('selected');
+        const checkboxes = Array.from(document.querySelectorAll('.trackBox')).filter(cb => {
+            const val = parseInt(cb.value, 10);
+            return val >= start && val <= end;
+        });
+
+        const shouldCheck = !isSelected;
+        checkboxes.forEach(cb => {
+            cb.checked = shouldCheck;
+            toggleClass(cb.closest('label'), 'selected', shouldCheck);
+        });
+
+        // Trigger an update for consistency, especially if other selections were checked
+        if(checkboxes.length > 0) {
+            const firstCheckbox = checkboxes[0];
+            // Simulate a change event on the first affected checkbox to trigger the visual updates and cross-list clearing
+            firstCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        toggleClass(btn, 'selected', shouldCheck);
+        btn.setAttribute('aria-pressed', shouldCheck.toString());
+        updateSavePlaylistButtonVisibility();
+    }
+    // End Placeholder functions 
+
     function getActiveSelection(mode = 'regular') {
         // handle playlist box
         const selectedPlaylists = Array.from(document.querySelectorAll('.playlist-box:checked')).map(cb => JSON.parse(cb.dataset.selection));
@@ -563,6 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggleClass(cb.closest('label'), 'selected', isChecked);
             });
             updateGroupButtonSelection();
+            updateSavePlaylistButtonVisibility(); // Ensure save button visibility is updated
         } else {
             showModal("Please enter a valid shlok range (e.g., 1-10).");
         }
@@ -591,7 +709,8 @@ document.addEventListener('DOMContentLoaded', () => {
             li.className = 'space-y-2';
 
             const labelEl = document.createElement('label');
-            labelEl.className = 'playlist-item block p-3 container-card cursor-pointer flex items-center justify-between';
+            // CRITICAL FIX: Added 'selectable-item' class for CSS visual selection logic
+            labelEl.className = 'selectable-item playlist-item block p-3 container-card cursor-pointer flex items-center justify-between';
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -615,13 +734,19 @@ document.addEventListener('DOMContentLoaded', () => {
             loadBtn.className = 'text-xs px-2 py-1 btn-secondary rounded-full';
             loadBtn.textContent = 'Load';
             loadBtn.setAttribute('type', 'button');
-            loadBtn.addEventListener('click', () => loadPlaylist(name));
+            loadBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // Prevent accidental check/uncheck
+                loadPlaylist(name);
+            });
 
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'text-xs px-2 py-1 btn-red rounded-full';
             deleteBtn.textContent = 'Delete';
             deleteBtn.setAttribute('type', 'button');
-            deleteBtn.addEventListener('click', () => confirmDeletePlaylist(name));
+            deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // Prevent accidental check/uncheck
+                confirmDeletePlaylist(name);
+            });
 
             actionsDiv.appendChild(countSpan);
             actionsDiv.appendChild(loadBtn);
@@ -631,6 +756,36 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.playlistList.appendChild(li);
         });
     }
+    
+    // Missing handler definitions
+    function confirmDeletePlaylist(name) {
+        showModal(`Are you sure you want to delete the playlist "${name}"?`, () => deletePlaylist(name));
+    }
+    
+    function handleSearch() {
+        const query = DOM.search.value.trim();
+        const num = parseInt(query, 10);
+        
+        toggleClass(DOM.clearSearch, 'hidden', query.length === 0);
+        toggleClass(DOM.searchFeedback, 'hidden', true);
+
+        const trackItems = DOM.trackList.querySelectorAll('li');
+        let found = false;
+
+        trackItems.forEach(li => {
+            const checkbox = li.querySelector('.trackBox');
+            const shlokNum = parseInt(checkbox.value, 10);
+            const isMatch = shlokNum === num || (query.length === 0);
+            
+            toggleClass(li, 'hidden', !isMatch);
+            if (isMatch) {
+                found = true;
+            }
+        });
+        
+        toggleClass(DOM.searchFeedback, 'hidden', found);
+    }
+    // End Missing handler definitions
 
     function loadPlaylist(name) {
         if (!AppState.localStorageEnabled) return;
@@ -651,6 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             updateGroupButtonSelection();
+            updateSavePlaylistButtonVisibility();
             showToast(`Playlist "${name}" loaded into your selection!`);
         }
     }
@@ -666,6 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
         delete playlists[name];
         localStorage.setItem('personalPlaylists', JSON.stringify(playlists));
         renderPersonalPlaylists();
+        showToast(`Playlist "${name}" deleted.`);
     }
 
     function showSavePlaylistModal() {
