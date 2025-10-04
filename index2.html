@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mission Rajipo - Apple Music UI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2GQR+q1U/G1bYfQYy9kH9hT7p0uE/I8T2OQ+YQ+c2wJpC8XvPqjG6Jg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://ia601703.us.archive.org">
@@ -306,21 +306,21 @@
             <div class="flex gap-2">
                 <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2">
                 <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2">
-                <button onclick="selectRange()" class="px-4 py-3 bg-gray-500 text-white rounded-lg flex items-center gap-1 btn-secondary">
+                <button id="rangeBtn" class="px-4 py-3 bg-gray-500 text-white rounded-lg flex items-center gap-1 btn-secondary">
                     <i class="fa-solid fa-list-ol"></i> Range
                 </button>
             </div>
         </div>
 
         <div id="groups-container" class="mb-6 container-card">
-            <button onclick="toggleGroupDisplay()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2 mb-3">
+            <button id="groupToggleBtn" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2 mb-3">
                 <i id="group-toggle-icon" class="fa-solid fa-chevron-down"></i> Groups
             </button>
             <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
         </div>
         
         <div class="mb-6 container-card space-y-4">
-            <button onclick="toggleMode()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
+            <button id="modeToggleBtn" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
                 <i class="fa-solid fa-toggle-off"></i> Toggle to Quiz Mode
             </button>
         
@@ -349,14 +349,14 @@
                     </div>
                     
                     <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                        <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2">
+                        <button id="autoPlayToggle" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2">
                             <i class="fa-solid fa-toggle-off"></i>Auto-Play: OFF
                         </button>
-                        <button id="playFullBtn" onclick="playFullShloka()" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2 hidden">
+                        <button id="playFullBtn" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2 hidden">
                             <i class="fa-solid fa-redo"></i> Play Full Shloka
                         </button>
                     </div>
-                    <button onclick="playNextQuizTrack()" class="w-full py-3 btn-primary text-white btn-rounded">
+                    <button id="playNextBtn" class="w-full py-3 btn-primary text-white btn-rounded">
                         <i class="fa-solid fa-forward"></i> Play Next
                     </button>
                 </div>
@@ -384,10 +384,10 @@
                     </div>
                     
                     <div class="flex flex-col gap-2 sm:flex-row">
-                        <button onclick="playSelected()" class="flex-1 py-3 btn-primary text-white btn-rounded">
+                        <button id="playBtn" class="flex-1 py-3 btn-primary text-white btn-rounded">
                             <i class="fa-solid fa-play"></i> Play
                         </button>
-                        <button onclick="confirmClearSelection()" class="flex-1 py-3 btn-red text-white btn-rounded">
+                        <button id="clearBtn" class="flex-1 py-3 btn-red text-white btn-rounded">
                             <i class="fa-solid fa-eraser"></i> Clear
                         </button>
                     </div>
@@ -400,7 +400,7 @@
             <p id="playlist-empty" class="text-gray-400 text-center mb-3 hidden">No saved playlists yet.</p>
             <ul id="playlistList" class="space-y-3 mb-4"></ul>
             <div id="savePlaylistBtn" class="hidden">
-                 <button onclick="showSavePlaylistModal()" class="w-full py-3 btn-rounded btn-green text-white flex items-center justify-center gap-2">
+                 <button id="savePlaylistModalBtn" class="w-full py-3 btn-rounded btn-green text-white flex items-center justify-center gap-2">
                     <i class="fa-solid fa-plus-circle"></i> Save as Playlist
                 </button>
             </div>
@@ -410,7 +410,7 @@
             <h2 class="text-lg font-bold mb-3 text-white">Recently Played</h2>
             <ul id="recentList" class="space-y-3"></ul>
             <p id="recent-empty" class="text-gray-400 text-center hidden">Your recently played selections will appear here.</p>
-            <button onclick="confirmClearHistory()" class="mt-4 w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
+            <button id="clearHistoryBtn" class="mt-4 w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
                 <i class="fa-solid fa-trash-can"></i> Clear History
             </button>
         </div>
@@ -446,6 +446,8 @@
         let currentQuizDelay = 3;
         let quizTimeUpdateListener = null;
         let searchTimeout = null;
+        let countdownStartTime = null;
+        let countdownTotalTime = null;
 
         function isLocalStorageAvailable() {
             try {
@@ -539,7 +541,7 @@
                 regularControlsEl.classList.toggle('fade-in', !isQuizMode);
             }
 
-            const modeButton = document.querySelector('button[onclick="toggleMode()"]');
+            const modeButton = document.getElementById('modeToggleBtn');
             if (modeButton) {
                 modeButton.innerHTML = `<i class="fa-solid fa-toggle-${isQuizMode ? 'on' : 'off'}"></i> ${isQuizMode ? 'Exit Quiz Mode' : 'Toggle to Quiz Mode'}`;
             }
@@ -562,6 +564,125 @@
                 if (quizStatus) quizStatus.textContent = '';
                 if (countdown) countdown.textContent = '';
                 document.getElementById('playFullBtn').classList.add('hidden');
+            }
+            updateGroupButtonSelection();
+        }
+
+        function toggleAutoPlay() {
+            autoPlay = !autoPlay;
+            const button = document.getElementById("autoPlayToggle");
+            button.innerHTML = `<i class="fa-solid fa-toggle-${autoPlay ? 'on' : 'off'}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
+            button.classList.toggle('btn-secondary', !autoPlay);
+            button.classList.toggle('btn-green', autoPlay);
+        }
+
+        function playFullShloka() {
+            const trackNum = playlist[currentIndex > 0 ? currentIndex - 1 : 0];
+            audioPlayer.src = getAudioUrl(trackNum);
+            audioPlayer.playbackRate = currentSpeed;
+            
+            clearAllTimers();
+            document.getElementById('quizStatus').textContent = '';
+            document.getElementById('countdown').textContent = '';
+            document.getElementById('playFullBtn').classList.add('hidden');
+
+            audioPlayer.play().catch(err => {
+                handleAudioError(err, trackNum);
+            });
+        }
+        
+        function changeQuizTime(time) {
+            currentQuizTime = time;
+            document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
+            
+            if (countdownInterval && countdownStartTime && countdownTotalTime) {
+                const elapsed = Math.floor((Date.now() - countdownStartTime) / 1000);
+                const remaining = Math.max(0, currentQuizTime - elapsed);
+                
+                if (remaining > 0) {
+                    countdownTotalTime = currentQuizTime;
+                    document.getElementById('countdownBar').style.width = `${(remaining / currentQuizTime) * 100}%`;
+                }
+            }
+        }
+
+        function changeQuizDelay(delay) {
+            currentQuizDelay = delay;
+            document.getElementById("quizDelayDisplay").textContent = `${currentQuizDelay}s`;
+        }
+        
+        function toggleGroupDisplay() {
+            const groupsDiv = document.getElementById("groups");
+            const isHidden = groupsDiv.classList.toggle("hidden");
+            const groupToggleIcon = document.getElementById("group-toggle-icon");
+            groupToggleIcon.classList.toggle("fa-chevron-down", isHidden);
+            groupToggleIcon.classList.toggle("fa-chevron-up", !isHidden);
+        }
+
+        function clearSelection() {
+            document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(item => item.classList.remove("selected"));
+            document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => cb.checked = false);
+            document.querySelectorAll(".group-btn.selected").forEach(btn => btn.classList.remove("selected"));
+            playlist = [];
+            currentIndex = 0;
+            updateGroupButtonSelection();
+            showToast("Selection cleared.");
+        }
+
+        function confirmClearSelection() {
+            showModal("Are you sure you want to clear your current selection?", () => {
+                clearSelection();
+            });
+        }
+
+        function confirmClearHistory() {
+            showModal("Are you sure you want to clear your recently played history? This action cannot be undone.", () => {
+                clearHistory();
+                showToast("Recently played history cleared.");
+            });
+        }
+        
+        function confirmDeletePlaylist(playlistName) {
+             showModal(`Are you sure you want to delete the playlist "${escapeHTML(playlistName)}"? This action cannot be undone.`, () => {
+                deletePlaylist(playlistName);
+                showToast(`Playlist "${escapeHTML(playlistName)}" deleted.`);
+            });
+        }
+        
+        function selectRange() {
+            const start = parseInt(document.getElementById("rangeStart").value);
+            const end = parseInt(document.getElementById("rangeEnd").value);
+            
+            if (isNaN(start) || isNaN(end)) {
+                showModal("Please enter valid numbers for both start and end.");
+                return;
+            }
+            
+            if (start < 1 || end > TOTAL_TRACKS || start > end) {
+                showModal(`Please enter a valid shlok range between 1 and ${TOTAL_TRACKS}.`);
+                return;
+            }
+            
+            document.querySelectorAll(".trackBox").forEach(cb => {
+                const val = parseInt(cb.value, 10);
+                const isChecked = val >= start && val <= end;
+                cb.checked = isChecked;
+                cb.closest("label").classList.toggle("selected", isChecked);
+            });
+            updateGroupButtonSelection();
+            showToast(`Shlokas ${start}-${end} selected.`);
+        }
+
+        function toggleGroup(start, end, element) {
+            const isSelected = !element.classList.contains('selected');
+            element.classList.toggle('selected', isSelected);
+            element.setAttribute('aria-pressed', isSelected.toString());
+            for (let i = start; i <= end; i++) {
+                const checkbox = document.querySelector(`.trackBox[value="${i}"]`);
+                if (checkbox) {
+                    checkbox.checked = isSelected;
+                    checkbox.closest("label").classList.toggle("selected", isSelected);
+                }
             }
             updateGroupButtonSelection();
         }
@@ -668,6 +789,8 @@
                     document.getElementById('quizStatus').textContent = "Audio Paused. Your turn to recite!";
                     document.getElementById('playFullBtn').classList.remove('hidden');
 
+                    countdownStartTime = Date.now();
+                    countdownTotalTime = currentQuizTime;
                     let countdown = currentQuizTime;
                     const countdownEl = document.getElementById('countdown');
                     countdownEl.textContent = `(${countdown}s)`;
@@ -681,6 +804,8 @@
                         if (countdown <= 0) {
                             clearInterval(countdownInterval);
                             countdownInterval = null;
+                            countdownStartTime = null;
+                            countdownTotalTime = null;
                             countdownEl.textContent = '';
                             document.getElementById('quizStatus').textContent = '';
                             if (autoPlay) {
@@ -1181,6 +1306,18 @@
 
         document.addEventListener("DOMContentLoaded", function () {
             audioPlayer = document.getElementById("audioPlayer");
+            
+            document.getElementById('rangeBtn').addEventListener('click', selectRange);
+            document.getElementById('groupToggleBtn').addEventListener('click', toggleGroupDisplay);
+            document.getElementById('modeToggleBtn').addEventListener('click', toggleMode);
+            document.getElementById('autoPlayToggle').addEventListener('click', toggleAutoPlay);
+            document.getElementById('playFullBtn').addEventListener('click', playFullShloka);
+            document.getElementById('playNextBtn').addEventListener('click', playNextQuizTrack);
+            document.getElementById('playBtn').addEventListener('click', playSelected);
+            document.getElementById('clearBtn').addEventListener('click', confirmClearSelection);
+            document.getElementById('savePlaylistModalBtn').addEventListener('click', showSavePlaylistModal);
+            document.getElementById('clearHistoryBtn').addEventListener('click', confirmClearHistory);
+
             const searchInput = document.getElementById("search");
             const clearSearchBtn = document.getElementById("clearSearch");
             const searchFeedbackEl = document.getElementById("search-feedback");
@@ -1336,113 +1473,4 @@
         });
     </script>
 </body>
-</html>Selection();
-        }
-
-        function toggleAutoPlay() {
-            autoPlay = !autoPlay;
-            const button = document.getElementById("autoPlayToggle");
-            button.innerHTML = `<i class="fa-solid fa-toggle-${autoPlay ? 'on' : 'off'}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
-            button.classList.toggle('btn-secondary', !autoPlay);
-            button.classList.toggle('btn-green', autoPlay);
-        }
-
-        function playFullShloka() {
-            const trackNum = playlist[currentIndex > 0 ? currentIndex - 1 : 0];
-            audioPlayer.src = getAudioUrl(trackNum);
-            audioPlayer.playbackRate = currentSpeed;
-            
-            clearAllTimers();
-            document.getElementById('quizStatus').textContent = '';
-            document.getElementById('countdown').textContent = '';
-            document.getElementById('playFullBtn').classList.add('hidden');
-
-            audioPlayer.play().catch(err => {
-                handleAudioError(err, trackNum);
-            });
-        }
-        
-        function changeQuizTime(time) {
-            currentQuizTime = time;
-            document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
-        }
-
-        function changeQuizDelay(delay) {
-            currentQuizDelay = delay;
-            document.getElementById("quizDelayDisplay").textContent = `${currentQuizDelay}s`;
-        }
-        
-        function toggleGroupDisplay() {
-            const groupsDiv = document.getElementById("groups");
-            const isHidden = groupsDiv.classList.toggle("hidden");
-            const groupToggleIcon = document.getElementById("group-toggle-icon");
-            groupToggleIcon.classList.toggle("fa-chevron-down", isHidden);
-            groupToggleIcon.classList.toggle("fa-chevron-up", !isHidden);
-        }
-
-        function clearSelection() {
-            document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(item => item.classList.remove("selected"));
-            document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => cb.checked = false);
-            document.querySelectorAll(".group-btn.selected").forEach(btn => btn.classList.remove("selected"));
-            playlist = [];
-            currentIndex = 0;
-            updateGroupButtonSelection();
-            showToast("Selection cleared.");
-        }
-
-        function confirmClearSelection() {
-            showModal("Are you sure you want to clear your current selection?", () => {
-                clearSelection();
-            });
-        }
-
-        function confirmClearHistory() {
-            showModal("Are you sure you want to clear your recently played history? This action cannot be undone.", () => {
-                clearHistory();
-                showToast("Recently played history cleared.");
-            });
-        }
-        
-        function confirmDeletePlaylist(playlistName) {
-             showModal(`Are you sure you want to delete the playlist "${escapeHTML(playlistName)}"? This action cannot be undone.`, () => {
-                deletePlaylist(playlistName);
-                showToast(`Playlist "${escapeHTML(playlistName)}" deleted.`);
-            });
-        }
-        
-        function selectRange() {
-            const start = parseInt(document.getElementById("rangeStart").value);
-            const end = parseInt(document.getElementById("rangeEnd").value);
-            
-            if (isNaN(start) || isNaN(end)) {
-                showModal("Please enter valid numbers for both start and end.");
-                return;
-            }
-            
-            if (start < 1 || end > TOTAL_TRACKS || start > end) {
-                showModal(`Please enter a valid shlok range between 1 and ${TOTAL_TRACKS}.`);
-                return;
-            }
-            
-            document.querySelectorAll(".trackBox").forEach(cb => {
-                const val = parseInt(cb.value, 10);
-                const isChecked = val >= start && val <= end;
-                cb.checked = isChecked;
-                cb.closest("label").classList.toggle("selected", isChecked);
-            });
-            updateGroupButtonSelection();
-            showToast(`Shlokas ${start}-${end} selected.`);
-        }
-
-        function toggleGroup(start, end, element) {
-            const isSelected = !element.classList.contains('selected');
-            element.classList.toggle('selected', isSelected);
-            element.setAttribute('aria-pressed', isSelected.toString());
-            for (let i = start; i <= end; i++) {
-                const checkbox = document.querySelector(`.trackBox[value="${i}"]`);
-                if (checkbox) {
-                    checkbox.checked = isSelected;
-                    checkbox.closest("label").classList.toggle("selected", isSelected);
-                }
-            }
-            updateGroupButton
+</html>
