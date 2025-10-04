@@ -35,7 +35,6 @@
             border-radius: 14px;
             padding: 16px;
         }
-        
         .track-item, .playlist-item, .recent-item {
             background-color: var(--card-bg);
             transition: transform 0.2s ease, background-color 0.2s ease;
@@ -43,12 +42,10 @@
             border-radius: 10px;
             border: 1px solid transparent;
         }
-        
         .track-item:hover, .playlist-item:hover, .recent-item:hover {
             transform: scale(1.02);
             background-color: #3b3b3d;
         }
-        
         .track-item.selected, .playlist-item.selected, .recent-item.selected {
             background-color: var(--accent-blue);
             color: white;
@@ -64,12 +61,10 @@
             box-shadow: none;
             transition: border-color 0.2s;
         }
-        
         input[type="text"]:focus, input[type="number"]:focus {
             outline: none;
             border-color: var(--accent-blue);
         }
-        
         input[type="text"]::placeholder, input[type="number"]::placeholder {
             color: var(--secondary-text);
         }
@@ -84,7 +79,6 @@
             border-radius: 9999px;
             cursor: pointer;
         }
-        
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -96,7 +90,6 @@
             border: 4px solid var(--container-bg);
             box-shadow: 0 0 4px rgba(0,0,0,0.5);
         }
-        
         input[type="range"]::-moz-range-thumb {
             width: 24px;
             height: 24px;
@@ -111,38 +104,30 @@
             background-color: var(--accent-blue);
             transition: background-color 0.2s, transform 0.1s;
         }
-        
         .btn-primary:hover {
             background-color: #2b91ff;
             transform: scale(1.01);
         }
-        
         .btn-secondary {
             background-color: #48484a;
             transition: background-color 0.2s, transform 0.1s;
         }
-        
         .btn-secondary:hover {
             background-color: #5d5d5f;
             transform: scale(1.01);
         }
-        
         .btn-green {
             background-color: var(--accent-green);
         }
-        
         .btn-green:hover {
             background-color: #40c666;
         }
-        
         .btn-red {
             background-color: var(--accent-red);
         }
-        
         .btn-red:hover {
             background-color: #ff574d;
         }
-        
         .btn-rounded {
             border-radius: 10px;
             padding: 12px 20px;
@@ -152,7 +137,6 @@
         .trackBox, .recent-box, .playlist-box {
             display: none;
         }
-        
         .track-item, .recent-item, .playlist-item {
             position: relative;
             user-select: none;
@@ -160,7 +144,6 @@
             display: flex;
             align-items: center;
         }
-        
         .track-item::before, .recent-item::before, .playlist-item::before {
             content: '';
             position: absolute;
@@ -173,12 +156,10 @@
             border: 2px solid var(--secondary-text);
             transition: all 0.2s;
         }
-        
         .track-item.selected::before, .recent-item.selected::before, .playlist-item.selected::before {
             border-color: var(--accent-blue);
             background-color: var(--accent-blue);
         }
-        
         .track-item.selected::after, .recent-item.selected::after, .playlist-item.selected::after {
             content: '✓';
             position: absolute;
@@ -188,7 +169,6 @@
             color: white;
             font-size: 10px;
         }
-        
         .group-btn {
             position: relative;
             background-color: var(--card-bg);
@@ -203,18 +183,15 @@
             align-items: center;
             min-height: 48px;
         }
-        
         .group-btn:hover {
             background-color: #3b3b3d;
             transform: scale(1.02);
         }
-        
         .group-btn.selected {
             background-color: var(--accent-blue);
             color: white;
             border-color: var(--accent-blue);
         }
-        
         .checkmark {
             position: absolute;
             top: 4px;
@@ -223,7 +200,6 @@
             opacity: 0;
             transition: opacity 0.2s ease-in-out;
         }
-        
         .group-btn.selected .checkmark {
             opacity: 1;
         }
@@ -231,14 +207,12 @@
         #quizControls {
             min-height: 250px;
         }
-        
         .countdown-bar {
             height: 6px;
             background: linear-gradient(90deg, #ff453a, #ff9f0a, #30d158);
             transition: width 0.5s ease-out;
             border-radius: 9999px;
         }
-        
         .countdown-bar-container {
             height: 8px; 
             background-color: var(--border-color);
@@ -263,7 +237,6 @@
             justify-content: center;
             z-index: 50;
         }
-        
         .modal-content {
             background-color: var(--container-bg);
             border-radius: 14px;
@@ -274,7 +247,6 @@
             text-align: center;
             position: relative;
         }
-        
         .modal-close {
             position: absolute;
             top: 10px;
@@ -457,151 +429,260 @@
         // Constants
         const TOTAL_TRACKS = 315;
         const AUDIO_BASE_URL = 'https://ia601703.us.archive.org/35/items/satsang_diksha';
-        const MAX_RECENT = 5;
+        const MAX_RECENT_ITEMS = 5;
 
-        // Application State
-        const App = {
-            audioPlayer: null,
-            playlist: [],
-            currentIndex: 0,
-            repeatEach: 1,
-            repeatCounter: 0,
-            currentSpeed: 1.0,
-            isQuizMode: false,
-            hasQuizPaused: false,
-            autoPlay: false,
-            autoPlayTimeout: null,
-            countdownInterval: null,
-            currentQuizTime: 20,
-            currentQuizDelay: 3,
-            
-            // Check localStorage availability
-            get localStorageAvailable() {
-                try {
-                    const test = '__test__';
-                    localStorage.setItem(test, test);
-                    localStorage.removeItem(test);
-                    return true;
-                } catch (e) {
-                    return false;
-                }
-            },
-            
-            // Utility: Clear all timers
-            clearTimers() {
-                if (this.countdownInterval) {
-                    clearInterval(this.countdownInterval);
-                    this.countdownInterval = null;
-                }
-                if (this.autoPlayTimeout) {
-                    clearTimeout(this.autoPlayTimeout);
-                    this.autoPlayTimeout = null;
-                }
-            },
-            
-            // Utility: Get audio URL
-            getAudioUrl(trackNum) {
-                return `${AUDIO_BASE_URL}/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+        // State variables
+        let audioPlayer;
+        let playlist = [];
+        let currentIndex = 0;
+        let repeatEach = 1;
+        let repeatCounter = 0;
+        let currentSpeed = 1.0;
+        let isQuizMode = false;
+        let hasQuizPaused = false;
+        let autoPlay = false;
+        let autoPlayTimeout = null;
+        let countdownInterval = null;
+        let currentQuizTime = 20;
+        let currentQuizDelay = 3;
+
+        // Check if localStorage is available
+        function isLocalStorageAvailable() {
+            try {
+                const test = '__localStorageTest__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                return true;
+            } catch (e) {
+                return false;
             }
-        };
+        }
+        const localStorageEnabled = isLocalStorageAvailable();
 
-        // Audio Player Controls
+        // Utility: Clear all timers
+        function clearAllTimers() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            if (autoPlayTimeout) {
+                clearTimeout(autoPlayTimeout);
+                autoPlayTimeout = null;
+            }
+        }
+
+        // Utility: Get audio URL
+        function getAudioUrl(trackNum) {
+            return `${AUDIO_BASE_URL}/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
+        }
+
         function playCurrent() {
-            if (App.currentIndex < App.playlist.length) {
-                const trackNum = App.playlist[App.currentIndex];
-                App.audioPlayer.src = App.getAudioUrl(trackNum);
-                App.audioPlayer.playbackRate = App.currentSpeed;
-                App.audioPlayer.play().catch(err => {
+            if (currentIndex < playlist.length) {
+                const trackNum = playlist[currentIndex];
+                audioPlayer.src = getAudioUrl(trackNum);
+                audioPlayer.playbackRate = currentSpeed;
+                audioPlayer.play().catch(err => {
                     console.error("Play error:", err);
                     showToast("Failed to play track. Please check your connection.");
                 });
             } else if (document.getElementById("repeatPlaylist").checked) {
-                App.currentIndex = 0;
+                currentIndex = 0;
                 playCurrent();
             } else {
-                App.audioPlayer.pause();
-                App.audioPlayer.src = "";
+                audioPlayer.pause();
+                audioPlayer.src = "";
             }
         }
 
-        function changeSpeed(speed) {
-            App.currentSpeed = speed;
-            App.audioPlayer.playbackRate = App.currentSpeed;
-            document.getElementById("speedDisplay").textContent = App.currentSpeed.toFixed(1);
-        }
-
-        // Mode Toggle
         function toggleMode() {
-            App.isQuizMode = !App.isQuizMode;
+            isQuizMode = !isQuizMode;
 
-            const quizControls = document.getElementById('quizControls');
-            const regularControls = document.getElementById('regularControls');
+            const quizControlsEl = document.getElementById('quizControls');
+            const regularControlsEl = document.getElementById('regularControls');
             
-            quizControls.classList.toggle('hidden', !App.isQuizMode);
-            quizControls.classList.toggle('fade-in', App.isQuizMode);
-            quizControls.classList.toggle('fade-out', !App.isQuizMode);
-            
-            regularControls.classList.toggle('hidden', App.isQuizMode);
-            regularControls.classList.toggle('fade-out', App.isQuizMode);
-            regularControls.classList.toggle('fade-in', !App.isQuizMode);
+            if (quizControlsEl) {
+                quizControlsEl.classList.toggle('hidden', !isQuizMode);
+                quizControlsEl.classList.toggle('fade-in', isQuizMode);
+                quizControlsEl.classList.toggle('fade-out', !isQuizMode);
+            }
+            if (regularControlsEl) {
+                regularControlsEl.classList.toggle('hidden', isQuizMode);
+                regularControlsEl.classList.toggle('fade-out', isQuizMode);
+                regularControlsEl.classList.toggle('fade-in', !isQuizMode);
+            }
 
             const modeButton = document.querySelector('button[onclick="toggleMode()"]');
             if (modeButton) {
-                modeButton.innerHTML = `<i class="fa-solid fa-toggle-${App.isQuizMode ? 'on' : 'off'}"></i> ${App.isQuizMode ? 'Exit Quiz Mode' : 'Toggle to Quiz Mode'}`;
+                modeButton.innerHTML = `<i class="fa-solid fa-toggle-${isQuizMode ? 'on' : 'off'}"></i> ${isQuizMode ? 'Exit Quiz Mode' : 'Toggle to Quiz Mode'}`;
             }
 
-            if (App.isQuizMode) {
-                try { App.audioPlayer.pause(); } catch(e) {}
-                try { App.audioPlayer.src = ''; } catch(e) {}
-                App.playlist = [];
-                App.currentIndex = 0;
+            if (isQuizMode) {
+                try { audioPlayer.pause(); } catch(e) {}
+                try { audioPlayer.src = ''; } catch(e) {}
+                playlist = [];
+                currentIndex = 0;
                 document.getElementById('playFullBtn').classList.add('hidden');
-                if (document.getElementById('countdownBar')) {
-                    document.getElementById('countdownBar').style.width = '100%';
-                }
-                App.clearTimers();
+                const countdownBar = document.getElementById('countdownBar');
+                if (countdownBar) countdownBar.style.width = '100%';
+                clearAllTimers();
             } else {
-                App.clearTimers();
-                document.getElementById('quizStatus').textContent = '';
-                document.getElementById('countdown').textContent = '';
+                clearAllTimers();
+                const quizStatus = document.getElementById('quizStatus');
+                const countdown = document.getElementById('countdown');
+                if (quizStatus) quizStatus.textContent = '';
+                if (countdown) countdown.textContent = '';
                 document.getElementById('playFullBtn').classList.add('hidden');
             }
             updateGroupButtonSelection();
         }
 
-        // Quiz Mode Functions
         function toggleAutoPlay() {
-            App.autoPlay = !App.autoPlay;
+            autoPlay = !autoPlay;
             const button = document.getElementById("autoPlayToggle");
-            button.innerHTML = `<i class="fa-solid fa-toggle-${App.autoPlay ? 'on' : 'off'}"></i> Auto-Play: ${App.autoPlay ? 'ON' : 'OFF'}`;
-            button.classList.toggle('btn-secondary', !App.autoPlay);
-            button.classList.toggle('btn-green', App.autoPlay);
+            button.innerHTML = `<i class="fa-solid fa-toggle-${autoPlay ? 'on' : 'off'}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
+            button.classList.toggle('btn-secondary', !autoPlay);
+            button.classList.toggle('btn-green', autoPlay);
         }
 
         function playFullShloka() {
-            const trackNum = App.playlist[App.currentIndex > 0 ? App.currentIndex - 1 : 0];
-            App.audioPlayer.src = App.getAudioUrl(trackNum);
-            App.audioPlayer.playbackRate = App.currentSpeed;
+            const trackNum = playlist[currentIndex > 0 ? currentIndex - 1 : 0];
+            audioPlayer.src = getAudioUrl(trackNum);
+            audioPlayer.playbackRate = currentSpeed;
             
-            App.clearTimers();
+            clearAllTimers();
             document.getElementById('quizStatus').textContent = '';
             document.getElementById('countdown').textContent = '';
             document.getElementById('playFullBtn').classList.add('hidden');
 
-            App.audioPlayer.play().catch(err => {
+            audioPlayer.play().catch(err => {
                 showToast("Failed to play track. Please check your connection.");
                 console.error("Play error:", err);
             });
         }
         
         function changeQuizTime(time) {
-            App.currentQuizTime = time;
-            document.getElementById("quizTimeDisplay").textContent = `${App.currentQuizTime}s`;
+            currentQuizTime = time;
+            document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
         }
 
         function changeQuizDelay(delay) {
-            App.currentQuizDelay = delay;
-            document.getElementById("quizDelayDisplay").textContent = `${App.currentQuizDelay}s`;
+            currentQuizDelay = delay;
+            document.getElementById("quizDelayDisplay").textContent = `${currentQuizDelay}s`;
+        }
+        
+        function toggleGroupDisplay() {
+            const groupsDiv = document.getElementById("groups");
+            const isHidden = groupsDiv.classList.toggle("hidden");
+            const groupToggleIcon = document.getElementById("group-toggle-icon");
+            groupToggleIcon.classList.toggle("fa-chevron-down", isHidden);
+            groupToggleIcon.classList.toggle("fa-chevron-up", !isHidden);
+        }
+
+        function clearSelection() {
+            document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(item => item.classList.remove("selected"));
+            document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => cb.checked = false);
+            document.querySelectorAll(".group-btn.selected").forEach(btn => btn.classList.remove("selected"));
+            playlist = [];
+            currentIndex = 0;
+            updateGroupButtonSelection();
+            showToast("Selection cleared.");
+        }
+
+        function confirmClearSelection() {
+            showModal("Are you sure you want to clear your current selection?", () => {
+                clearSelection();
+            });
+        }
+
+        function confirmClearHistory() {
+            showModal("Are you sure you want to clear your recently played history? This action cannot be undone.", () => {
+                clearHistory();
+                showToast("Recently played history cleared.");
+            });
+        }
+        
+        function confirmDeletePlaylist(playlistName) {
+             showModal(`Are you sure you want to delete the playlist "${playlistName}"? This action cannot be undone.`, () => {
+                deletePlaylist(playlistName);
+                showToast(`Playlist "${playlistName}" deleted.`);
+            });
+        }
+        
+        function selectRange() {
+            const start = parseInt(document.getElementById("rangeStart").value);
+            const end = parseInt(document.getElementById("rangeEnd").value);
+            
+            if (isNaN(start) || isNaN(end)) {
+                showModal("Please enter valid numbers for both start and end.");
+                return;
+            }
+            
+            if (start < 1 || end > TOTAL_TRACKS || start > end) {
+                showModal(`Please enter a valid shlok range between 1 and ${TOTAL_TRACKS}.`);
+                return;
+            }
+            
+            document.querySelectorAll(".trackBox").forEach(cb => {
+                const val = parseInt(cb.value, 10);
+                const isChecked = val >= start && val <= end;
+                cb.checked = isChecked;
+                cb.closest("label").classList.toggle("selected", isChecked);
+            });
+            updateGroupButtonSelection();
+            showToast(`Shlokas ${start}-${end} selected.`);
+        }
+
+        function toggleGroup(start, end, element) {
+            const isSelected = !element.classList.contains('selected');
+            element.classList.toggle('selected', isSelected);
+            element.setAttribute('aria-pressed', isSelected.toString());
+            for (let i = start; i <= end; i++) {
+                const checkbox = document.querySelector(`.trackBox[value="${i}"]`);
+                if (checkbox) {
+                    checkbox.checked = isSelected;
+                    checkbox.closest("label").classList.toggle("selected", isSelected);
+                }
+            }
+            updateGroupButtonSelection();
+        }
+        
+        function changeSpeed(speed) {
+            currentSpeed = speed;
+            audioPlayer.playbackRate = currentSpeed;
+            document.getElementById("speedDisplay").textContent = currentSpeed.toFixed(1);
+        }
+
+        function playSelected() {
+            const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"))
+                .map(cb => JSON.parse(cb.dataset.selection));
+            const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked"))
+                .map(cb => parseInt(cb.value, 10));
+
+            let finalSelection = [];
+            if (selectedPlaylists.length > 0) {
+                const playlistShlokas = new Set(selectedPlaylists.flatMap(p => p));
+                finalSelection = Array.from(playlistShlokas);
+            } else {
+                finalSelection = selectedTracks;
+            }
+
+            if (finalSelection.length === 0) {
+                showModal("Please select at least one shlok or a playlist to play.");
+                return;
+            }
+
+            repeatEach = parseInt(document.getElementById("repeatCount").value) || 1;
+            playlist = [...finalSelection];
+            if (document.getElementById("shuffle").checked) {
+                playlist = playlist.sort(() => Math.random() - 0.5);
+            }
+            currentIndex = 0;
+            repeatCounter = 0;
+            if (localStorageEnabled) {
+                saveSelection(finalSelection);
+            }
+            playCurrent();
+            showToast("Playback started.");
         }
 
         function playNextQuizTrack() {
@@ -613,8 +694,8 @@
                 .map(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim())));
             
             if (selectedPlaylists.length > 0) {
-                const playlistShlokas = new Set(selectedPlaylists.flatMap(p => p));
-                selected = Array.from(playlistShlokas);
+                 const playlistShlokas = new Set(selectedPlaylists.flatMap(p => p));
+                 selected = Array.from(playlistShlokas);
             } else if (selectedRecents.length > 0) {
                 const allNumbers = new Set(selectedRecents.flat());
                 selected = Array.from(allNumbers);
@@ -628,46 +709,498 @@
                 return;
             }
 
-            if (App.playlist.length === 0 || App.currentIndex >= App.playlist.length) {
-                App.playlist = [...selected].sort(() => Math.random() - 0.5);
-                App.currentIndex = 0;
+            if (playlist.length === 0 || currentIndex >= playlist.length) {
+                playlist = [...selected].sort(() => Math.random() - 0.5);
+                currentIndex = 0;
             }
 
-            App.clearTimers();
+            clearAllTimers();
             document.getElementById('quizStatus').textContent = '';
             document.getElementById('playFullBtn').classList.add('hidden');
 
-            const trackNum = App.playlist[App.currentIndex];
+            const trackNum = playlist[currentIndex];
             document.getElementById('currentShlokQuiz').textContent = `Now playing: Shlok ${trackNum}`;
-            App.audioPlayer.src = App.getAudioUrl(trackNum);
-            App.audioPlayer.playbackRate = App.currentSpeed;
+            audioPlayer.src = getAudioUrl(trackNum);
+            audioPlayer.playbackRate = currentSpeed;
             
-            App.hasQuizPaused = false;
+            hasQuizPaused = false;
             document.getElementById('countdownBar').style.width = '100%';
-            App.audioPlayer.play().catch(err => {
+            audioPlayer.play().catch(err => {
                 showToast("Failed to play track. Please check your connection.");
                 console.error("Play error:", err);
             });
 
-            App.currentIndex++;
+            currentIndex++;
         }
 
-        // Selection Functions
-        function toggleGroupDisplay() {
-            const groupsDiv = document.getElementById("groups");
-            const isHidden = groupsDiv.classList.toggle("hidden");
-            const groupToggleIcon = document.getElementById("group-toggle-icon");
-            groupToggleIcon.classList.toggle("fa-chevron-down", isHidden);
-            groupToggleIcon.classList.toggle("fa-chevron-up", !isHidden);
+        function showSavePlaylistModal() {
+            if (!localStorageEnabled) {
+                showModal("Local storage is not enabled or available in your browser. Cannot save playlists.");
+                return;
+            }
+            const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked"))
+                .map(cb => parseInt(cb.value, 10));
+            
+            if (selectedTracks.length === 0) {
+                showModal("Please select at least one shlok to save as a playlist.");
+                return;
+            }
+
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = '';
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.innerHTML = `
+                <div class="modal-content text-left">
+                    <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+                    <h3 class="text-xl font-bold mb-4">Save Playlist</h3>
+                    <p class="mb-2">Enter a name for your playlist:</p>
+                    <input type="text" id="playlistNameInput" class="w-full mb-4" placeholder="My new playlist">
+                    <div id="playlistNameFeedback" class="text-red-400 font-semibold hidden mb-4"></div>
+                    <div class="flex gap-4 justify-end">
+                        <button class="px-4 py-3 btn-secondary text-white btn-rounded" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button class="px-4 py-3 btn-green text-white btn-rounded" id="savePlaylistConfirm">Save</button>
+                    </div>
+                </div>
+            `;
+            modalContainer.appendChild(modal);
+            const inputEl = document.getElementById('playlistNameInput');
+            const saveBtnEl = document.getElementById('savePlaylistConfirm');
+            const feedbackEl = document.getElementById('playlistNameFeedback');
+
+            function savePlaylist() {
+                const playlistName = inputEl.value.trim();
+                if (playlistName === "") {
+                    feedbackEl.textContent = "Playlist name cannot be empty.";
+                    feedbackEl.classList.remove('hidden');
+                    return;
+                }
+                let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+                if (playlists[playlistName]) {
+                    feedbackEl.textContent = "A playlist with this name already exists.";
+                    feedbackEl.classList.remove('hidden');
+                    return;
+                }
+                playlists[playlistName] = selectedTracks;
+                localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
+                renderPersonalPlaylists();
+                showToast(`Playlist "${playlistName}" saved!`);
+                modal.remove();
+            }
+
+            saveBtnEl.addEventListener('click', savePlaylist);
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    savePlaylist();
+                }
+            });
+            inputEl.focus();
         }
 
-        function clearSelection() {
-            document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(item => {
-                item.classList.remove("selected");
+        function renderPersonalPlaylists() {
+            if (!localStorageEnabled) {
+                return;
+            }
+            const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+            const playlistList = document.getElementById("playlistList");
+            const personalPlaylistsDiv = document.getElementById("personalPlaylists");
+            const emptyMessage = document.getElementById("playlist-empty");
+
+            playlistList.innerHTML = "";
+            const names = Object.keys(playlists);
+            
+            if (names.length === 0) {
+                personalPlaylistsDiv.classList.remove("hidden");
+                emptyMessage.classList.remove("hidden");
+            } else {
+                personalPlaylistsDiv.classList.remove("hidden");
+                emptyMessage.classList.add("hidden");
+            }
+            
+            names.forEach(name => {
+                const shlokas = playlists[name];
+                const li = document.createElement("li");
+                li.className = "space-y-2";
+                li.innerHTML = `
+                    <label class="playlist-item block p-3 container-card cursor-pointer flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input type="checkbox" class="playlist-box mr-2" data-selection='${JSON.stringify(shlokas)}'>
+                            <span class="ml-6 font-semibold">${name}</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-sm text-gray-400">
+                            <span>(${shlokas.length} shlokas)</span>
+                            <button onclick="loadPlaylist('${name.replace(/'/g, "\\'")}'); event.stopPropagation();" class="text-xs px-2 py-1 btn-secondary rounded-full">
+                                Load
+                            </button>
+                            <button onclick="confirmDeletePlaylist('${name.replace(/'/g, "\\'")}'); event.stopPropagation();" class="text-xs px-2 py-1 btn-red rounded-full">
+                                Delete
+                            </button>
+                        </div>
+                    </label>
+                `;
+                playlistList.appendChild(li);
             });
-            document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => {
-                cb.checked = false;
+        }
+
+        function loadPlaylist(name) {
+            if (!localStorageEnabled) return;
+            let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+            const shlokas = playlists[name];
+            if (shlokas) {
+                clearSelection();
+                shlokas.forEach(trackNum => {
+                    const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        checkbox.closest("label").classList.add("selected");
+                    }
+                });
+                updateGroupButtonSelection();
+                showToast(`Playlist "${name}" loaded into your selection!`);
+            }
+        }
+
+        function deletePlaylist(name) {
+            if (!localStorageEnabled) return;
+            let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+            delete playlists[name];
+            localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
+            renderPersonalPlaylists();
+        }
+
+        function saveSelection(selection) {
+            if (!localStorageEnabled) return;
+            let history = [];
+            try { 
+                history = JSON.parse(localStorage.getItem("recentSelections")) || []; 
+            } catch (e) { 
+                history = []; 
+            }
+            const selString = selection.join(",");
+            history = [selString, ...history.filter(h => h !== selString)].slice(0, MAX_RECENT_ITEMS);
+            localStorage.setItem("recentSelections", JSON.stringify(history));
+            renderRecentSelections();
+        }
+
+        function clearHistory() {
+            if (!localStorageEnabled) return;
+            localStorage.removeItem("recentSelections");
+            renderRecentSelections();
+        }
+
+        function renderRecentSelections() {
+            if (!localStorageEnabled) {
+                return;
+            }
+            const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+            const recentDiv = document.getElementById("recentlyPlayed");
+            const recentList = document.getElementById("recentList");
+            const recentEmpty = document.getElementById("recent-empty");
+            recentList.innerHTML = "";
+            if (history.length === 0) { 
+                recentDiv.classList.add("hidden"); 
+                recentEmpty.classList.remove("hidden");
+                return; 
+            }
+            recentDiv.classList.remove("hidden");
+            recentEmpty.classList.add("hidden");
+            history.forEach((sel) => {
+                const numbers = sel.split(",").map(n => parseInt(n.trim()));
+                let labelText = numbers.length <= 6 ? "Shlok " + numbers.join(", ") : `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${numbers.length} total)`;
+                const li = document.createElement("li");
+                li.className = "space-y-2";
+                li.innerHTML = `
+                    <label class="recent-item block p-3 container-card cursor-pointer">
+                        <input type="checkbox" class="recent-box mr-2" data-selection="${sel}">
+                        <span class="ml-6">${labelText}</span>
+                    </label>
+                `;
+                recentList.appendChild(li);
             });
-            document.querySelectorAll(".group-btn.selected").forEach(btn => {
-                btn.classList.remove("selected");
+        }
+
+        function restoreLastSelection() {
+            if (!localStorageEnabled) return;
+            let history = [];
+            try { 
+                history = JSON.parse(localStorage.getItem("recentSelections")) || []; 
+            } catch (e) { 
+                history = []; 
+            }
+            if (history.length > 0) {
+                const lastSel = history[0].split(",").map(n => parseInt(n.trim()));
+                document.querySelectorAll(".trackBox").forEach(cb => {
+                    const isChecked = lastSel.includes(parseInt(cb.value, 10));
+                    cb.checked = isChecked;
+                    cb.closest("label").classList.toggle("selected", isChecked);
+                });
+                updateGroupButtonSelection();
+            }
+        }
+        
+        function updateGroupButtonSelection() {
+            const selectedTracks = new Set(Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value)));
+            document.querySelectorAll(".group-btn").forEach(btn => {
+                const start = parseInt(btn.dataset.start);
+                const end = parseInt(btn.dataset.end);
+                if (isNaN(start) || isNaN(end)) {
+                    return;
+                }
+                let isGroupSelected = true;
+                for(let i = start; i <= end; i++) {
+                    if (!selectedTracks.has(i)) {
+                        isGroupSelected = false;
+                        break;
+                    }
+                }
+                btn.classList.toggle('selected', isGroupSelected);
+                btn.setAttribute('aria-pressed', isGroupSelected.toString());
             });
+            const savePlaylistBtn = document.getElementById('savePlaylistBtn');
+            if (savePlaylistBtn) {
+                savePlaylistBtn.classList.toggle('hidden', selectedTracks.size === 0 || isQuizMode);
+            }
+        }
+
+        function generateGroups() {
+            const groupDiv = document.getElementById("groups");
+            for (let i = 1; i <= TOTAL_TRACKS; i += 10) {
+                const end = Math.min(i + 9, TOTAL_TRACKS);
+                const btn = document.createElement("button");
+                btn.className = "group-btn";
+                btn.setAttribute("tabindex", "0");
+                btn.setAttribute("aria-pressed", "false");
+                btn.dataset.start = i;
+                btn.dataset.end = end;
+                btn.innerHTML = `${i}–${end}<span class="checkmark">✓</span>`;
+                btn.onclick = () => toggleGroup(i, end, btn);
+                groupDiv.appendChild(btn);
+            }
+        }
+
+        function generateTracks() {
+            const trackListEl = document.getElementById("trackList");
+            for (let i = 1; i <= TOTAL_TRACKS; i++) {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    <label class="track-item block p-3 text-white">
+                        <input type="checkbox" value="${i}" class="trackBox mr-2"> <span class="ml-6">Shlok ${i}</span>
+                    </label>`;
+                trackListEl.appendChild(li);
+            }
+        }
+
+        function showModal(message, onConfirm = null) {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = '';
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+                    <p class="mb-4">${message}</p>
+                    ${onConfirm ? `
+                        <div class="flex gap-4 justify-center">
+                            <button class="px-4 py-3 btn-red text-white btn-rounded" id="modal-cancel">Cancel</button>
+                            <button class="px-4 py-3 btn-primary text-white btn-rounded" id="modal-confirm">OK</button>
+                        </div>
+                    ` : `
+                        <button onclick="this.closest('.modal').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">
+                            OK
+                        </button>
+                    `}
+                </div>
+            `;
+            
+            modalContainer.appendChild(modal);
+
+            if (onConfirm) {
+                modal.querySelector('#modal-confirm').addEventListener('click', () => {
+                    onConfirm();
+                    modal.remove();
+                });
+                modal.querySelector('#modal-cancel').addEventListener('click', () => modal.remove());
+            }
+            modal.querySelector('.modal-close').focus();
+        }
+
+        function showToast(message) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.setAttribute('role', 'status');
+            toast.setAttribute('aria-live', 'polite');
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            audioPlayer = document.getElementById("audioPlayer");
+            const searchInput = document.getElementById("search");
+            const trackListContainer = document.getElementById("trackList");
+            const clearSearchBtn = document.getElementById("clearSearch");
+            const searchFeedbackEl = document.getElementById("search-feedback");
+
+            const speedSlider = document.getElementById("speedSlider");
+            speedSlider.addEventListener("input", function() {
+                changeSpeed(parseFloat(this.value));
+            });
+
+            const quizTimeSlider = document.getElementById("quizTimeSlider");
+            quizTimeSlider.addEventListener("input", function() {
+                changeQuizTime(parseInt(this.value));
+            });
+
+            const quizDelaySlider = document.getElementById("quizDelaySlider");
+            quizDelaySlider.addEventListener("input", function() {
+                changeQuizDelay(parseInt(this.value));
+            });
+            
+            clearSearchBtn.addEventListener("click", () => {
+                searchInput.value = "";
+                searchInput.dispatchEvent(new Event('input'));
+            });
+
+            searchInput.addEventListener("input", function () {
+                const term = this.value.trim().toLowerCase();
+                let found = false;
+                document.querySelectorAll("#trackList li").forEach(li => {
+                    const trackNumber = li.querySelector(".trackBox").value;
+                    if (!term || trackNumber.startsWith(term)) {
+                        li.classList.remove("hidden");
+                        found = true;
+                    } else {
+                        li.classList.add("hidden");
+                    }
+                });
+                searchFeedbackEl.classList.toggle("hidden", found);
+                clearSearchBtn.classList.toggle("hidden", term === "");
+            });
+
+            trackListContainer.addEventListener("change", function(event) {
+                if (event.target.classList.contains("trackBox")) {
+                    const label = event.target.closest("label");
+                    const isChecked = event.target.checked;
+                    label.classList.toggle("selected", isChecked);
+                    updateGroupButtonSelection();
+                    document.querySelectorAll(".recent-box, .playlist-box").forEach(cb => {
+                        cb.checked = false;
+                        cb.closest("label").classList.remove("selected");
+                    });
+                }
+            });
+            
+            document.getElementById("recentList").addEventListener("change", function(event) {
+                if (event.target.classList.contains("recent-box")) {
+                    document.querySelectorAll(".track-item.selected, .playlist-item.selected").forEach(item => item.classList.remove("selected"));
+                    document.querySelectorAll(".trackBox, .playlist-box").forEach(cb => cb.checked = false);
+
+                    const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
+                    const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(Number)));
+                    
+                    document.querySelectorAll(".trackBox").forEach(cb => {
+                        const trackNum = parseInt(cb.value);
+                        if (allNumbers.has(trackNum)) {
+                            cb.checked = true;
+                            cb.closest("label").classList.add("selected");
+                        }
+                    });
+                    selectedRecents.forEach(cb => cb.closest("label").classList.add("selected"));
+                    updateGroupButtonSelection();
+                }
+            });
+
+            document.getElementById("playlistList").addEventListener("change", function(event) {
+                if (event.target.classList.contains("playlist-box")) {
+                    document.querySelectorAll(".track-item.selected, .recent-item.selected").forEach(item => item.classList.remove("selected"));
+                    document.querySelectorAll(".trackBox, .recent-box").forEach(cb => cb.checked = false);
+
+                    const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"));
+                    const allNumbers = new Set(selectedPlaylists.flatMap(cb => JSON.parse(cb.dataset.selection)));
+                    
+                    document.querySelectorAll(".trackBox").forEach(cb => {
+                        const trackNum = parseInt(cb.value);
+                        if (allNumbers.has(trackNum)) {
+                            cb.checked = true;
+                            cb.closest("label").classList.add("selected");
+                        }
+                    });
+                    selectedPlaylists.forEach(cb => cb.closest("label").classList.add("selected"));
+                    updateGroupButtonSelection();
+                }
+            });
+
+            audioPlayer.addEventListener("error", (e) => {
+                showToast("An error occurred while loading the audio.");
+            });
+
+            audioPlayer.addEventListener("playing", () => {
+                if (isQuizMode && !hasQuizPaused) {
+                    document.getElementById('playFullBtn').classList.add('hidden');
+                    setTimeout(() => {
+                        audioPlayer.pause();
+                        hasQuizPaused = true;
+                        document.getElementById('quizStatus').textContent = "Audio Paused. Your turn to recite!";
+                        document.getElementById('playFullBtn').classList.remove('hidden');
+
+                        let countdown = currentQuizTime;
+                        const countdownEl = document.getElementById('countdown');
+                        countdownEl.textContent = `(${countdown}s)`;
+                        
+                        if (countdownInterval) {
+                            clearInterval(countdownInterval);
+                        }
+                        
+                        document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+
+                        countdownInterval = setInterval(() => {
+                            countdown--;
+                            countdownEl.textContent = `(${countdown}s)`;
+                            document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+                            if (countdown <= 0) {
+                                clearInterval(countdownInterval);
+                                countdownInterval = null;
+                                countdownEl.textContent = '';
+                                document.getElementById('quizStatus').textContent = '';
+                                if (autoPlay) {
+                                    playNextQuizTrack();
+                                }
+                            }
+                        }, 1000);
+                    }, currentQuizDelay * 1000);
+                }
+            });
+
+            audioPlayer.addEventListener("ended", () => {
+                if (!isQuizMode) {
+                    repeatCounter++;
+                    if (repeatCounter >= repeatEach) {
+                        repeatCounter = 0;
+                        currentIndex++;
+                    }
+                    playCurrent();
+                }
+            });
+
+            generateGroups();
+            generateTracks();
+            if (localStorageEnabled) {
+                restoreLastSelection();
+                renderRecentSelections();
+                renderPersonalPlaylists();
+            } else {
+                showToast("Local storage is disabled. Playlists and history will not be saved.");
+            }
+        });
+    </script>
+</body>
+</html>
