@@ -510,9 +510,19 @@
         }
 
         /* Fade animations */
-        .fade-in { animation: fadeIn 0.3s ease; }
-        .fade-out { animation: fadeOut 0.3s ease; }
-        @keyframes fadeOut { to { opacity: 0; } }
+        .fade-in { 
+            animation: fadeIn 0.3s ease forwards; 
+            opacity: 1;
+        }
+        .fade-out { 
+            animation: fadeOut 0.3s ease forwards; 
+            opacity: 0;
+            pointer-events: none;
+        }
+        @keyframes fadeOut { 
+            from { opacity: 1; }
+            to { opacity: 0; } 
+        }
 
         /* Responsive */
         @media (max-width: 640px) {
@@ -622,19 +632,19 @@
                 <span>Toggle to Quiz Mode</span>
             </button>
 
-            <div id="dynamicControlsWrapper" class="relative min-h-[300px]">
+            <div id="dynamicControlsWrapper" class="relative">
                 <!-- Quiz Controls -->
-                <div id="quizControls" class="space-y-5 absolute w-full top-0 left-0 fade-out hidden">
+                <div id="quizControls" class="space-y-5 hidden">
                     <div class="section-header">
                         <div class="section-icon">🧠</div>
                         <h2>Quiz Mode</h2>
                     </div>
                     
                     <div class="text-center">
-                        <p id="currentShlokQuiz" class="text-2xl font-bold mb-2">Shlok 0</p>
+                        <p id="currentShlokQuiz" class="text-2xl font-bold mb-2">Ready to start</p>
                         <div class="stats-badge inline-flex">
                             <i class="fa-solid fa-clock"></i>
-                            <span id="countdown"></span>
+                            <span id="countdown">--</span>
                         </div>
                     </div>
 
@@ -658,11 +668,11 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="btn-modern btn-secondary flex-1 flex items-center justify-center gap-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="btn-modern btn-secondary flex items-center justify-center gap-2">
                             <i class="fa-solid fa-toggle-off"></i> Auto-Play: OFF
                         </button>
-                        <button id="playFullBtn" onclick="playFullShloka()" class="btn-modern btn-secondary flex-1 hidden flex items-center justify-center gap-2">
+                        <button id="playFullBtn" onclick="playFullShloka()" class="btn-modern btn-secondary hidden flex items-center justify-center gap-2">
                             <i class="fa-solid fa-redo"></i> Play Full
                         </button>
                     </div>
@@ -673,7 +683,7 @@
                 </div>
 
                 <!-- Regular Controls -->
-                <div id="regularControls" class="space-y-5 absolute w-full top-0 left-0 fade-in">
+                <div id="regularControls" class="space-y-5">
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <label class="flex items-center gap-3 glass-card-hover p-4 rounded-xl" style="background: var(--bg-elevated);">
                             <span class="text-sm font-medium" style="color: var(--text-secondary);">Repeat:</span>
@@ -838,8 +848,25 @@
             const quizControls = document.getElementById('quizControls');
             const regularControls = document.getElementById('regularControls');
             
-            quizControls.classList.toggle('hidden', !isQuizMode);
-            regularControls.classList.toggle('hidden', isQuizMode);
+            if (isQuizMode) {
+                regularControls.classList.add('fade-out');
+                regularControls.classList.remove('fade-in');
+                setTimeout(() => {
+                    regularControls.classList.add('hidden');
+                    quizControls.classList.remove('hidden');
+                    quizControls.classList.remove('fade-out');
+                    quizControls.classList.add('fade-in');
+                }, 300);
+            } else {
+                quizControls.classList.add('fade-out');
+                quizControls.classList.remove('fade-in');
+                setTimeout(() => {
+                    quizControls.classList.add('hidden');
+                    regularControls.classList.remove('hidden');
+                    regularControls.classList.remove('fade-out');
+                    regularControls.classList.add('fade-in');
+                }, 300);
+            }
             
             const modeBtn = document.querySelector('button[onclick="toggleMode()"]');
             const icon = isQuizMode ? 'fa-toggle-on' : 'fa-toggle-off';
@@ -852,6 +879,8 @@
                 currentIndex = 0;
                 document.getElementById('playFullBtn').classList.add('hidden');
                 document.getElementById('countdownBar').style.width = '100%';
+                document.getElementById('currentShlokQuiz').textContent = 'Ready to start';
+                document.getElementById('countdown').textContent = '--';
                 clearAllTimers();
             } else {
                 clearAllTimers();
@@ -867,8 +896,9 @@
             autoPlay = !autoPlay;
             const btn = document.getElementById("autoPlayToggle");
             const icon = autoPlay ? 'fa-toggle-on' : 'fa-toggle-off';
+            const btnClass = autoPlay ? 'btn-success' : 'btn-secondary';
+            btn.className = `btn-modern ${btnClass} flex items-center justify-center gap-2`;
             btn.innerHTML = `<i class="fa-solid ${icon}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
-            btn.className = btn.className.replace(/btn-\w+/, autoPlay ? 'btn-success' : 'btn-secondary');
         }
 
         // Play full shloka in quiz
