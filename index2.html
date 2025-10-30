@@ -3,460 +3,763 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Rajipo - Apple Music UI</title>
+    <title>Mission Rajipo - Enhanced</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2GQR+q1U/G1bYfQYy9kH9hT7p0uE/I8T2OQ+YQ+c2wJpC8XvPqjG6Jg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
         :root {
-            --bg-color: #1c1c1e;
-            --container-bg: #2c2c2e;
-            --card-bg: #2e2e30;
-            --text-color: #f2f2f7;
-            --secondary-text: #a0a0a0;
-            --accent-blue: #0a84ff;
-            --accent-green: #30d158;
-            --accent-red: #ff453a;
-            --border-color: #38383a;
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #13131a;
+            --bg-tertiary: #1a1a24;
+            --bg-card: #20212e;
+            --bg-elevated: #2a2b3d;
+            --text-primary: #ffffff;
+            --text-secondary: #a8aabb;
+            --text-muted: #6b6d82;
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+            --border-color: #2a2b3d;
+            --glow-blue: rgba(59, 130, 246, 0.4);
+            --glow-purple: rgba(139, 92, 246, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
-            /* Increased padding for new, taller nav bar */
-            padding-bottom: 160px;
-        }
-        
-        .container-card {
-            background-color: var(--container-bg);
-            border-radius: 14px;
-            padding: 16px;
-        }
-        .track-item, .playlist-item, .recent-item {
-            background-color: var(--card-bg);
-            transition: transform 0.2s ease, background-color 0.2s ease;
-            cursor: pointer;
-            border-radius: 10px;
-            border: 1px solid transparent;
-        }
-        .track-item:hover, .playlist-item:hover, .recent-item:hover {
-            transform: scale(1.02);
-            background-color: #3b3b3d;
-        }
-        .track-item.selected, .playlist-item.selected, .recent-item.selected {
-            background-color: var(--accent-blue);
-            color: white;
-            transform: scale(1.02);
+            padding-bottom: 140px;
+            overflow-x: hidden;
         }
 
-        input[type="text"], input[type="number"] {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            border-radius: 10px;
-            padding: 12px;
-            box-shadow: none;
-            transition: border-color 0.2s;
+        /* Animated Background */
+        .bg-animated {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.03;
+            pointer-events: none;
         }
-        input[type="text"]:focus, input[type="number"]:focus {
+
+        .bg-animated::before,
+        .bg-animated::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-animated::before {
+            width: 500px;
+            height: 500px;
+            background: var(--accent-blue);
+            top: -200px;
+            right: -200px;
+        }
+
+        .bg-animated::after {
+            width: 400px;
+            height: 400px;
+            background: var(--accent-purple);
+            bottom: -150px;
+            left: -150px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(100px, -100px) scale(1.1); }
+            66% { transform: translate(-100px, 100px) scale(0.9); }
+        }
+
+        /* Glass morphism cards */
+        .glass-card {
+            background: rgba(32, 33, 46, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Enhanced Header */
+        .header-gradient {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+        }
+
+        .header-glow {
+            text-shadow: 0 0 40px var(--glow-blue), 0 0 60px var(--glow-purple);
+        }
+
+        /* Modern Input Styling */
+        .modern-input {
+            background: var(--bg-elevated);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 16px;
+            padding: 14px 18px;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+
+        .modern-input:focus {
             outline: none;
             border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            background: var(--bg-card);
         }
-        input[type="text"]::placeholder, input[type="number"]::placeholder {
-            color: var(--secondary-text);
+
+        .modern-input::placeholder {
+            color: var(--text-muted);
         }
-        
+
+        /* Enhanced Buttons */
+        .btn-modern {
+            position: relative;
+            padding: 14px 28px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-modern:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-modern:active {
+            transform: scale(0.96);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 30px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+            border-color: var(--accent-blue);
+        }
+
+        .btn-success {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        /* Track Items with Modern Design */
+        .track-item, .playlist-item, .recent-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .track-item::after, .playlist-item::after, .recent-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+            transition: width 0.5s;
+        }
+
+        .track-item:hover::after, .playlist-item:hover::after, .recent-item:hover::after {
+            width: 100%;
+        }
+
+        .track-item:hover, .playlist-item:hover, .recent-item:hover {
+            background: var(--bg-elevated);
+            border-color: var(--accent-blue);
+            transform: translateX(4px);
+        }
+
+        .track-item.selected, .playlist-item.selected, .recent-item.selected {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Custom Checkbox */
+        .custom-checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            position: relative;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .track-item:hover .custom-checkbox,
+        .playlist-item:hover .custom-checkbox,
+        .recent-item:hover .custom-checkbox {
+            border-color: var(--accent-blue);
+        }
+
+        .track-item.selected .custom-checkbox,
+        .playlist-item.selected .custom-checkbox,
+        .recent-item.selected .custom-checkbox {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .custom-checkbox::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .track-item.selected .custom-checkbox::after,
+        .playlist-item.selected .custom-checkbox::after,
+        .recent-item.selected .custom-checkbox::after {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Group Buttons */
+        .group-btn {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .group-btn:hover {
+            background: var(--bg-elevated);
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .group-btn.selected {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Range Slider */
         input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
-            height: 4px;
-            background: var(--border-color);
+            height: 6px;
+            background: var(--bg-elevated);
             outline: none;
-            border-radius: 9999px;
-            cursor: pointer;
+            border-radius: 10px;
+            position: relative;
         }
+
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 24px;
-            height: 24px;
-            background: var(--accent-blue);
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
             cursor: pointer;
             border-radius: 50%;
-            border: 4px solid var(--container-bg);
-            box-shadow: 0 0 4px rgba(0,0,0,0.5);
-        }
-        input[type="range"]::-moz-range-thumb {
-            width: 24px;
-            height: 24px;
-            background: var(--accent-blue);
-            cursor: pointer;
-            border-radius: 50%;
-            border: 4px solid var(--container-bg);
-            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+            transition: all 0.2s ease;
         }
 
-        .btn-primary {
-            background-color: var(--accent-blue);
-            transition: background-color 0.2s, transform 0.1s;
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.6);
         }
-        .btn-primary:hover {
-            background-color: #2b91ff;
-            transform: scale(1.01);
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
         }
-        .btn-secondary {
-            background-color: #48484a;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn-secondary:hover {
-            background-color: #5d5d5f;
-            transform: scale(1.01);
-        }
-        .btn-green {
-            background-color: var(--accent-green);
-        }
-        .btn-green:hover {
-            background-color: #40c666;
-        }
-        .btn-red {
-            background-color: var(--accent-red);
-        }
-        .btn-red:hover {
-            background-color: #ff574d;
-        }
-        .btn-rounded {
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-elevated);
             border-radius: 10px;
-            padding: 12px 20px;
-            font-weight: 600;
-        }
-        
-        .trackBox, .recent-box, .playlist-box {
-            display: none;
-        }
-        .track-item, .recent-item, .playlist-item {
+            overflow: hidden;
             position: relative;
-            user-select: none;
-            min-height: 48px;
-            display: flex;
-            align-items: center;
         }
-        .track-item::before, .recent-item::before, .playlist-item::before {
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple), var(--accent-green));
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 12px;
-            transform: translateY(-50%);
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 2px solid var(--secondary-text);
-            transition: all 0.2s;
-        }
-        .track-item.selected::before, .recent-item.selected::before, .playlist-item.selected::before {
-            border-color: var(--accent-blue);
-            background-color: var(--accent-blue);
-        }
-        .track-item.selected::after, .recent-item.selected::after, .playlist-item.selected::after {
-            content: '✓';
-            position: absolute;
-            top: 50%;
-            left: 14px;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 10px;
-        }
-        .group-btn {
-            position: relative;
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 0.875rem;
-            transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 48px;
-        }
-        .group-btn:hover {
-            background-color: #3b3b3d;
-            transform: scale(1.02);
-        }
-        .group-btn.selected {
-            background-color: var(--accent-blue);
-            color: white;
-            border-color: var(--accent-blue);
-        }
-        .checkmark {
-            position: absolute;
-            top: 4px;
-            right: 6px;
-            font-size: 1.25rem;
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
-        }
-        .group-btn.selected .checkmark {
-            opacity: 1;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
         }
 
-        #quizControls {
-            min-height: 250px;
-        }
-        .countdown-bar {
-            height: 6px;
-            background: linear-gradient(90deg, #ff453a, #ff9f0a, #30d158);
-            transition: width 0.5s ease-out;
-            border-radius: 9999px;
-        }
-        .countdown-bar-container {
-            height: 8px; 
-            background-color: var(--border-color);
-            border-radius: 9999px;
-            margin-bottom: 8px;
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
-        /* New Nav Bar Styling */
-        .bottom-nav {
-            background-color: #1e1e1e;
-            border-top: 1px solid #333;
-        }
-        .nav-btn {
-            color: var(--secondary-text);
-            background: none;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.75rem;
-            padding: 8px;
-            transition: color 0.2s ease;
-        }
-        .nav-btn .fa-solid {
-            font-size: 1.25rem;
-        }
-        .nav-btn.active {
-            color: var(--accent-blue);
-        }
-        
+        /* Modal */
         .modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.75);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 50;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
         }
+
         .modal-content {
-            background-color: var(--container-bg);
-            border-radius: 14px;
-            padding: 24px;
-            max-width: 400px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 500px;
             width: 90%;
-            color: var(--text-color);
-            text-align: center;
             position: relative;
-        }
-        .modal-close {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 24px;
-            cursor: pointer;
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
-        .toast-container {
-            position: fixed;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 60;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 90%;
-            max-width: 400px;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Toast */
         .toast {
-            background-color: rgba(48, 48, 48, 0.9);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
             color: white;
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-            opacity: 0;
-            animation: fadeInOut 4s ease-in-out forwards;
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            animation: toastSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateY(20px); }
-            10% { opacity: 1; transform: translateY(0); }
-            90% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-20px); }
+        @keyframes toastSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Audio Player */
+        audio {
+            width: 100%;
+            border-radius: 12px;
+            background: var(--bg-card);
+        }
+
+        audio::-webkit-media-controls-panel {
+            background: var(--bg-card);
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Stats Badge */
+        .stats-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        /* Fade animations */
+        .fade-in { animation: fadeIn 0.3s ease; }
+        .fade-out { animation: fadeOut 0.3s ease; }
+        @keyframes fadeOut { to { opacity: 0; } }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .glass-card {
+                border-radius: 16px;
+            }
+            .section-header h2 {
+                font-size: 20px;
+            }
+        }
+
+        /* Loading State */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-blue);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-elevated);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
         }
     </style>
 </head>
-<body class="flex flex-col">
+<body>
+    <div class="bg-animated"></div>
 
-    <div class="max-w-xl mx-auto p-4 flex flex-col flex-1 w-full">
-        <h1 class="text-3xl font-bold text-center mb-6 text-white">Mission Rajipo 🎵</h1>
-        
-        <div id="searchView" class="hidden">
-            <div id="mainControls" class="space-y-3 mb-6 container-card">
-                <h2 class="text-xl font-bold text-center">Search & Select 🔎</h2>
-                <div id="search-container" class="relative">
-                    <input id="search" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Search shlok number..." class="w-full pr-10" aria-label="Search shlok number">
-                    <i id="clearSearch" class="fa-solid fa-xmark absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hidden"></i>
+    <div class="max-w-5xl mx-auto p-4 sm:p-6 relative z-10">
+        <!-- Header -->
+        <header class="text-center mb-12 mt-6">
+            <h1 class="text-5xl sm:text-6xl font-black mb-3 header-gradient">
+                Mission Rajipo
+            </h1>
+            <p class="text-lg text-secondary" style="color: var(--text-secondary);">
+                Your spiritual journey through 315 sacred shlokas 🙏
+            </p>
+        </header>
+
+        <!-- Search & Controls -->
+        <div class="glass-card p-6 mb-6">
+            <div class="space-y-4">
+                <!-- Search -->
+                <div class="relative">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2" style="color: var(--text-muted);"></i>
+                    <input 
+                        id="search" 
+                        type="text" 
+                        inputmode="numeric" 
+                        pattern="[0-9]*" 
+                        placeholder="Search by shlok number..." 
+                        class="modern-input w-full pl-12"
+                    >
+                    <button id="clearSearch" class="absolute right-4 top-1/2 -translate-y-1/2 hidden">
+                        <i class="fa-solid fa-xmark" style="color: var(--text-muted);"></i>
+                    </button>
                 </div>
-                <div id="search-feedback" class="text-center text-red-400 font-semibold hidden" aria-live="polite">No matching shlokas found.</div>
-                <div class="flex gap-2">
-                    <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="w-1/2">
-                    <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="w-1/2">
-                    <button onclick="selectRange()" class="px-4 py-3 bg-gray-500 text-white rounded-lg flex items-center gap-1 btn-secondary">
-                        <i class="fa-solid fa-list-ol"></i> Range
+                
+                <div id="search-feedback" class="text-center font-semibold hidden" style="color: var(--accent-red);">
+                    No matching shlokas found.
+                </div>
+
+                <!-- Range Selection -->
+                <div class="flex gap-3">
+                    <input id="rangeStart" type="number" min="1" max="315" placeholder="Start" class="modern-input flex-1">
+                    <input id="rangeEnd" type="number" min="1" max="315" placeholder="End" class="modern-input flex-1">
+                    <button onclick="selectRange()" class="btn-modern btn-secondary px-6">
+                        <i class="fa-solid fa-list-ol mr-2"></i> Range
                     </button>
                 </div>
             </div>
         </div>
 
-        <div id="quizView" class="hidden">
-            <div class="container-card">
-                <div id="quizControls" class="space-y-4">
-                    <h2 class="text-xl font-bold text-center">Quiz Mode 🧠</h2>
-                    <p id="currentShlokQuiz" class="text-lg font-semibold text-center text-gray-400">Shlok 0</p>
-                    <div class="countdown-bar-container">
-                        <div id="countdownBar" class="countdown-bar h-full"></div>
+        <!-- Groups -->
+        <div class="glass-card p-6 mb-6">
+            <button onclick="toggleGroupDisplay()" class="w-full btn-modern btn-secondary flex items-center justify-center gap-3 mb-4">
+                <i id="group-toggle-icon" class="fa-solid fa-chevron-down"></i>
+                <span>Quick Select Groups</span>
+            </button>
+            <div id="groups" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 hidden"></div>
+        </div>
+
+        <!-- Mode Toggle & Controls -->
+        <div class="glass-card p-6 mb-6">
+            <button onclick="toggleMode()" class="w-full btn-modern btn-secondary mb-6 flex items-center justify-center gap-3">
+                <i class="fa-solid fa-toggle-off"></i>
+                <span>Toggle to Quiz Mode</span>
+            </button>
+
+            <div id="dynamicControlsWrapper" class="relative min-h-[300px]">
+                <!-- Quiz Controls -->
+                <div id="quizControls" class="space-y-5 absolute w-full top-0 left-0 fade-out hidden">
+                    <div class="section-header">
+                        <div class="section-icon">🧠</div>
+                        <h2>Quiz Mode</h2>
                     </div>
                     
-                    <div class="min-h-[24px] flex justify-between items-center space-x-2">
-                        <p id="quizStatus" class="font-semibold text-green-400" aria-live="polite"></p>
-                        <span id="countdown" class="font-semibold text-white"></span>
+                    <div class="text-center">
+                        <p id="currentShlokQuiz" class="text-2xl font-bold mb-2">Shlok 0</p>
+                        <div class="stats-badge inline-flex">
+                            <i class="fa-solid fa-clock"></i>
+                            <span id="countdown"></span>
+                        </div>
                     </div>
 
-                    <div class="flex items-center space-x-4 w-full">
-                        <span class="text-sm text-gray-400 w-16">Pause:</span>
-                        <input type="range" id="quizTimeSlider" min="5" max="60" step="5" value="20" class="flex-1">
-                        <span id="quizTimeDisplay" class="font-semibold w-10 text-white">20s</span>
+                    <div class="progress-bar">
+                        <div id="countdownBar" class="progress-fill" style="width: 100%;"></div>
                     </div>
-                    <div class="flex items-center space-x-4 w-full">
-                        <span class="text-sm text-gray-400 w-16">Play Delay:</span>
-                        <input type="range" id="quizDelaySlider" min="1" max="10" step="1" value="3" class="flex-1">
-                        <span id="quizDelayDisplay" class="font-semibold w-10 text-white">3s</span>
+
+                    <p id="quizStatus" class="text-center font-semibold" style="color: var(--accent-green); min-height: 24px;"></p>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4">
+                            <label class="text-sm font-medium" style="color: var(--text-secondary); min-width: 100px;">Pause Time:</label>
+                            <input type="range" id="quizTimeSlider" min="5" max="60" step="5" value="20" class="flex-1">
+                            <span id="quizTimeDisplay" class="stats-badge">20s</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-4">
+                            <label class="text-sm font-medium" style="color: var(--text-secondary); min-width: 100px;">Play Delay:</label>
+                            <input type="range" id="quizDelaySlider" min="1" max="10" step="1" value="3" class="flex-1">
+                            <span id="quizDelayDisplay" class="stats-badge">3s</span>
+                        </div>
                     </div>
-                    
-                    <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                        <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2">
-                            <i class="fa-solid fa-toggle-off"></i>Auto-Play: OFF
+
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button id="autoPlayToggle" onclick="toggleAutoPlay()" class="btn-modern btn-secondary flex-1 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-toggle-off"></i> Auto-Play: OFF
                         </button>
-                        <button id="playFullBtn" onclick="playFullShloka()" class="px-4 py-3 btn-secondary text-white btn-rounded flex items-center gap-2 hidden">
-                            <i class="fa-solid fa-redo"></i> Play Full Shloka
+                        <button id="playFullBtn" onclick="playFullShloka()" class="btn-modern btn-secondary flex-1 hidden flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-redo"></i> Play Full
                         </button>
                     </div>
-                    <button onclick="playNextQuizTrack()" class="w-full py-3 btn-primary text-white btn-rounded">
-                        <i class="fa-solid fa-forward"></i> Play Next
+
+                    <button onclick="playNextQuizTrack()" class="w-full btn-modern btn-primary flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-forward"></i> Play Next Shlok
                     </button>
+                </div>
+
+                <!-- Regular Controls -->
+                <div id="regularControls" class="space-y-5 absolute w-full top-0 left-0 fade-in">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <label class="flex items-center gap-3 glass-card-hover p-4 rounded-xl" style="background: var(--bg-elevated);">
+                            <span class="text-sm font-medium" style="color: var(--text-secondary);">Repeat:</span>
+                            <input id="repeatCount" type="number" min="1" value="1" class="modern-input flex-1 text-center py-2">
+                        </label>
+                        
+                        <label class="flex items-center gap-3 glass-card-hover p-4 rounded-xl cursor-pointer" style="background: var(--bg-elevated);">
+                            <input type="checkbox" id="shuffle" class="w-5 h-5 rounded cursor-pointer">
+                            <span class="text-sm font-medium">Shuffle</span>
+                        </label>
+                        
+                        <label class="flex items-center gap-3 glass-card-hover p-4 rounded-xl cursor-pointer" style="background: var(--bg-elevated);">
+                            <input type="checkbox" id="repeatPlaylist" class="w-5 h-5 rounded cursor-pointer">
+                            <span class="text-sm font-medium">Repeat All</span>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <label class="text-sm font-medium" style="color: var(--text-secondary); min-width: 80px;">Speed:</label>
+                        <input type="range" id="speedSlider" min="0.5" max="1.5" step="0.1" value="1.0" class="flex-1">
+                        <span class="stats-badge"><span id="speedDisplay">1.0</span>x</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button onclick="playSelected()" class="btn-modern btn-primary flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> Play Selection
+                        </button>
+                        <button onclick="confirmClearSelection()" class="btn-modern btn-danger flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-eraser"></i> Clear Selection
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <div id="homeView">
-            <div id="groups-container" class="mb-6 container-card">
-                <button onclick="toggleGroupDisplay()" class="w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2 mb-3">
-                    <i id="group-toggle-icon" class="fa-solid fa-chevron-down"></i> Groups
-                </button>
-                <div id="groups" class="grid grid-cols-3 gap-2 justify-items-center mb-3 hidden"></div>
-            </div>
-            
-            <div class="mb-6 container-card space-y-4">
-                <div id="dynamicControlsWrapper" class="relative min-h-[250px]">
-                    <div id="regularControls" class="space-y-4 absolute w-full top-0 left-0">
-                        <div class="flex flex-wrap justify-between items-center gap-4 text-sm text-gray-400">
-                            <label class="flex-1 flex items-center gap-2">
-                                <span class="text-gray-400">Repeat:</span> 
-                                <input id="repeatCount" type="number" min="1" value="1" class="w-16 p-1 text-center bg-transparent border-b-2 border-gray-600">
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" id="shuffle" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600">
-                                Shuffle
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" id="repeatPlaylist" class="h-4 w-4 rounded text-blue-600 bg-gray-800 border-gray-600">
-                                Repeat
-                            </label>
-                        </div>
-                        
-                        <div class="flex items-center space-x-4">
-                            <span class="text-sm text-gray-400 w-12">Speed:</span>
-                            <input type="range" id="speedSlider" min="0.5" max="1.5" step="0.1" value="1.0" class="flex-1">
-                            <span id="speedDisplay" class="font-semibold w-8 text-white">1.0</span>x
-                        </div>
-                        
-                        <div class="flex flex-col gap-2 sm:flex-row">
-                            <button onclick="playSelected()" class="flex-1 py-3 btn-primary text-white btn-rounded">
-                                <i class="fa-solid fa-play"></i> Play
-                            </button>
-                            <button onclick="confirmClearSelection()" class="flex-1 py-3 btn-red text-white btn-rounded">
-                                <i class="fa-solid fa-eraser"></i> Clear
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="personalPlaylists" class="mt-6 container-card">
-                <h2 class="text-lg font-bold mb-3 text-white">My Personal Playlists 💾</h2>
-                <p id="playlist-empty" class="text-gray-400 text-center mb-3 hidden">No saved playlists yet.</p>
-                <ul id="playlistList" class="space-y-3 mb-4"></ul>
-                <div id="savePlaylistBtn" class="hidden">
-                     <button onclick="showSavePlaylistModal()" class="w-full py-3 btn-rounded btn-green text-white flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-plus-circle"></i> Save as Playlist
-                    </button>
-                </div>
-            </div>
 
-            <div id="recentlyPlayed" class="mt-6 hidden container-card">
-                <h2 class="text-lg font-bold mb-3 text-white">Recently Played</h2>
-                <ul id="recentList" class="space-y-3"></ul>
-                <p id="recent-empty" class="text-gray-400 text-center hidden">Your recently played selections will appear here.</p>
-                <button onclick="confirmClearHistory()" class="mt-4 w-full py-3 btn-rounded btn-secondary flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-trash-can"></i> Clear History
+        <!-- Personal Playlists -->
+        <div id="personalPlaylists" class="glass-card p-6 mb-6">
+            <div class="section-header">
+                <div class="section-icon">💾</div>
+                <h2>My Playlists</h2>
+            </div>
+            <p id="playlist-empty" class="text-center hidden" style="color: var(--text-secondary); padding: 20px;">
+                No saved playlists yet. Create one by selecting shlokas!
+            </p>
+            <ul id="playlistList" class="space-y-3 mb-4"></ul>
+            <div id="savePlaylistBtn" class="hidden">
+                <button onclick="showSavePlaylistModal()" class="w-full btn-modern btn-success flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus-circle"></i> Save as Playlist
                 </button>
             </div>
+        </div>
 
-            <h2 id="allShlokasTitle" class="text-lg font-bold mt-6 mb-3 text-white">All Shlokas</h2>
-            <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></ul>
+        <!-- Recently Played -->
+        <div id="recentlyPlayed" class="glass-card p-6 mb-6 hidden">
+            <div class="section-header">
+                <div class="section-icon">🕐</div>
+                <h2>Recently Played</h2>
+            </div>
+            <ul id="recentList" class="space-y-3 mb-4"></ul>
+            <p id="recent-empty" class="text-center hidden" style="color: var(--text-secondary); padding: 20px;">
+                Your recently played selections will appear here.
+            </p>
+            <button onclick="confirmClearHistory()" class="w-full btn-modern btn-secondary flex items-center justify-center gap-2">
+                <i class="fa-solid fa-trash-can"></i> Clear History
+            </button>
+        </div>
+
+        <!-- All Shlokas -->
+        <div class="glass-card p-6">
+            <div class="section-header">
+                <div class="section-icon">📿</div>
+                <h2 id="allShlokasTitle">All Shlokas</h2>
+                <div class="stats-badge ml-auto">
+                    <span id="selectedCount">0 selected</span>
+                </div>
+            </div>
+            <ul id="trackList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></ul>
         </div>
     </div>
 
-    <nav class="fixed bottom-0 left-0 right-0 shadow p-3 z-10 bottom-nav">
-        <audio id="audioPlayer" controls class="w-full mb-2"></audio>
-        <div class="flex justify-around items-center">
-            <button id="navHome" onclick="switchView('home')" class="nav-btn">
-                <i class="fa-solid fa-home"></i>
-                <span>Home</span>
-            </button>
-            <button id="navQuiz" onclick="switchView('quiz')" class="nav-btn">
-                <i class="fa-solid fa-brain"></i>
-                <span>Quiz</span>
-            </button>
-            <button id="navSearch" onclick="switchView('search')" class="nav-btn">
-                <i class="fa-solid fa-search"></i>
-                <span>Search</span>
-            </button>
-        </div>
-    </nav>
+    <!-- Audio Player Footer -->
+    <footer class="fixed bottom-0 left-0 right-0 z-50 glass-card p-4 border-t" style="border-color: var(--border-color);">
+        <audio id="audioPlayer" controls class="w-full"></audio>
+    </footer>
 
-    <div id="toast-container" class="toast-container"></div>
+    <div id="toast-container" class="fixed bottom-32 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-3 w-full max-w-md px-4"></div>
     <div id="modal-container"></div>
 
     <script>
@@ -465,24 +768,26 @@
         const AUDIO_BASE_URL = 'https://ia601703.us.archive.org/35/items/satsang_diksha';
         const MAX_RECENT_ITEMS = 5;
 
-        // State variables
+        // State
         let audioPlayer;
         let playlist = [];
         let currentIndex = 0;
         let repeatEach = 1;
         let repeatCounter = 0;
         let currentSpeed = 1.0;
+        let isQuizMode = false;
         let hasQuizPaused = false;
         let autoPlay = false;
         let autoPlayTimeout = null;
         let countdownInterval = null;
         let currentQuizTime = 20;
         let currentQuizDelay = 3;
+        let localStorageEnabled = false;
 
-        // Check if localStorage is available
+        // Check localStorage availability
         function isLocalStorageAvailable() {
             try {
-                const test = '__localStorageTest__';
+                const test = '__test__';
                 localStorage.setItem(test, test);
                 localStorage.removeItem(test);
                 return true;
@@ -490,9 +795,8 @@
                 return false;
             }
         }
-        const localStorageEnabled = isLocalStorageAvailable();
 
-        // Utility: Clear all timers
+        // Clear timers
         function clearAllTimers() {
             if (countdownInterval) {
                 clearInterval(countdownInterval);
@@ -504,11 +808,12 @@
             }
         }
 
-        // Utility: Get audio URL
+        // Get audio URL
         function getAudioUrl(trackNum) {
             return `${AUDIO_BASE_URL}/sanskrit_${String(trackNum).padStart(3, '0')}.mp3`;
         }
 
+        // Play current track
         function playCurrent() {
             if (currentIndex < playlist.length) {
                 const trackNum = playlist[currentIndex];
@@ -516,7 +821,7 @@
                 audioPlayer.playbackRate = currentSpeed;
                 audioPlayer.play().catch(err => {
                     console.error("Play error:", err);
-                    showToast("Failed to play track. Please check your connection.");
+                    showToast("Failed to play. Check connection.", "error");
                 });
             } else if (document.getElementById("repeatPlaylist").checked) {
                 currentIndex = 0;
@@ -526,51 +831,47 @@
                 audioPlayer.src = "";
             }
         }
-        
-        // New function to switch between views
-        function switchView(viewId) {
-            // Hide all views
-            document.getElementById('homeView').classList.add('hidden');
-            document.getElementById('quizView').classList.add('hidden');
-            document.getElementById('searchView').classList.add('hidden');
 
-            // Deactivate all nav buttons
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        // Toggle mode
+        function toggleMode() {
+            isQuizMode = !isQuizMode;
+            const quizControls = document.getElementById('quizControls');
+            const regularControls = document.getElementById('regularControls');
+            
+            quizControls.classList.toggle('hidden', !isQuizMode);
+            regularControls.classList.toggle('hidden', isQuizMode);
+            
+            const modeBtn = document.querySelector('button[onclick="toggleMode()"]');
+            const icon = isQuizMode ? 'fa-toggle-on' : 'fa-toggle-off';
+            const text = isQuizMode ? 'Exit Quiz Mode' : 'Toggle to Quiz Mode';
+            modeBtn.innerHTML = `<i class="fa-solid ${icon}"></i><span>${text}</span>`;
 
-            // Show the target view and activate its button
-            document.getElementById(viewId + 'View').classList.remove('hidden');
-            document.getElementById('nav' + viewId.charAt(0).toUpperCase() + viewId.slice(1)).classList.add('active');
-
-            // Handle state changes when switching to/from quiz mode
-            if (viewId === 'quiz') {
-                // Entering quiz mode: Reset player and timers
-                try { audioPlayer.pause(); } catch(e) {}
-                try { audioPlayer.src = ''; } catch(e) {}
+            if (isQuizMode) {
+                try { audioPlayer.pause(); audioPlayer.src = ''; } catch(e) {}
                 playlist = [];
                 currentIndex = 0;
                 document.getElementById('playFullBtn').classList.add('hidden');
-                const countdownBar = document.getElementById('countdownBar');
-                if (countdownBar) countdownBar.style.width = '100%';
+                document.getElementById('countdownBar').style.width = '100%';
                 clearAllTimers();
             } else {
-                // Exiting quiz mode: Clear timers and statuses
                 clearAllTimers();
-                const quizStatus = document.getElementById('quizStatus');
-                const countdown = document.getElementById('countdown');
-                if (quizStatus) quizStatus.textContent = '';
-                if (countdown) countdown.textContent = '';
+                document.getElementById('quizStatus').textContent = '';
+                document.getElementById('countdown').textContent = '';
                 document.getElementById('playFullBtn').classList.add('hidden');
             }
+            updateGroupButtonSelection();
         }
 
+        // Toggle auto-play
         function toggleAutoPlay() {
             autoPlay = !autoPlay;
-            const button = document.getElementById("autoPlayToggle");
-            button.innerHTML = `<i class="fa-solid fa-toggle-${autoPlay ? 'on' : 'off'}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
-            button.classList.toggle('btn-secondary', !autoPlay);
-            button.classList.toggle('btn-green', autoPlay);
+            const btn = document.getElementById("autoPlayToggle");
+            const icon = autoPlay ? 'fa-toggle-on' : 'fa-toggle-off';
+            btn.innerHTML = `<i class="fa-solid ${icon}"></i> Auto-Play: ${autoPlay ? 'ON' : 'OFF'}`;
+            btn.className = btn.className.replace(/btn-\w+/, autoPlay ? 'btn-success' : 'btn-secondary');
         }
 
+        // Play full shloka in quiz
         function playFullShloka() {
             const trackNum = playlist[currentIndex > 0 ? currentIndex - 1 : 0];
             audioPlayer.src = getAudioUrl(trackNum);
@@ -582,59 +883,67 @@
             document.getElementById('playFullBtn').classList.add('hidden');
 
             audioPlayer.play().catch(err => {
-                showToast("Failed to play track. Please check your connection.");
-                console.error("Play error:", err);
+                showToast("Failed to play. Check connection.", "error");
             });
         }
-        
+
+        // Change quiz time
         function changeQuizTime(time) {
             currentQuizTime = time;
             document.getElementById("quizTimeDisplay").textContent = `${currentQuizTime}s`;
         }
 
+        // Change quiz delay
         function changeQuizDelay(delay) {
             currentQuizDelay = delay;
             document.getElementById("quizDelayDisplay").textContent = `${currentQuizDelay}s`;
         }
-        
+
+        // Toggle group display
         function toggleGroupDisplay() {
-            const groupsDiv = document.getElementById("groups");
-            const isHidden = groupsDiv.classList.toggle("hidden");
-            const groupToggleIcon = document.getElementById("group-toggle-icon");
-            groupToggleIcon.classList.toggle("fa-chevron-down", isHidden);
-            groupToggleIcon.classList.toggle("fa-chevron-up", !isHidden);
+            const groups = document.getElementById("groups");
+            const isHidden = groups.classList.toggle("hidden");
+            const icon = document.getElementById("group-toggle-icon");
+            icon.className = isHidden ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
         }
 
+        // Clear selection
         function clearSelection() {
-            document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected").forEach(item => item.classList.remove("selected"));
-            document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked").forEach(cb => cb.checked = false);
-            document.querySelectorAll(".group-btn.selected").forEach(btn => btn.classList.remove("selected"));
+            document.querySelectorAll(".track-item.selected, .recent-item.selected, .playlist-item.selected")
+                .forEach(item => item.classList.remove("selected"));
+            document.querySelectorAll(".trackBox:checked, .recent-box:checked, .playlist-box:checked")
+                .forEach(cb => cb.checked = false);
+            document.querySelectorAll(".group-btn.selected")
+                .forEach(btn => btn.classList.remove("selected"));
             playlist = [];
             currentIndex = 0;
             updateGroupButtonSelection();
-            showToast("Selection cleared.");
+            updateSelectedCount();
+            showToast("Selection cleared", "info");
         }
 
+        // Confirm clear selection
         function confirmClearSelection() {
-            showModal("Are you sure you want to clear your current selection?", () => {
-                clearSelection();
+            showModal("Clear your current selection?", () => clearSelection());
+        }
+
+        // Confirm clear history
+        function confirmClearHistory() {
+            showModal("Clear your recently played history? This cannot be undone.", () => {
+                clearHistory();
+                showToast("History cleared", "success");
             });
         }
 
-        function confirmClearHistory() {
-            showModal("Are you sure you want to clear your recently played history? This action cannot be undone.", () => {
-                clearHistory();
-                showToast("Recently played history cleared.");
+        // Confirm delete playlist
+        function confirmDeletePlaylist(name) {
+            showModal(`Delete playlist "${name}"? This cannot be undone.`, () => {
+                deletePlaylist(name);
+                showToast(`Playlist deleted`, "success");
             });
         }
-        
-        function confirmDeletePlaylist(playlistName) {
-             showModal(`Are you sure you want to delete the playlist "${playlistName}"? This action cannot be undone.`, () => {
-                deletePlaylist(playlistName);
-                showToast(`Playlist "${playlistName}" deleted.`);
-            });
-        }
-        
+
+        // Select range
         function selectRange() {
             const start = parseInt(document.getElementById("rangeStart").value);
             const end = parseInt(document.getElementById("rangeEnd").value);
@@ -645,7 +954,7 @@
             }
             
             if (start < 1 || end > TOTAL_TRACKS || start > end) {
-                showModal(`Please enter a valid shlok range between 1 and ${TOTAL_TRACKS}.`);
+                showModal(`Please enter a valid range (1-${TOTAL_TRACKS}).`);
                 return;
             }
             
@@ -656,30 +965,34 @@
                 cb.closest("label").classList.toggle("selected", isChecked);
             });
             updateGroupButtonSelection();
-            showToast(`Shlokas ${start}-${end} selected.`);
-            switchView('home'); // Switch back to home view after selecting a range
+            updateSelectedCount();
+            showToast(`Shlokas ${start}-${end} selected`, "success");
         }
 
+        // Toggle group
         function toggleGroup(start, end, element) {
             const isSelected = !element.classList.contains('selected');
             element.classList.toggle('selected', isSelected);
-            element.setAttribute('aria-pressed', isSelected.toString());
+            
             for (let i = start; i <= end; i++) {
-                const checkbox = document.querySelector(`.trackBox[value="${i}"]`);
-                if (checkbox) {
-                    checkbox.checked = isSelected;
-                    checkbox.closest("label").classList.toggle("selected", isSelected);
+                const cb = document.querySelector(`.trackBox[value="${i}"]`);
+                if (cb) {
+                    cb.checked = isSelected;
+                    cb.closest("label").classList.toggle("selected", isSelected);
                 }
             }
             updateGroupButtonSelection();
+            updateSelectedCount();
         }
-        
+
+        // Change speed
         function changeSpeed(speed) {
             currentSpeed = speed;
             audioPlayer.playbackRate = currentSpeed;
             document.getElementById("speedDisplay").textContent = currentSpeed.toFixed(1);
         }
 
+        // Play selected
         function playSelected() {
             const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"))
                 .map(cb => JSON.parse(cb.dataset.selection));
@@ -688,14 +1001,13 @@
 
             let finalSelection = [];
             if (selectedPlaylists.length > 0) {
-                const playlistShlokas = new Set(selectedPlaylists.flatMap(p => p));
-                finalSelection = Array.from(playlistShlokas);
+                finalSelection = Array.from(new Set(selectedPlaylists.flat()));
             } else {
                 finalSelection = selectedTracks;
             }
 
             if (finalSelection.length === 0) {
-                showModal("Please select at least one shlok or a playlist to play.");
+                showModal("Please select at least one shlok or playlist.");
                 return;
             }
 
@@ -706,34 +1018,30 @@
             }
             currentIndex = 0;
             repeatCounter = 0;
-            if (localStorageEnabled) {
-                saveSelection(finalSelection);
-            }
+            if (localStorageEnabled) saveSelection(finalSelection);
             playCurrent();
-            showToast("Playback started.");
+            showToast("Playback started", "success");
         }
 
+        // Play next quiz track
         function playNextQuizTrack() {
             let selected = [];
-            
             const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"))
                 .map(cb => JSON.parse(cb.dataset.selection));
             const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"))
                 .map(cb => cb.dataset.selection.split(",").map(n => parseInt(n.trim())));
             
             if (selectedPlaylists.length > 0) {
-                 const playlistShlokas = new Set(selectedPlaylists.flatMap(p => p));
-                 selected = Array.from(playlistShlokas);
+                selected = Array.from(new Set(selectedPlaylists.flat()));
             } else if (selectedRecents.length > 0) {
-                const allNumbers = new Set(selectedRecents.flat());
-                selected = Array.from(allNumbers);
+                selected = Array.from(new Set(selectedRecents.flat()));
             } else {
                 selected = Array.from(document.querySelectorAll(".trackBox:checked"))
                     .map(cb => parseInt(cb.value, 10));
             }
 
             if (selected.length === 0) {
-                showModal("Go to the Home tab and select a group of shlokas or a playlist to quiz yourself on first!");
+                showModal("Please select shlokas or a playlist to quiz yourself!");
                 return;
             }
 
@@ -747,30 +1055,31 @@
             document.getElementById('playFullBtn').classList.add('hidden');
 
             const trackNum = playlist[currentIndex];
-            document.getElementById('currentShlokQuiz').textContent = `Now playing: Shlok ${trackNum}`;
+            document.getElementById('currentShlokQuiz').textContent = `Shlok ${trackNum}`;
             audioPlayer.src = getAudioUrl(trackNum);
             audioPlayer.playbackRate = currentSpeed;
             
             hasQuizPaused = false;
             document.getElementById('countdownBar').style.width = '100%';
             audioPlayer.play().catch(err => {
-                showToast("Failed to play track. Please check your connection.");
-                console.error("Play error:", err);
+                showToast("Failed to play. Check connection.", "error");
             });
 
             currentIndex++;
         }
 
+        // Show save playlist modal
         function showSavePlaylistModal() {
             if (!localStorageEnabled) {
-                showModal("Local storage is not enabled or available in your browser. Cannot save playlists.");
+                showModal("Local storage not available. Cannot save playlists.");
                 return;
             }
+            
             const selectedTracks = Array.from(document.querySelectorAll(".trackBox:checked"))
                 .map(cb => parseInt(cb.value, 10));
             
             if (selectedTracks.length === 0) {
-                showModal("Please select at least one shlok to save as a playlist.");
+                showModal("Please select at least one shlok.");
                 return;
             }
 
@@ -779,439 +1088,457 @@
             
             const modal = document.createElement('div');
             modal.className = 'modal';
-            modal.setAttribute('role', 'dialog');
-            modal.setAttribute('aria-modal', 'true');
             modal.innerHTML = `
-                <div class="modal-content text-left">
-                    <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
-                    <h3 class="text-xl font-bold mb-4">Save Playlist</h3>
-                    <p class="mb-2">Enter a name for your playlist:</p>
-                    <input type="text" id="playlistNameInput" class="w-full mb-4" placeholder="My new playlist">
-                    <div id="playlistNameFeedback" class="text-red-400 font-semibold hidden mb-4"></div>
-                    <div class="flex gap-4 justify-end">
-                        <button class="px-4 py-3 btn-secondary text-white btn-rounded" onclick="this.closest('.modal').remove()">Cancel</button>
-                        <button class="px-4 py-3 btn-green text-white btn-rounded" id="savePlaylistConfirm">Save</button>
+                <div class="modal-content">
+                    <h3 class="text-2xl font-bold mb-4">Save Playlist</h3>
+                    <p class="mb-4" style="color: var(--text-secondary);">Enter a name for your playlist:</p>
+                    <input type="text" id="playlistNameInput" class="modern-input w-full mb-4" placeholder="e.g., Morning Prayers">
+                    <div id="playlistNameFeedback" class="hidden mb-4" style="color: var(--accent-red);"></div>
+                    <div class="flex gap-3">
+                        <button class="btn-modern btn-secondary flex-1" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button class="btn-modern btn-success flex-1" id="savePlaylistConfirm">Save</button>
                     </div>
                 </div>
             `;
             modalContainer.appendChild(modal);
-            const inputEl = document.getElementById('playlistNameInput');
-            const saveBtnEl = document.getElementById('savePlaylistConfirm');
-            const feedbackEl = document.getElementById('playlistNameFeedback');
+            
+            const input = document.getElementById('playlistNameInput');
+            const saveBtn = document.getElementById('savePlaylistConfirm');
+            const feedback = document.getElementById('playlistNameFeedback');
 
-            function savePlaylist() {
-                const playlistName = inputEl.value.trim();
-                if (playlistName === "") {
-                    feedbackEl.textContent = "Playlist name cannot be empty.";
-                    feedbackEl.classList.remove('hidden');
+            function save() {
+                const name = input.value.trim();
+                if (!name) {
+                    feedback.textContent = "Playlist name cannot be empty.";
+                    feedback.classList.remove('hidden');
                     return;
                 }
+                
                 let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
-                if (playlists[playlistName]) {
-                    feedbackEl.textContent = "A playlist with this name already exists.";
-                    feedbackEl.classList.remove('hidden');
+                if (playlists[name]) {
+                    feedback.textContent = "A playlist with this name already exists.";
+                    feedback.classList.remove('hidden');
                     return;
                 }
-                playlists[playlistName] = selectedTracks;
+                
+                playlists[name] = selectedTracks;
                 localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
                 renderPersonalPlaylists();
-                showToast(`Playlist "${playlistName}" saved!`);
+                showToast(`Playlist "${name}" saved!`, "success");
                 modal.remove();
             }
 
-            saveBtnEl.addEventListener('click', savePlaylist);
-            inputEl.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    savePlaylist();
-                }
-            });
-            inputEl.focus();
+            saveBtn.onclick = save;
+            input.onkeydown = (e) => e.key === 'Enter' && save();
+            input.focus();
         }
 
+        // Render personal playlists
         function renderPersonalPlaylists() {
-            if (!localStorageEnabled) {
-                return;
-            }
+            if (!localStorageEnabled) return;
+            
             const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
-            const playlistList = document.getElementById("playlistList");
-            const personalPlaylistsDiv = document.getElementById("personalPlaylists");
-            const emptyMessage = document.getElementById("playlist-empty");
+            const list = document.getElementById("playlistList");
+            const empty = document.getElementById("playlist-empty");
 
-            playlistList.innerHTML = "";
+            list.innerHTML = "";
             const names = Object.keys(playlists);
             
-            if (names.length === 0) {
-                personalPlaylistsDiv.classList.remove("hidden");
-                emptyMessage.classList.remove("hidden");
-            } else {
-                personalPlaylistsDiv.classList.remove("hidden");
-                emptyMessage.classList.add("hidden");
-            }
+            empty.classList.toggle("hidden", names.length > 0);
             
             names.forEach(name => {
                 const shlokas = playlists[name];
                 const li = document.createElement("li");
-                li.className = "space-y-2";
                 li.innerHTML = `
-                    <label class="playlist-item block p-3 container-card cursor-pointer flex items-center justify-between">
-                        <div class="flex items-center">
-                            <input type="checkbox" class="playlist-box mr-2" data-selection='${JSON.stringify(shlokas)}'>
-                            <span class="ml-6 font-semibold">${name}</span>
+                    <label class="playlist-item flex items-center justify-between gap-3 cursor-pointer">
+                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                            <div class="custom-checkbox"></div>
+                            <input type="checkbox" class="playlist-box hidden" data-selection='${JSON.stringify(shlokas)}'>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold truncate">${name}</div>
+                                <div class="text-sm" style="color: var(--text-muted);">${shlokas.length} shlokas</div>
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2 text-sm text-gray-400">
-                            <span>(${shlokas.length} shlokas)</span>
-                            <button onclick="loadPlaylist('${name.replace(/'/g, "\\'")}'); event.stopPropagation();" class="text-xs px-2 py-1 btn-secondary rounded-full">
+                        <div class="flex gap-2">
+                            <button onclick="loadPlaylist('${name.replace(/'/g, "\\'")}'); event.stopPropagation();" class="btn-modern btn-secondary px-3 py-2 text-sm">
                                 Load
                             </button>
-                            <button onclick="confirmDeletePlaylist('${name.replace(/'/g, "\\'")}'); event.stopPropagation();" class="text-xs px-2 py-1 btn-red rounded-full">
-                                Delete
+                            <button onclick="confirmDeletePlaylist('${name.replace(/'/g, "\\'")}'); event.stopPropagation();" class="btn-modern btn-danger px-3 py-2 text-sm">
+                                <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
                     </label>
                 `;
-                playlistList.appendChild(li);
+                list.appendChild(li);
             });
         }
 
+        // Load playlist
         function loadPlaylist(name) {
             if (!localStorageEnabled) return;
-            let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
+            
+            const playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
             const shlokas = playlists[name];
+            
             if (shlokas) {
                 clearSelection();
                 shlokas.forEach(trackNum => {
-                    const checkbox = document.querySelector(`.trackBox[value="${trackNum}"]`);
-                    if (checkbox) {
-                        checkbox.checked = true;
-                        checkbox.closest("label").classList.add("selected");
+                    const cb = document.querySelector(`.trackBox[value="${trackNum}"]`);
+                    if (cb) {
+                        cb.checked = true;
+                        cb.closest("label").classList.add("selected");
                     }
                 });
                 updateGroupButtonSelection();
-                showToast(`Playlist "${name}" loaded into your selection!`);
+                updateSelectedCount();
+                showToast(`Playlist "${name}" loaded!`, "success");
             }
         }
 
+        // Delete playlist
         function deletePlaylist(name) {
             if (!localStorageEnabled) return;
+            
             let playlists = JSON.parse(localStorage.getItem("personalPlaylists")) || {};
             delete playlists[name];
             localStorage.setItem("personalPlaylists", JSON.stringify(playlists));
             renderPersonalPlaylists();
         }
 
+        // Save selection to history
         function saveSelection(selection) {
             if (!localStorageEnabled) return;
-            let history = [];
-            try { 
-                history = JSON.parse(localStorage.getItem("recentSelections")) || []; 
-            } catch (e) { 
-                history = []; 
-            }
+            
+            let history = JSON.parse(localStorage.getItem("recentSelections")) || [];
             const selString = selection.join(",");
             history = [selString, ...history.filter(h => h !== selString)].slice(0, MAX_RECENT_ITEMS);
             localStorage.setItem("recentSelections", JSON.stringify(history));
             renderRecentSelections();
         }
 
+        // Clear history
         function clearHistory() {
             if (!localStorageEnabled) return;
             localStorage.removeItem("recentSelections");
             renderRecentSelections();
         }
 
+        // Render recent selections
         function renderRecentSelections() {
-            if (!localStorageEnabled) {
+            if (!localStorageEnabled) return;
+            
+            const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
+            const div = document.getElementById("recentlyPlayed");
+            const list = document.getElementById("recentList");
+            const empty = document.getElementById("recent-empty");
+            
+            list.innerHTML = "";
+            
+            if (history.length === 0) {
+                div.classList.add("hidden");
                 return;
             }
-            const history = JSON.parse(localStorage.getItem("recentSelections")) || [];
-            const recentDiv = document.getElementById("recentlyPlayed");
-            const recentList = document.getElementById("recentList");
-            const recentEmpty = document.getElementById("recent-empty");
-            recentList.innerHTML = "";
-            if (history.length === 0) { 
-                recentDiv.classList.add("hidden"); 
-                recentEmpty.classList.remove("hidden");
-                return; 
-            }
-            recentDiv.classList.remove("hidden");
-            recentEmpty.classList.add("hidden");
-            history.forEach((sel) => {
+            
+            div.classList.remove("hidden");
+            empty.classList.add("hidden");
+            
+            history.forEach(sel => {
                 const numbers = sel.split(",").map(n => parseInt(n.trim()));
-                let labelText = numbers.length <= 6 ? "Shlok " + numbers.join(", ") : `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${numbers.length} total)`;
+                const label = numbers.length <= 6 
+                    ? `Shlok ${numbers.join(", ")}` 
+                    : `Shlok ${numbers[0]}–${numbers[numbers.length - 1]} (${numbers.length} total)`;
+                
                 const li = document.createElement("li");
-                li.className = "space-y-2";
                 li.innerHTML = `
-                    <label class="recent-item block p-3 container-card cursor-pointer">
-                        <input type="checkbox" class="recent-box mr-2" data-selection="${sel}">
-                        <span class="ml-6">${labelText}</span>
+                    <label class="recent-item flex items-center gap-3 cursor-pointer">
+                        <div class="custom-checkbox"></div>
+                        <input type="checkbox" class="recent-box hidden" data-selection="${sel}">
+                        <span class="flex-1">${label}</span>
                     </label>
                 `;
-                recentList.appendChild(li);
+                list.appendChild(li);
             });
         }
 
-        function restoreLastSelection() {
-            if (!localStorageEnabled) return;
-            let history = [];
-            try { 
-                history = JSON.parse(localStorage.getItem("recentSelections")) || []; 
-            } catch (e) { 
-                history = []; 
-            }
-            if (history.length > 0) {
-                const lastSel = history[0].split(",").map(n => parseInt(n.trim()));
-                document.querySelectorAll(".trackBox").forEach(cb => {
-                    const isChecked = lastSel.includes(parseInt(cb.value, 10));
-                    cb.checked = isChecked;
-                    cb.closest("label").classList.toggle("selected", isChecked);
-                });
-                updateGroupButtonSelection();
-            }
-        }
-        
+        // Update group button selection
         function updateGroupButtonSelection() {
-            const selectedTracks = new Set(Array.from(document.querySelectorAll(".trackBox:checked")).map(cb => parseInt(cb.value)));
+            const selected = new Set(
+                Array.from(document.querySelectorAll(".trackBox:checked"))
+                    .map(cb => parseInt(cb.value))
+            );
+            
             document.querySelectorAll(".group-btn").forEach(btn => {
                 const start = parseInt(btn.dataset.start);
                 const end = parseInt(btn.dataset.end);
-                if (isNaN(start) || isNaN(end)) {
-                    return;
-                }
-                let isGroupSelected = true;
-                for(let i = start; i <= end; i++) {
-                    if (!selectedTracks.has(i)) {
-                        isGroupSelected = false;
+                let isSelected = true;
+                
+                for (let i = start; i <= end; i++) {
+                    if (!selected.has(i)) {
+                        isSelected = false;
                         break;
                     }
                 }
-                btn.classList.toggle('selected', isGroupSelected);
-                btn.setAttribute('aria-pressed', isGroupSelected.toString());
+                
+                btn.classList.toggle('selected', isSelected);
             });
-            const savePlaylistBtn = document.getElementById('savePlaylistBtn');
-            if (savePlaylistBtn) {
-                savePlaylistBtn.classList.toggle('hidden', selectedTracks.size === 0);
-            }
+            
+            const saveBtn = document.getElementById('savePlaylistBtn');
+            saveBtn.classList.toggle('hidden', selected.size === 0 || isQuizMode);
         }
 
+        // Update selected count
+        function updateSelectedCount() {
+            const count = document.querySelectorAll(".trackBox:checked").length;
+            document.getElementById('selectedCount').textContent = count === 0 
+                ? '0 selected' 
+                : `${count} selected`;
+        }
+
+        // Generate groups
         function generateGroups() {
-            const groupDiv = document.getElementById("groups");
+            const div = document.getElementById("groups");
             for (let i = 1; i <= TOTAL_TRACKS; i += 10) {
                 const end = Math.min(i + 9, TOTAL_TRACKS);
                 const btn = document.createElement("button");
                 btn.className = "group-btn";
-                btn.setAttribute("tabindex", "0");
-                btn.setAttribute("aria-pressed", "false");
                 btn.dataset.start = i;
                 btn.dataset.end = end;
-                btn.innerHTML = `${i}–${end}<span class="checkmark">✓</span>`;
+                btn.textContent = `${i}–${end}`;
                 btn.onclick = () => toggleGroup(i, end, btn);
-                groupDiv.appendChild(btn);
+                div.appendChild(btn);
             }
         }
 
+        // Generate tracks
         function generateTracks() {
-            const trackListEl = document.getElementById("trackList");
+            const list = document.getElementById("trackList");
             for (let i = 1; i <= TOTAL_TRACKS; i++) {
                 const li = document.createElement("li");
                 li.innerHTML = `
-                    <label class="track-item block p-3 text-white">
-                        <input type="checkbox" value="${i}" class="trackBox mr-2"> <span class="ml-6">Shlok ${i}</span>
-                    </label>`;
-                trackListEl.appendChild(li);
+                    <label class="track-item flex items-center gap-3 cursor-pointer">
+                        <div class="custom-checkbox"></div>
+                        <input type="checkbox" value="${i}" class="trackBox hidden">
+                        <span class="flex-1">Shlok ${i}</span>
+                    </label>
+                `;
+                list.appendChild(li);
             }
         }
 
+        // Show modal
         function showModal(message, onConfirm = null) {
-            const modalContainer = document.getElementById('modal-container');
-            modalContainer.innerHTML = '';
+            const container = document.getElementById('modal-container');
+            container.innerHTML = '';
             
             const modal = document.createElement('div');
             modal.className = 'modal';
-            modal.setAttribute('role', 'dialog');
-            modal.setAttribute('aria-modal', 'true');
             modal.innerHTML = `
                 <div class="modal-content">
-                    <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
-                    <p class="mb-4">${message}</p>
+                    <p class="text-lg mb-6">${message}</p>
                     ${onConfirm ? `
-                        <div class="flex gap-4 justify-center">
-                            <button class="px-4 py-3 btn-red text-white btn-rounded" id="modal-cancel">Cancel</button>
-                            <button class="px-4 py-3 btn-primary text-white btn-rounded" id="modal-confirm">OK</button>
+                        <div class="flex gap-3">
+                            <button class="btn-modern btn-secondary flex-1" id="modal-cancel">Cancel</button>
+                            <button class="btn-modern btn-primary flex-1" id="modal-confirm">Confirm</button>
                         </div>
                     ` : `
-                        <button onclick="this.closest('.modal').remove()" class="px-4 py-3 btn-primary text-white btn-rounded">
-                            OK
-                        </button>
+                        <button class="btn-modern btn-primary w-full" onclick="this.closest('.modal').remove()">OK</button>
                     `}
                 </div>
             `;
             
-            modalContainer.appendChild(modal);
+            container.appendChild(modal);
 
             if (onConfirm) {
-                modal.querySelector('#modal-confirm').addEventListener('click', () => {
+                modal.querySelector('#modal-confirm').onclick = () => {
                     onConfirm();
                     modal.remove();
-                });
-                modal.querySelector('#modal-cancel').addEventListener('click', () => modal.remove());
+                };
+                modal.querySelector('#modal-cancel').onclick = () => modal.remove();
             }
-            modal.querySelector('.modal-close').focus();
+            
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
         }
 
-        function showToast(message) {
-            const toastContainer = document.getElementById('toast-container');
+        // Show toast
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.setAttribute('role', 'status');
-            toast.setAttribute('aria-live', 'polite');
-            toast.textContent = message;
-            toastContainer.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 4000);
+            
+            const icons = {
+                success: '✓',
+                error: '✗',
+                info: 'ℹ',
+                warning: '⚠'
+            };
+            
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div style="font-size: 20px;">${icons[type] || icons.info}</div>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
+        // Initialize
+        document.addEventListener("DOMContentLoaded", () => {
             audioPlayer = document.getElementById("audioPlayer");
-            const searchInput = document.getElementById("search");
-            const trackListContainer = document.getElementById("trackList");
-            const clearSearchBtn = document.getElementById("clearSearch");
-            const searchFeedbackEl = document.getElementById("search-feedback");
-
-            const speedSlider = document.getElementById("speedSlider");
-            speedSlider.addEventListener("input", function() {
-                changeSpeed(parseFloat(this.value));
-            });
-
-            const quizTimeSlider = document.getElementById("quizTimeSlider");
-            quizTimeSlider.addEventListener("input", function() {
-                changeQuizTime(parseInt(this.value));
-            });
-
-            const quizDelaySlider = document.getElementById("quizDelaySlider");
-            quizDelaySlider.addEventListener("input", function() {
-                changeQuizDelay(parseInt(this.value));
-            });
+            localStorageEnabled = isLocalStorageAvailable();
             
-            clearSearchBtn.addEventListener("click", () => {
-                searchInput.value = "";
-                searchInput.dispatchEvent(new Event('input'));
-            });
+            // Search
+            const search = document.getElementById("search");
+            const clearBtn = document.getElementById("clearSearch");
+            const feedback = document.getElementById("search-feedback");
+            
+            clearBtn.onclick = () => {
+                search.value = "";
+                search.dispatchEvent(new Event('input'));
+            };
 
-            searchInput.addEventListener("input", function () {
-                const term = this.value.trim().toLowerCase();
+            search.oninput = function() {
+                const term = this.value.trim();
                 let found = false;
+                
                 document.querySelectorAll("#trackList li").forEach(li => {
-                    const trackNumber = li.querySelector(".trackBox").value;
-                    if (!term || trackNumber.startsWith(term)) {
+                    const num = li.querySelector(".trackBox").value;
+                    if (!term || num.startsWith(term)) {
                         li.classList.remove("hidden");
                         found = true;
                     } else {
                         li.classList.add("hidden");
                     }
                 });
-                searchFeedbackEl.classList.toggle("hidden", found);
-                clearSearchBtn.classList.toggle("hidden", term === "");
-            });
+                
+                feedback.classList.toggle("hidden", found);
+                clearBtn.classList.toggle("hidden", !term);
+            };
 
-            trackListContainer.addEventListener("change", function(event) {
-                if (event.target.classList.contains("trackBox")) {
-                    const label = event.target.closest("label");
-                    const isChecked = event.target.checked;
-                    label.classList.toggle("selected", isChecked);
+            // Speed slider
+            document.getElementById("speedSlider").oninput = function() {
+                changeSpeed(parseFloat(this.value));
+            };
+
+            // Quiz sliders
+            document.getElementById("quizTimeSlider").oninput = function() {
+                changeQuizTime(parseInt(this.value));
+            };
+
+            document.getElementById("quizDelaySlider").oninput = function() {
+                changeQuizDelay(parseInt(this.value));
+            };
+
+            // Track list changes
+            document.getElementById("trackList").onchange = (e) => {
+                if (e.target.classList.contains("trackBox")) {
+                    e.target.closest("label").classList.toggle("selected", e.target.checked);
                     updateGroupButtonSelection();
+                    updateSelectedCount();
+                    
                     document.querySelectorAll(".recent-box, .playlist-box").forEach(cb => {
                         cb.checked = false;
                         cb.closest("label").classList.remove("selected");
                     });
                 }
-            });
-            
-            document.getElementById("recentList").addEventListener("change", function(event) {
-                if (event.target.classList.contains("recent-box")) {
-                    document.querySelectorAll(".track-item.selected, .playlist-item.selected").forEach(item => item.classList.remove("selected"));
-                    document.querySelectorAll(".trackBox, .playlist-box").forEach(cb => cb.checked = false);
+            };
 
-                    const selectedRecents = Array.from(document.querySelectorAll(".recent-box:checked"));
-                    const allNumbers = new Set(selectedRecents.flatMap(cb => cb.dataset.selection.split(",").map(Number)));
+            // Recent list changes
+            document.getElementById("recentList").onchange = (e) => {
+                if (e.target.classList.contains("recent-box")) {
+                    document.querySelectorAll(".track-item.selected, .playlist-item.selected")
+                        .forEach(item => item.classList.remove("selected"));
+                    document.querySelectorAll(".trackBox, .playlist-box")
+                        .forEach(cb => cb.checked = false);
+
+                    const selected = Array.from(document.querySelectorAll(".recent-box:checked"));
+                    const numbers = new Set(selected.flatMap(cb => 
+                        cb.dataset.selection.split(",").map(Number)
+                    ));
                     
                     document.querySelectorAll(".trackBox").forEach(cb => {
-                        const trackNum = parseInt(cb.value);
-                        if (allNumbers.has(trackNum)) {
+                        if (numbers.has(parseInt(cb.value))) {
                             cb.checked = true;
                             cb.closest("label").classList.add("selected");
                         }
                     });
-                    selectedRecents.forEach(cb => cb.closest("label").classList.add("selected"));
+                    
+                    selected.forEach(cb => cb.closest("label").classList.add("selected"));
                     updateGroupButtonSelection();
+                    updateSelectedCount();
                 }
-            });
+            };
 
-            document.getElementById("playlistList").addEventListener("change", function(event) {
-                if (event.target.classList.contains("playlist-box")) {
-                    document.querySelectorAll(".track-item.selected, .recent-item.selected").forEach(item => item.classList.remove("selected"));
-                    document.querySelectorAll(".trackBox, .recent-box").forEach(cb => cb.checked = false);
+            // Playlist list changes
+            document.getElementById("playlistList").onchange = (e) => {
+                if (e.target.classList.contains("playlist-box")) {
+                    document.querySelectorAll(".track-item.selected, .recent-item.selected")
+                        .forEach(item => item.classList.remove("selected"));
+                    document.querySelectorAll(".trackBox, .recent-box")
+                        .forEach(cb => cb.checked = false);
 
-                    const selectedPlaylists = Array.from(document.querySelectorAll(".playlist-box:checked"));
-                    const allNumbers = new Set(selectedPlaylists.flatMap(cb => JSON.parse(cb.dataset.selection)));
+                    const selected = Array.from(document.querySelectorAll(".playlist-box:checked"));
+                    const numbers = new Set(selected.flatMap(cb => 
+                        JSON.parse(cb.dataset.selection)
+                    ));
                     
                     document.querySelectorAll(".trackBox").forEach(cb => {
-                        const trackNum = parseInt(cb.value);
-                        if (allNumbers.has(trackNum)) {
+                        if (numbers.has(parseInt(cb.value))) {
                             cb.checked = true;
                             cb.closest("label").classList.add("selected");
                         }
                     });
-                    selectedPlaylists.forEach(cb => cb.closest("label").classList.add("selected"));
+                    
+                    selected.forEach(cb => cb.closest("label").classList.add("selected"));
                     updateGroupButtonSelection();
+                    updateSelectedCount();
                 }
-            });
+            };
 
-            audioPlayer.addEventListener("error", (e) => {
-                showToast("An error occurred while loading the audio.");
-            });
+            // Audio events
+            audioPlayer.onerror = () => {
+                showToast("Error loading audio", "error");
+            };
 
-            audioPlayer.addEventListener("playing", () => {
-                 // Check if the quiz view is active
-                if (!document.getElementById('quizView').classList.contains('hidden') && !hasQuizPaused) {
+            audioPlayer.onplaying = () => {
+                if (isQuizMode && !hasQuizPaused) {
                     document.getElementById('playFullBtn').classList.add('hidden');
+                    
                     setTimeout(() => {
                         audioPlayer.pause();
                         hasQuizPaused = true;
-                        document.getElementById('quizStatus').textContent = "Audio Paused. Your turn to recite!";
+                        document.getElementById('quizStatus').textContent = "Your turn to recite!";
                         document.getElementById('playFullBtn').classList.remove('hidden');
 
                         let countdown = currentQuizTime;
-                        const countdownEl = document.getElementById('countdown');
-                        countdownEl.textContent = `(${countdown}s)`;
-                        
-                        if (countdownInterval) {
-                            clearInterval(countdownInterval);
-                        }
-                        
-                        document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+                        document.getElementById('countdown').textContent = `${countdown}s remaining`;
+                        document.getElementById('countdownBar').style.width = '100%';
+
+                        if (countdownInterval) clearInterval(countdownInterval);
 
                         countdownInterval = setInterval(() => {
                             countdown--;
-                            countdownEl.textContent = `(${countdown}s)`;
-                            document.getElementById('countdownBar').style.width = `${(countdown / currentQuizTime) * 100}%`;
+                            document.getElementById('countdown').textContent = `${countdown}s remaining`;
+                            document.getElementById('countdownBar').style.width = 
+                                `${(countdown / currentQuizTime) * 100}%`;
+                            
                             if (countdown <= 0) {
                                 clearInterval(countdownInterval);
                                 countdownInterval = null;
-                                countdownEl.textContent = '';
+                                document.getElementById('countdown').textContent = '';
                                 document.getElementById('quizStatus').textContent = '';
-                                if (autoPlay) {
-                                    playNextQuizTrack();
-                                }
+                                if (autoPlay) playNextQuizTrack();
                             }
                         }, 1000);
                     }, currentQuizDelay * 1000);
                 }
-            });
+            };
 
-            audioPlayer.addEventListener("ended", () => {
-                // Check if the home view is active (i.e., not in quiz mode)
-                if (!document.getElementById('homeView').classList.contains('hidden')) {
+            audioPlayer.onended = () => {
+                if (!isQuizMode) {
                     repeatCounter++;
                     if (repeatCounter >= repeatEach) {
                         repeatCounter = 0;
@@ -1219,20 +1546,21 @@
                     }
                     playCurrent();
                 }
-            });
+            };
 
+            // Generate UI
             generateGroups();
             generateTracks();
+            
+            // Load saved data
             if (localStorageEnabled) {
-                restoreLastSelection();
                 renderRecentSelections();
                 renderPersonalPlaylists();
             } else {
-                showToast("Local storage is disabled. Playlists and history will not be saved.");
+                showToast("Storage unavailable. Playlists won't be saved.", "warning");
             }
             
-            // Set the initial view to 'home'
-            switchView('home');
+            updateSelectedCount();
         });
     </script>
 </body>
