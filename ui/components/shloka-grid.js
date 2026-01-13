@@ -26,8 +26,6 @@ class ShlokaGrid {
   
   _setupEventListeners() {
     // Use event delegation for better performance
-    this._grid = $('#shlokaGrid');
-    
     if (this._grid) {
       this._grid.addEventListener('click', (e) => {
         const label = e.target.closest('.shloka-item');
@@ -50,11 +48,11 @@ class ShlokaGrid {
         // Emit selection change
         this._handleCheckboxChange(checkbox);
       });
-    });
+    }
   }
   
   _handleCheckboxChange(checkbox) {
-    const trackNum = parseInt(checkbox.value);
+    const trackNum = parseInt(checkbox.value, 10);
     const isChecked = checkbox.checked;
     
     // Update visual state
@@ -78,7 +76,7 @@ class ShlokaGrid {
     const selectedSet = new Set(selectedTracks);
     
     $$('.shloka-checkbox').forEach(checkbox => {
-      const trackNum = parseInt(checkbox.value);
+      const trackNum = parseInt(checkbox.value, 10);
       const isSelected = selectedSet.has(trackNum);
       
       checkbox.checked = isSelected;
@@ -123,7 +121,9 @@ class ShlokaGrid {
   getStats() {
     const total = $$('.shloka-item').length;
     const selected = $$('.shloka-checkbox:checked').length;
-    const visible = $$('.shloka-item').filter(item => item.style.display !== 'none').length;
+    const visible = $$('.shloka-item').filter(
+      item => item.style.display !== 'none'
+    ).length;
     
     return { total, selected, visible };
   }
