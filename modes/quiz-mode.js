@@ -22,6 +22,7 @@ class QuizMode {
     this._currentIndex = 0;
     this._isPaused = false;
     this._countdownTimerId = null;
+    this._pauseTimerId = null;
     
     this._setupEventListeners();
   }
@@ -70,8 +71,7 @@ class QuizMode {
     state.setMode(MODES.QUIZ);
     
     // Clear any existing timers
-    timerManager.stopAllOfType('countdown');
-    timerManager.stopAllOfType('delay');
+    this._clearAllTimers();
     
     // Force speed to 1.0 in quiz mode
     audioService.setPlaybackRate(1.0);
@@ -88,12 +88,7 @@ class QuizMode {
     console.log('🧹 Cleaning up Quiz Mode');
     
     // Clear all timers
-    if (this._countdownTimerId) {
-      timerManager.stopTimer(this._countdownTimerId);
-      this._countdownTimerId = null;
-    }
-    timerManager.stopAllOfType('countdown');
-    timerManager.stopAllOfType('delay');
+    this._clearAllTimers();
     
     // Stop audio
     if (audioService.isPlaying()) {
@@ -128,6 +123,7 @@ class QuizMode {
     // Shuffle tracks for quiz
     this._currentPlaylist = playlistService.shufflePlaylist(selectedTracks);
     this._currentIndex = 0;
+    this._isPaused = false;
     
     // Update state
     state.update({
@@ -148,13 +144,13 @@ class QuizMode {
     }
     
     // Clear countdown timer
-    if (this._countdownTimerId) {
-      timerManager.stopTimer(this._countdownTimerId);
-      this._countdownTimerId = null;
-    }
+    this._clearAllTimers();
+    
+    // Move to next track
+    this._currentIndex++;
     
     // Check if we have more tracks
-    if (this._currentIndex >= this._currentPlaylist.length - 1) {
+    if (this._currentIndex >= this._currentPlaylist.length) {
       // End of quiz
       EventBus.emit(EVENTS.TOAST_SHOW, {
         message: 'Quiz complete! Great job!',
@@ -165,8 +161,6 @@ class QuizMode {
       return;
     }
     
-    // Move to next track
-    this._currentIndex++;
     this._isPaused = false;
     
     // Update state
@@ -187,6 +181,10 @@ class QuizMode {
     
     try {
       await audioService.loadTrack(trackNum);
+      
+      // Ensure speed is 1.0 for quiz mode
+      audioService.setPlaybackRate(1.0);
+      
       await audioService.play();
       
       console.log(`🎵 Quiz: Playing track ${trackNum} (${this._currentIndex + 1}/${this._currentPlaylist.length})`);
@@ -212,11 +210,17 @@ class QuizMode {
   
   // Start pause timer (pauses audio after quiz delay)
   _startPauseTimer() {
+    // Clear any existing pause timer
+    if (this._pauseTimerId) {
+      timerManager.stopTimer(this._pauseTimerId);
+      this._pauseTimerId = null;
+    }
+    
     const delayMs = this._settings.quizDelay * TIMING.MS_PER_SECOND;
     
     console.log(`⏸️ Quiz: Will pause after ${this._settings.quizDelay}s`);
     
-    timerManager.startDelay(delayMs, () => {
+    this._pauseTimerId = timerManager.startDelay(delayMs, () => {
       if (!this._isActive || this._isPaused) return;
       
       audioService.pause();
@@ -266,15 +270,16 @@ class QuizMode {
     }
     
     // Clear countdown
-    if (this._countdownTimerId) {
-      timerManager.stopTimer(this._countdownTimerId);
-      this._countdownTimerId = null;
-    }
+    this._clearAllTimers();
     
     const trackNum = this._currentPlaylist[this._currentIndex];
     
     try {
       await audioService.loadTrack(trackNum);
+      
+      // Ensure speed is 1.0
+      audioService.setPlaybackRate(1.0);
+      
       await audioService.play();
       
       console.log(`🔊 Playing full shloka ${trackNum}`);
@@ -283,6 +288,18 @@ class QuizMode {
       
     } catch (error) {
       console.error('Failed to play full shloka:', error);
+    }
+  }
+  
+  // Clear all timers
+  _clearAllTimers() {
+    if (this._countdownTimerId) {
+      timerManager.stopTimer(this._countdownTimerId);
+      this._countdownTimerId = null;
+    }
+    if (this._pauseTimerId) {
+      timerManager.stopTimer(this._pauseTimerId);
+      this._pauseTimerId = null;
     }
   }
   
