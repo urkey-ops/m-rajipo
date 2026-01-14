@@ -1,4 +1,4 @@
-// search-bar.js - Search bar component with tabs
+// search-bar.js - Search bar component with tabs (FIXED)
 import { $, $$, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, TIMING, TOTAL_TRACKS } from '../../core/constants.js';
@@ -151,9 +151,11 @@ class SearchBar {
       if (this._isCollapsed) {
         this._searchContent.style.transform = 'scaleY(0)';
         this._searchContent.style.opacity = '0';
+        this._searchContent.style.maxHeight = '0';
       } else {
         this._searchContent.style.transform = 'scaleY(1)';
         this._searchContent.style.opacity = '1';
+        this._searchContent.style.maxHeight = '1000px';
       }
     }
   }
@@ -204,6 +206,9 @@ class SearchBar {
     }
     
     try {
+      // Deselect sheet items first
+      this._deselectSheetItems();
+      
       selectionManager.selectRange(start, end);
       
       EventBus.emit(EVENTS.TOAST_SHOW, {
@@ -243,6 +248,9 @@ class SearchBar {
       btn.addEventListener('click', () => {
         const groupIndex = parseInt(btn.dataset.groupIndex);
         try {
+          // Deselect sheet items first
+          this._deselectSheetItems();
+          
           selectionManager.selectGroup(groupIndex);
         } catch (error) {
           EventBus.emit(EVENTS.TOAST_SHOW, {
@@ -282,6 +290,13 @@ class SearchBar {
       }
       
       toggleClass(btn, 'selected', allSelected);
+    });
+  }
+  
+  _deselectSheetItems() {
+    $$('.sheet-item input:checked').forEach(cb => {
+      cb.checked = false;
+      removeClass(cb.closest('.sheet-item'), 'selected');
     });
   }
   
