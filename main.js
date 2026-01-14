@@ -175,9 +175,25 @@ class Application {
   
   async _handleQuizNext() {
     try {
-      // Check if quiz is active
+      const quizState = quizMode.getState();
+      
+      // Check if quiz has started
       if (!quizMode.isActive()) {
+        // Quiz mode is active but quiz hasn't started yet
+        const validation = quizMode.validate();
+        if (!validation.valid) {
+          toast.error(validation.error);
+          return;
+        }
+        
         // Start new quiz
+        await quizMode.startQuiz();
+        return;
+      }
+      
+      // Check if we have a playlist
+      if (quizState.playlist.length === 0) {
+        // No playlist - start new quiz
         const validation = quizMode.validate();
         if (!validation.valid) {
           toast.error(validation.error);
@@ -186,7 +202,7 @@ class Application {
         
         await quizMode.startQuiz();
       } else {
-        // Next question
+        // Continue to next question
         await quizMode.nextQuestion();
       }
       
@@ -250,51 +266,47 @@ class Application {
       background: var(--bg-elevated, #fff);
       padding: 32px;
       border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-      max-width: 400px;
-      text-align: center;
-      z-index: 10000;
-    `;
-    
-    errorDiv.innerHTML = `
-      <h2 style="color: var(--destructive, #ff3b30); margin-bottom: 16px;">
-        ⚠️ Initialization Failed
-      </h2>
-      <p style="margin-bottom: 16px; color: var(--text-primary, #000);">
-        ${error.message || 'An unexpected error occurred'}
-      </p>
-      <button onclick="window.location.reload()" style="
-        padding: 12px 24px;
-        background: var(--primary, #007aff);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        cursor: pointer;
-      ">
-        Reload App
-      </button>
-    `;
-    
-    container.appendChild(errorDiv);
-  }
-}
+      box-shadow: 0 4px 20px
+      rgba(0,0,0,0.2);
+max-width: 400px;
+text-align: center;
+z-index: 10000;
+`;
+errorDiv.innerHTML = `
+  <h2 style="color: var(--destructive, #ff3b30); margin-bottom: 16px;">
+    ⚠️ Initialization Failed
+  </h2>
+  <p style="margin-bottom: 16px; color: var(--text-primary, #000);">
+    ${error.message || 'An unexpected error occurred'}
+  </p>
+  <button onclick="window.location.reload()" style="
+    padding: 12px 24px;
+    background: var(--primary, #007aff);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+  ">
+    Reload App
+  </button>
+`;
 
+container.appendChild(errorDiv);
+}
+}
 // Create application instance
 const app = new Application();
-
 // Initialize when DOM is ready
 function initApp() {
-  app.initialize();
+app.initialize();
 }
-
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('DOMContentLoaded', initApp);
 } else {
-  initApp();
+initApp();
 }
-
 // Export for debugging
-window.__app__ = app;
-window.__state__ = state;
-window.__eventBus__ = EventBus;
+window.app = app;
+window.state = state;
+window.eventBus = EventBus;
