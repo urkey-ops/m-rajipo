@@ -62,31 +62,7 @@ class Controls {
         const value = parseInt(this._repeatCount.value);
         if (value < 1) this._repeatCount.value = 1;
         if (value > 10) this._repeatCount.value = 10;
-      });
-      
-      this._repeatCount.addEventListener('input', () => {
-        const value = parseInt(this._repeatCount.value);
-        if (value > 10) this._repeatCount.value = 10;
-      });
-    }
-    
-    // Shuffle checkbox
-    if (this._shuffle) {
-      this._shuffle.addEventListener('change', () => {
-        regularMode.toggleShuffle();
-      });
-    }
-    
-    // Repeat playlist checkbox
-    if (this._repeatPlaylist) {
-      this._repeatPlaylist.addEventListener('change', () => {
-        regularMode.toggleRepeatPlaylist();
-      });
-    }
-    
-    // Repeat count input
-    if (this._repeatCount) {
-      this._repeatCount.addEventListener('change', () => {
+        
         try {
           regularMode.updateRepeatCount(this._repeatCount.value);
         } catch (error) {
@@ -97,11 +73,24 @@ class Controls {
         }
       });
       
-      // Prevent invalid input
       this._repeatCount.addEventListener('input', () => {
         const value = parseInt(this._repeatCount.value);
         if (value > 10) this._repeatCount.value = 10;
         if (value < 1) this._repeatCount.value = 1;
+      });
+    }
+    
+    // Shuffle checkbox
+    if (this._shuffleCheckbox) {
+      this._shuffleCheckbox.addEventListener('change', () => {
+        regularMode.toggleShuffle();
+      });
+    }
+    
+    // Repeat playlist checkbox
+    if (this._repeatPlaylistCheckbox) {
+      this._repeatPlaylistCheckbox.addEventListener('change', () => {
+        regularMode.toggleRepeatPlaylist();
       });
     }
     
@@ -127,26 +116,6 @@ class Controls {
     if (this._quizDelayDisplay) {
       this._quizDelayDisplay.textContent = `${delay}s`;
     }
-  }
-  
-  // Enable/disable controls based on mode
-  setRegularControlsEnabled(enabled) {
-    const controls = $$('#regularControls input, #regularControls button');
-    controls.forEach(el => {
-      el.disabled = !enabled;
-      if (enabled) {
-        removeClass(el, 'disabled');
-      } else {
-        addClass(el, 'disabled');
-      }
-    });
-  }
-  
-  setQuizControlsEnabled(enabled) {
-    const controls = $$('#quizControls input, #quizControls button');
-    controls.forEach(el => {
-      el.disabled = !enabled;
-    });
   }
 }
 
