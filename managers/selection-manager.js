@@ -183,12 +183,13 @@ class SelectionManager {
     // Update state
     state.set('selection.selectedTracks', new Set(this._selectedTracks));
     
-    // Emit event
+    // Emit event with UI sync flag
     EventBus.emit(EVENTS.SELECTION_CHANGED, {
       count: this._selectedTracks.size,
       tracks: selection,
       source: this._selectedSource,
-      sourceData: this._sourceData
+      sourceData: this._sourceData,
+      shouldSyncUI: true // Flag for UI to update checkboxes
     });
   }
   
