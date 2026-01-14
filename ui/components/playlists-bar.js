@@ -1,4 +1,4 @@
-// playlists-bar.js - Playlists and recent selections component
+// playlists-bar.js - Playlists and recent selections component (FULLY FIXED)
 import { $, $$, createElement, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS } from '../../core/constants.js';
@@ -59,11 +59,14 @@ class PlaylistsBar {
     this._renderPlaylists();
     this._renderRecent();
     
+    // Check initial selection state for save button
+    this._updateSaveButtonVisibility();
+    
     console.log('✅ Playlists bar initialized');
   }
   
   _setupEventListeners() {
-    // Tab switching
+    // Tab switching with collapse
     [this._playlistsTab, this._recentTab].forEach((tab, index) => {
       if (!tab) return;
       
@@ -95,16 +98,12 @@ class PlaylistsBar {
     }
     
     // Listen to selection changes to show/hide save button
-    EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
-      if (this._savePlaylistBtn) {
-        toggleClass(this._savePlaylistBtn, 'hidden', data.count === 0);
-      }
+    EventBus.on(EVENTS.SELECTION_CHANGED, () => {
+      this._updateSaveButtonVisibility();
     });
     
     EventBus.on(EVENTS.SELECTION_CLEARED, () => {
-      if (this._savePlaylistBtn) {
-        addClass(this._savePlaylistBtn, 'hidden');
-      }
+      this._updateSaveButtonVisibility();
     });
     
     // Listen to playlist events
@@ -122,9 +121,15 @@ class PlaylistsBar {
     
     // Listen to playback start to update recent
     EventBus.on(EVENTS.PLAYBACK_STARTED, () => {
-      // Delay to allow storage service to save
       setTimeout(() => this._renderRecent(), 100);
     });
+  }
+  
+  _updateSaveButtonVisibility() {
+    if (!this._savePlaylistBtn) return;
+    
+    const count = selectionManager.getCount();
+    toggleClass(this._savePlaylistBtn, 'hidden', count === 0);
   }
   
   _switchTab(index) {
@@ -156,9 +161,11 @@ class PlaylistsBar {
       if (this._isCollapsed) {
         this._playlistsContent.style.transform = 'scaleY(0)';
         this._playlistsContent.style.opacity = '0';
+        this._playlistsContent.style.maxHeight = '0';
       } else {
         this._playlistsContent.style.transform = 'scaleY(1)';
         this._playlistsContent.style.opacity = '1';
+        this._playlistsContent.style.maxHeight = '1000px';
       }
     }
   }
@@ -179,7 +186,11 @@ class PlaylistsBar {
     
     // Show/hide empty message
     if (this._playlistEmpty) {
-      toggleClass(this._playlistEmpty, 'hidden', names.length > 0);
+      if (names.length === 0) {
+        this._playlistEmpty.style.display = 'block';
+      } else {
+        this._playlistEmpty.style.display = 'none';
+      }
     }
     
     if (names.length === 0) return;
@@ -226,7 +237,8 @@ class PlaylistsBar {
     const loadBtn = createElement('button', {
       className: 'sheet-item-btn',
       title: 'Load playlist'
-    }, [createElement('i', { className: 'fa-solid fa-upload' })]);
+    });
+    loadBtn.innerHTML = '<i class="fa-solid fa-upload"></i>';
     
     loadBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -236,7 +248,8 @@ class PlaylistsBar {
     const deleteBtn = createElement('button', {
       className: 'sheet-item-btn delete',
       title: 'Delete playlist'
-    }, [createElement('i', { className: 'fa-solid fa-trash' })]);
+    });
+    deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
     
     deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -304,6 +317,12 @@ class PlaylistsBar {
         try {
           storageService.deletePlaylist(name);
           
+          // Clear selection if this playlist was selected
+          const source = selectionManager.getSource();
+          if (source.type === 'playlist' && source.data?.name === name) {
+            selectionManager.clear();
+          }
+          
           EventBus.emit(EVENTS.PLAYLIST_DELETED, { name });
           EventBus.emit(EVENTS.TOAST_SHOW, {
             message: `Playlist "${name}" deleted`,
@@ -315,6 +334,11 @@ class PlaylistsBar {
             type: 'error'
           });
         }
+      },
+      null,
+      {
+        confirmText: 'Delete',
+        confirmStyle: { background: 'var(--destructive)', borderColor: 'var(--destructive)' }
       }
     );
   }
@@ -334,7 +358,11 @@ class PlaylistsBar {
     
     // Show/hide empty message
     if (this._recentEmpty) {
-      toggleClass(this._recentEmpty, 'hidden', history.length > 0);
+      if (history.length === 0) {
+        this._recentEmpty.style.display = 'block';
+      } else {
+        this._recentEmpty.style.display = 'none';
+      }
     }
     
     if (history.length === 0) return;
@@ -448,13 +476,28 @@ class PlaylistsBar {
     modal.showConfirm(
       'Are you sure you want to clear your recently played history? This action cannot be undone.',
       () => {
-        storageService.clearHistory();
-        
-        EventBus.emit(EVENTS.HISTORY_CLEARED);
-        EventBus.emit(EVENTS.TOAST_SHOW, {
-          message: 'Recently played history cleared',
-          type: 'success'
-        });
+        try {
+          storageService.clearHistory();
+          
+          EventBus.emit(EVENTS.HISTORY_CLEARED);
+          EventBus.emit(EVENTS.TOAST_SHOW, {
+            message: 'Recently played history cleared',
+            type: 'success'
+          });
+          
+          // Re-render to show empty state
+          this._renderRecent();
+        } catch (error) {
+          EventBus.emit(EVENTS.TOAST_SHOW, {
+            message: 'Failed to clear history',
+            type: 'error'
+          });
+        }
+      },
+      null,
+      {
+        confirmText: 'Clear',
+        confirmStyle: { background: 'var(--destructive)', borderColor: 'var(--destructive)' }
       }
     );
   }
