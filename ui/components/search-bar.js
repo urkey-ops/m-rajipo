@@ -26,6 +26,7 @@ class SearchBar {
     this._applyRangeBtn = null;
     
     this._groupsGrid = null;
+    this._clearAllBtn = null;
     
     this._activeTab = 0;
     this._isCollapsed = false;
@@ -56,6 +57,9 @@ class SearchBar {
     // Groups grid
     this._groupsGrid = $('#groupsGrid');
     
+    // Clear all button
+    this._clearAllBtn = $('#clearAllBtn');
+    
     this._setupEventListeners();
     this._generateGroups();
     
@@ -79,6 +83,17 @@ class SearchBar {
         }
       });
     });
+    
+    // Clear all button
+    if (this._clearAllBtn) {
+      this._clearAllBtn.addEventListener('click', () => {
+        selectionManager.clear();
+        EventBus.emit(EVENTS.TOAST_SHOW, {
+          message: 'Selection cleared',
+          type: 'info'
+        });
+      });
+    }
     
     // Search input
     if (this._searchInput) {
@@ -213,9 +228,9 @@ class SearchBar {
       
       const btn = document.createElement('button');
       btn.className = 'group-btn';
-      btn.dataset.start = i;
-      btn.dataset.end = end;
-      btn.dataset.groupIndex = Math.floor((i - 1) / 10);
+      btn.dataset.start = i.toString();
+      btn.dataset.end = end.toString();
+      btn.dataset.groupIndex = Math.floor((i - 1) / 10).toString();
       
       const rangeText = document.createTextNode(`${i}–${end}`);
       const checkmark = document.createElement('span');
