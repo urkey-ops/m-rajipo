@@ -79,12 +79,14 @@ class ShlokaGrid {
     });
     
     // Listen to selection manager changes to update visual state
-    EventBus.on(EVENTS.SELECTION_CHANGED, () => {
-      this._updateVisualState();
+    EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
+      if (data.shouldSyncUI) {
+        this._updateVisualStateFromManager();
+      }
     });
     
     EventBus.on(EVENTS.SELECTION_CLEARED, () => {
-      this._updateVisualState();
+      this._clearAllVisualSelection();
     });
   }
   
@@ -92,23 +94,50 @@ class ShlokaGrid {
     const trackNum = parseInt(checkbox.value);
     const isChecked = checkbox.checked;
     
-    // Update visual state
+    // Update visual state immediately
     const label = checkbox.closest('.shloka-item');
     toggleClass(label, 'selected', isChecked);
     
-    // Update selection manager
+    // Update selection manager (will NOT trigger UI sync to avoid loop)
     if (isChecked) {
+      // Temporarily set shouldSyncUI to false
+      const originalEmit = EventBus.emit;
+      EventBus.emit = function(event, data) {
+        if (event === EVENTS.SELECTION_CHANGED) {
+          data.shouldSyncUI = false;
+        }
+        originalEmit.call(EventBus, event, data);
+      };
+      
       selectionManager.select(trackNum);
+      
+      // Restore original emit
+      EventBus.emit = originalEmit;
       
       // Deselect playlists/recent when selecting individual
       this._deselectSheetItems();
     } else {
+      // Temporarily set shouldSyncUI to false
+      const originalEmit = EventBus.emit;
+      EventBus.emit = function(event, data) {
+        if (event === EVENTS.SELECTION_CHANGED) {
+          data.shouldSyncUI = false;
+        }
+        originalEmit.call(EventBus, event, data);
+      };
+      
       selectionManager.deselect(trackNum);
+      
+      // Restore original emit
+      EventBus.emit = originalEmit;
     }
+    
+    // Update selection actions
+    this._updateSelectionActions();
   }
   
   // Update visual state from selection manager
-  _updateVisualState() {
+  _updateVisualStateFromManager() {
     const selectedTracks = selectionManager.getSelection();
     const selectedSet = new Set(selectedTracks);
     
@@ -120,7 +149,18 @@ class ShlokaGrid {
       toggleClass(checkbox.closest('.shloka-item'), 'selected', isSelected);
     });
     
-    // Update selection actions visibility
+    // Update selection actions
+    this._updateSelectionActions();
+  }
+  
+  // Clear all visual selection
+  _clearAllVisualSelection() {
+    $$('.shloka-checkbox').forEach(checkbox => {
+      checkbox.checked = false;
+      removeClass(checkbox.closest('.shloka-item'), 'selected');
+    });
+    
+    // Update selection actions
     this._updateSelectionActions();
   }
   
@@ -135,6 +175,15 @@ class ShlokaGrid {
     
     if (selectionCount) {
       selectionCount.textContent = `Selected: ${count}`;
+      
+      // Add pulse animation
+      removeClass(selectionCount, 'pulse');
+      void selectionCount.offsetWidth; // Trigger reflow
+      addClass(selectionCount, 'pulse');
+      
+      setTimeout(() => {
+        removeClass(selectionCount, 'pulse');
+      }, 300);
     }
   }
   
