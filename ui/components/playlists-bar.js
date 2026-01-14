@@ -253,17 +253,17 @@ class PlaylistsBar {
     sheetItem.addEventListener('click', (e) => {
       if (e.target === checkbox || e.target.closest('.sheet-item-btn')) return;
       checkbox.checked = !checkbox.checked;
-      this._handlePlaylistSelection(checkbox, tracks);
+      this._handlePlaylistSelection(checkbox, tracks, name);
     });
     
     checkbox.addEventListener('change', () => {
-      this._handlePlaylistSelection(checkbox, tracks);
+      this._handlePlaylistSelection(checkbox, tracks, name);
     });
     
     return sheetItem;
   }
   
-  _handlePlaylistSelection(checkbox, tracks) {
+  _handlePlaylistSelection(checkbox, tracks, name) {
     toggleClass(checkbox.closest('.sheet-item'), 'selected', checkbox.checked);
     
     if (checkbox.checked) {
@@ -275,15 +275,20 @@ class PlaylistsBar {
         }
       });
       
-      // Select tracks
-      selectionManager.selectPlaylist('playlist', tracks);
+      // Select tracks via selection manager (will update UI)
+      selectionManager.selectPlaylist(name, tracks);
     } else {
       selectionManager.clear();
     }
   }
   
   _loadPlaylist(name, tracks) {
-    selectionManager.clear();
+    // Deselect all sheet items first
+    $$('.sheet-item input:checked').forEach(cb => {
+      cb.checked = false;
+      removeClass(cb.closest('.sheet-item'), 'selected');
+    });
+    
     selectionManager.selectPlaylist(name, tracks);
     
     EventBus.emit(EVENTS.TOAST_SHOW, {
@@ -398,7 +403,7 @@ class PlaylistsBar {
         }
       });
       
-      // Select tracks
+      // Select tracks via selection manager (will update UI)
       selectionManager.selectRecent('recent', tracks);
     } else {
       selectionManager.clear();
