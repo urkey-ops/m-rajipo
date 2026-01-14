@@ -62,13 +62,25 @@ class ModeToggle {
       audioService.stop();
     }
     
-    // Update UI
+    // Update button UI
     if (toMode === MODES.REGULAR) {
       addClass(this._regularBtn, 'active');
       removeClass(this._quizBtn, 'active');
     } else {
       removeClass(this._regularBtn, 'active');
       addClass(this._quizBtn, 'active');
+    }
+    
+    // Show/hide appropriate controls
+    const regularControls = $('#regularControls');
+    const quizControls = $('#quizControls');
+    
+    if (toMode === MODES.REGULAR) {
+      if (regularControls) removeClass(regularControls, 'hidden');
+      if (quizControls) addClass(quizControls, 'hidden');
+    } else {
+      if (regularControls) addClass(regularControls, 'hidden');
+      if (quizControls) removeClass(quizControls, 'hidden');
     }
     
     // Initialize new mode
@@ -79,8 +91,6 @@ class ModeToggle {
     }
     
     this._currentMode = toMode;
-    
-    // Emit mode change event (already emitted by state.setMode in mode classes)
     
     // Show toast if audio was playing
     if (wasPlaying) {
