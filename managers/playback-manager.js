@@ -16,6 +16,7 @@ class PlaybackManager {
     this._repeatCounter = 0;
     this._repeatPlaylist = false;
     this._shuffled = false;
+    this._speed = 1.0;
     
     this._setupEventListeners();
   }
@@ -81,6 +82,7 @@ class PlaybackManager {
     this._repeatEach = Math.max(1, repeatEach);
     this._repeatCounter = 0;
     this._repeatPlaylist = repeatPlaylist;
+    this._speed = speed;
     
     // Update state
     state.update({
@@ -92,16 +94,13 @@ class PlaybackManager {
       'playlist.shuffled': this._shuffled
     });
     
-    // Set speed
-    audioService.setPlaybackRate(speed);
-    
     // Save to history
     storageService.saveToHistory(tracks);
     
     // Load and play first track
     await this._playTrackAtIndex(this._currentIndex);
     
-    console.log(`📋 Playback started: ${playlist.length} tracks, repeat: ${repeatEach}×, loop: ${repeatPlaylist}, shuffle: ${shuffle}`);
+    console.log(`📋 Playback started: ${playlist.length} tracks, repeat: ${repeatEach}×, loop: ${repeatPlaylist}, shuffle: ${shuffle}, speed: ${speed}×`);
   }
   
   // Play track at specific index
@@ -114,6 +113,10 @@ class PlaybackManager {
     
     try {
       await audioService.loadTrack(trackNum);
+      
+      // Set speed AFTER loading track
+      audioService.setPlaybackRate(this._speed);
+      
       await audioService.play();
       
       this._isPlaying = true;
@@ -123,10 +126,11 @@ class PlaybackManager {
       state.update({
         'audio.currentTrack': trackNum,
         'audio.isPlaying': true,
+        'audio.speed': this._speed,
         'playlist.currentIndex': index
       });
       
-      console.log(`▶️ Playing track ${trackNum} at index ${index}/${this._currentPlaylist.length - 1}`);
+      console.log(`▶️ Playing track ${trackNum} at index ${index}/${this._currentPlaylist.length - 1}, speed: ${this._speed}×`);
       
     } catch (error) {
       console.error('Failed to play track:', error);
@@ -288,6 +292,7 @@ class PlaybackManager {
   
   // Change speed
   changeSpeed(speed) {
+    this._speed = speed;
     audioService.setPlaybackRate(speed);
     state.set('audio.speed', speed);
   }
@@ -302,7 +307,8 @@ class PlaybackManager {
       repeatEach: this._repeatEach,
       repeatCounter: this._repeatCounter,
       repeatPlaylist: this._repeatPlaylist,
-      shuffled: this._shuffled
+      shuffled: this._shuffled,
+      speed: this._speed
     };
   }
   
