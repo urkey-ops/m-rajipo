@@ -1,4 +1,4 @@
-// shloka-grid.js - Shloka grid component with event delegation
+// shloka-grid.js - Shloka grid component (FIXED - Initial State)
 import { $, $$, createElement, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, TOTAL_TRACKS } from '../../core/constants.js';
@@ -20,6 +20,11 @@ class ShlokaGrid {
     
     this._generateGrid();
     this._setupEventListeners();
+    
+    // Update selection actions on init (for restored selections)
+    setTimeout(() => {
+      this._updateSelectionActions();
+    }, 100);
     
     console.log('✅ Shloka grid initialized');
   }
@@ -101,12 +106,12 @@ class ShlokaGrid {
     // Update selection manager (will NOT trigger UI sync to avoid loop)
     if (isChecked) {
       // Temporarily set shouldSyncUI to false
-      const originalEmit = EventBus.emit;
+      const originalEmit = EventBus.emit.bind(EventBus);
       EventBus.emit = function(event, data) {
-        if (event === EVENTS.SELECTION_CHANGED) {
+        if (event === EVENTS.SELECTION_CHANGED && data) {
           data.shouldSyncUI = false;
         }
-        originalEmit.call(EventBus, event, data);
+        originalEmit(event, data);
       };
       
       selectionManager.select(trackNum);
@@ -118,12 +123,12 @@ class ShlokaGrid {
       this._deselectSheetItems();
     } else {
       // Temporarily set shouldSyncUI to false
-      const originalEmit = EventBus.emit;
+      const originalEmit = EventBus.emit.bind(EventBus);
       EventBus.emit = function(event, data) {
-        if (event === EVENTS.SELECTION_CHANGED) {
+        if (event === EVENTS.SELECTION_CHANGED && data) {
           data.shouldSyncUI = false;
         }
-        originalEmit.call(EventBus, event, data);
+        originalEmit(event, data);
       };
       
       selectionManager.deselect(trackNum);
@@ -162,75 +167,66 @@ class ShlokaGrid {
     
     // Update selection actions
     this._updateSelectionActions();
-  }
-  
-  _updateSelectionActions() {
-    const selectionActions = $('#selectionActions');
-    const selectionCount = $('#selectionCount');
-    const count = selectionManager.getCount();
-    
-    if (selectionActions) {
-      toggleClass(selectionActions, 'hidden', count === 0);
-    }
-    
-    if (selectionCount) {
-      selectionCount.textContent = `Selected: ${count}`;
-      
-      // Add pulse animation
-      removeClass(selectionCount, 'pulse');
-      void selectionCount.offsetWidth; // Trigger reflow
-      addClass(selectionCount, 'pulse');
-      
-      setTimeout(() => {
-        removeClass(selectionCount, 'pulse');
-      }, 300);
-    }
-  }
-  
-  // Deselect all sheet items (playlists/recent)
-  _deselectSheetItems() {
-    $$('.sheet-item input:checked').forEach(cb => {
-      cb.checked = false;
-      removeClass(cb.closest('.sheet-item'), 'selected');
-    });
-  }
-  
-  // Apply search filter
-  applyFilter(searchTerm) {
-    this._searchTerm = searchTerm;
-    let foundCount = 0;
-    
-    $$('.shloka-item').forEach(item => {
-      const shloka = item.dataset.shloka;
-      
-      if (!searchTerm || shloka.startsWith(searchTerm)) {
-        item.style.display = '';
-        foundCount++;
-      } else {
-        item.style.display = 'none';
-      }
-    });
-    
-    return foundCount;
-  }
-  
-  // Clear filter
-  clearFilter() {
-    this._searchTerm = '';
-    $$('.shloka-item').forEach(item => {
-      item.style.display = '';
-    });
-  }
-  
-  // Get grid statistics
-  getStats() {
-    const total = $$('.shloka-item').length;
-    const selected = $$('.shloka-checkbox:checked').length;
-    const visible = $$('.shloka-item').filter(item => item.style.display !== 'none').length;
-    
-    return { total, selected, visible };
-  }
+}
+_updateSelectionActions() {
+const selectionActions = $('#selectionActions');
+const selectionCount = $('#selectionCount');
+const count = selectionManager.getCount();
+if (selectionActions) {
+  toggleClass(selectionActions, 'hidden', count === 0);
 }
 
+if (selectionCount) {
+  selectionCount.textContent = `Selected: ${count}`;
+  
+  // Add pulse animation
+  removeClass(selectionCount, 'pulse');
+  void selectionCount.offsetWidth; // Trigger reflow
+  addClass(selectionCount, 'pulse');
+  
+  setTimeout(() => {
+    removeClass(selectionCount, 'pulse');
+  }, 300);
+}
+}
+// Deselect all sheet items (playlists/recent)
+_deselectSheetItems() {
+$$('.sheet-item input:checked').forEach(cb => {
+cb.checked = false;
+removeClass(cb.closest('.sheet-item'), 'selected');
+});
+}
+// Apply search filter
+applyFilter(searchTerm) {
+this._searchTerm = searchTerm;
+let foundCount = 0;
+$$('.shloka-item').forEach(item => {
+  const shloka = item.dataset.shloka;
+  
+  if (!searchTerm || shloka.startsWith(searchTerm)) {
+    item.style.display = '';
+    foundCount++;
+  } else {
+    item.style.display = 'none';
+  }
+});
+
+return foundCount;
+}
+// Clear filter
+clearFilter() {
+this._searchTerm = '';
+$$('.shloka-item').forEach(item => {
+item.style.display = '';
+});
+}
+// Get grid statistics
+getStats() {
+const total = $$('.shloka-item').length;
+const selected = $$('.shloka-checkbox:checked').length;
+const visible = $$('.shloka-item').filter(item => item.style.display !== 'none').length;
+return { total, selected, visible };
+}
+}
 // Export singleton
 export const shlokaGrid = new ShlokaGrid();
