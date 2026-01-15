@@ -1,150 +1,127 @@
-// fab.js - Floating Action Button component (FIXED)
+// fab.js - Floating Action Button (UPDATED FOR MEMORY MODE)
+
 import { $, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, MODES } from '../../core/constants.js';
 import { state } from '../../core/state.js';
 
-class FAB {
+class Fab {
   constructor() {
-    this._fabBtn = null;
-    this._fabIcon = null;
-    this._fabBadge = null;
-    this._isQuizMode = false;
-    this._count = 0;
+    this.button = null;
+    this.icon = null;
+    this.badge = null;
+    this.currentMode = MODES.REGULAR;
   }
-  
+
   initialize() {
-    this._fabBtn = $('#fabBtn');
-    this._fabIcon = $('#fabIcon');
-    this._fabBadge = $('#fabBadge');
-    
-    if (!this._fabBtn) {
+    this.button = $('#fabBtn');
+    this.icon = $('#fabIcon');
+    this.badge = $('#fabBadge');
+
+    if (!this.button) {
       console.error('FAB button not found');
       return;
     }
-    
+
     this._setupEventListeners();
-    
-    // Set initial state
-    this.updateState(0);
-    
     console.log('✅ FAB initialized');
   }
-  
+
   _setupEventListeners() {
     // Click handler
-    this._fabBtn.addEventListener('click', () => {
+    this.button.addEventListener('click', () => {
       this._handleClick();
     });
-    
+
     // Listen to selection changes
     EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
-      this.updateState(data.count);
+      this._updateBadge(data.count);
+      this._updateDimmedState(data.count);
     });
-    
+
     EventBus.on(EVENTS.SELECTION_CLEARED, () => {
-      this.updateState(0);
+      this._updateBadge(0);
+      this._updateDimmedState(0);
     });
-    
+
     // Listen to mode changes
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this._isQuizMode = data.to === MODES.QUIZ;
-      this.updateMode();
+      this.currentMode = data.to;
+      this._updateForMode(data.to);
     });
   }
-  
+
   _handleClick() {
-    if (this._isQuizMode) {
-      // Quiz mode: play next/start quiz
-      EventBus.emit('fab:quiz-next-clicked');
-    } else {
-      // Regular mode: play selected
-      EventBus.emit('fab:play-clicked');
+    switch (this.currentMode) {
+      case MODES.REGULAR:
+        EventBus.emit('fab:play-clicked');
+        break;
+      case MODES.QUIZ:
+        EventBus.emit('fab:quiz-next-clicked');
+        break;
+      case MODES.MEMORY:
+        EventBus.emit('fab:memory-clicked');
+        break;
     }
   }
-  
-  // Update FAB state based on count
-  updateState(count) {
-    this._count = count;
-    
-    if (this._isQuizMode) {
-      // Quiz mode: no badge, always enabled
-      removeClass(this._fabBtn, 'dimmed');
-      addClass(this._fabBadge, 'hidden');
-      
-      const title = count > 0 
-        ? `Quiz ${count} shloka${count > 1 ? 's' : ''}`
-        : 'Select shlokas for quiz mode';
-      this._fabBtn.setAttribute('title', title);
-      this._fabBtn.setAttribute('aria-label', title);
-      
-    } else {
-      // Regular mode: show badge and count
-      if (count === 0) {
-        addClass(this._fabBtn, 'dimmed');
-        addClass(this._fabBadge, 'hidden');
-        this._fabBtn.setAttribute('title', 'Select shlokas to play');
-        this._fabBtn.setAttribute('aria-label', 'Select shlokas to play');
-      } else {
-        removeClass(this._fabBtn, 'dimmed');
-        removeClass(this._fabBadge, 'hidden');
-        
-        // Update badge text
-        const displayCount = count > 999 ? '999+' : count.toString();
-        this._fabBadge.textContent = displayCount;
-        
-        const title = `Play ${count} shloka${count > 1 ? 's' : ''}`;
-        this._fabBtn.setAttribute('title', title);
-        this._fabBtn.setAttribute('aria-label', title);
-      }
+
+  _updateForMode(mode) {
+    // Remove all mode classes
+    removeClass(this.button, 'quiz-mode', 'memory-mode');
+
+    // Update icon and class
+    switch (mode) {
+      case MODES.REGULAR:
+        this.icon.className = 'fa-solid fa-play';
+        this.button.setAttribute('aria-label', 'Play selection');
+        break;
+      case MODES.QUIZ:
+        this.icon.className = 'fa-solid fa-forward';
+        this.button.setAttribute('aria-label', 'Next question');
+        addClass(this.button, 'quiz-mode');
+        break;
+      case MODES.MEMORY:
+        this.icon.className = 'fa-solid fa-brain';
+        this.button.setAttribute('aria-label', 'Start memory loop');
+        addClass(this.button, 'memory-mode');
+        break;
     }
   }
-  
-  // Update FAB based on mode
-  updateMode() {
-    if (this._isQuizMode) {
-      addClass(this._fabBtn, 'quiz-mode');
-      removeClass(this._fabBtn, 'dimmed');
-      this._fabIcon.className = 'fa-solid fa-forward-step';
+
+  _updateBadge(count) {
+    if (!this.badge) return;
+
+    if (count > 0) {
+      this.badge.textContent = count;
+      removeClass(this.badge, 'hidden');
     } else {
-      removeClass(this._fabBtn, 'quiz-mode');
-      this._fabIcon.className = 'fa-solid fa-play';
+      addClass(this.badge, 'hidden');
     }
-    
-    // Update state with current count
-    this.updateState(this._count);
   }
-  
-  // Show FAB
+
+  _updateDimmedState(count) {
+    if (!this.button) return;
+
+    // In regular mode, dim if no selection
+    if (this.currentMode === MODES.REGULAR) {
+      toggleClass(this.button, 'dimmed', count === 0);
+    } else {
+      removeClass(this.button, 'dimmed');
+    }
+  }
+
   show() {
-    if (this._fabBtn) {
-      this._fabBtn.style.display = 'flex';
+    if (this.button) {
+      removeClass(this.button, 'hidden');
     }
   }
-  
-  // Hide FAB
+
   hide() {
-    if (this._fabBtn) {
-      this._fabBtn.style.display = 'none';
-    }
-  }
-  
-  // Enable FAB
-  enable() {
-    if (this._fabBtn) {
-      this._fabBtn.disabled = false;
-      removeClass(this._fabBtn, 'disabled');
-    }
-  }
-  
-  // Disable FAB
-  disable() {
-    if (this._fabBtn) {
-      this._fabBtn.disabled = true;
-      addClass(this._fabBtn, 'disabled');
+    if (this.button) {
+      addClass(this.button, 'hidden');
     }
   }
 }
 
 // Export singleton
-export const fab = new FAB();
+export const fab = new Fab();
