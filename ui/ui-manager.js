@@ -1,4 +1,5 @@
 // ui-manager.js - Coordinates all UI components
+
 import { EventBus } from '../core/events.js';
 import { EVENTS } from '../core/constants.js';
 import { modal } from './components/modal.js';
@@ -17,15 +18,15 @@ class UIManager {
   constructor() {
     this._isInitialized = false;
   }
-  
+
   initialize() {
     if (this._isInitialized) {
       console.warn('UI Manager already initialized');
       return;
     }
-    
+
     console.log('🎨 Initializing UI Manager...');
-    
+
     // Initialize all components
     modal.initialize();
     toast.initialize();
@@ -38,24 +39,24 @@ class UIManager {
     playlistsBar.initialize();
     audioPlayer.initialize();
     quizControls.initialize();
-    
+
     // Setup global event listeners
     this._setupGlobalEvents();
-    
+
     this._isInitialized = true;
-    
+
     // Emit UI ready event
     EventBus.emit(EVENTS.UI_READY);
-    
+
     console.log('✅ UI Manager initialized');
   }
-  
+
   _setupGlobalEvents() {
     // Toast events
     EventBus.on(EVENTS.TOAST_SHOW, (data) => {
       toast.show(data.message, data.type, data.duration);
     });
-    
+
     // Modal events
     EventBus.on(EVENTS.MODAL_SHOW, (data) => {
       if (data.type === 'confirm') {
@@ -66,7 +67,7 @@ class UIManager {
         modal.show(data.message, data.options);
       }
     });
-    
+
     // FAB events
     EventBus.on('fab:play-clicked', () => {
       // Handled by main.js
@@ -74,31 +75,45 @@ class UIManager {
         window.handlePlaySelected();
       }
     });
-    
+
     EventBus.on('fab:quiz-next-clicked', () => {
       // Handled by main.js
       if (window.handleQuizNext) {
         window.handleQuizNext();
       }
     });
-    
+
+    // Playlist events - trigger re-renders
+    EventBus.on(EVENTS.PLAYLIST_SAVED, () => {
+      playlistsBar.renderPlaylists();
+    });
+
+    EventBus.on(EVENTS.PLAYLIST_DELETED, () => {
+      playlistsBar.renderPlaylists();
+    });
+
+    EventBus.on(EVENTS.HISTORY_CLEARED, () => {
+      playlistsBar.renderRecent();
+    });
+
     // Network status
     window.addEventListener('online', () => {
       const networkStatus = document.getElementById('networkStatus');
       if (networkStatus) {
         networkStatus.classList.add('hidden');
       }
+      EventBus.emit(EVENTS.NETWORK_ONLINE);
     });
-    
+
     window.addEventListener('offline', () => {
       const networkStatus = document.getElementById('networkStatus');
       if (networkStatus) {
         networkStatus.classList.remove('hidden');
       }
-      
       toast.warning('You are offline. Playback may be affected.');
+      EventBus.emit(EVENTS.NETWORK_OFFLINE);
     });
-    
+
     // Visibility change
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
@@ -114,7 +129,7 @@ class UIManager {
       }
     });
   }
-  
+
   isInitialized() {
     return this._isInitialized;
   }
