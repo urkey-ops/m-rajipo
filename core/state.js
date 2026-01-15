@@ -1,236 +1,99 @@
-// state.js - Centralized state management
-import { MODES, DEFAULT_SETTINGS } from './constants.js';
+// state.js - Global application state
+
 import { EventBus } from './events.js';
+import { EVENTS, MODES } from './constants.js';
 
 class State {
   constructor() {
     this._state = {
-      // Current mode
       currentMode: MODES.REGULAR,
+      isQuizMode: false,
+      isMemoryMode: false,
+      selectedTracks: [],
+      currentTrack: null,
+      isPlaying: false,
+      playbackSpeed: 1.0,
       
-      // Audio state
-      audio: {
+      // Quiz mode state
+      quizSettings: {
+        recitationTime: 20,
+        audioDelay: 3,
+        autoAdvance: false
+      },
+      
+      // Memory mode state
+      memoryMode: {
         currentTrack: null,
-        isPlaying: false,
-        isPaused: false,
-        currentTime: 0,
-        duration: 0,
-        speed: DEFAULT_SETTINGS.SPEED,
-        isLoading: false
-      },
-      
-      // Playlist state
-      playlist: {
-        tracks: [],
-        currentIndex: 0,
-        repeatEach: DEFAULT_SETTINGS.REPEAT_COUNT,
-        repeatCounter: 0,
-        repeatPlaylist: false,
-        shuffled: false
-      },
-      
-      // Selection state
-      selection: {
-        selectedTracks: new Set(),
-        selectedPlaylist: null,
-        selectedRecent: null
-      },
-      
-      // Regular mode settings
-      regularMode: {
-        speed: DEFAULT_SETTINGS.SPEED,
-        repeatCount: DEFAULT_SETTINGS.REPEAT_COUNT,
-        shuffle: false,
-        repeatPlaylist: false
-      },
-      
-      // Quiz mode settings
-      quizMode: {
-        quizTime: DEFAULT_SETTINGS.QUIZ_TIME,
-        quizDelay: DEFAULT_SETTINGS.QUIZ_DELAY,
-        autoPlay: DEFAULT_SETTINGS.AUTO_PLAY,
-        currentTrack: null,
-        isPaused: false,
-        countdown: null
-      },
-      
-      // UI state
-      ui: {
-        isSearchCollapsed: false,
-        isPlaylistsCollapsed: false,
-        activeSearchTab: 'search',
-        activePlaylistTab: 'playlists'
-      },
-      
-      // Network state
-      network: {
-        isOnline: navigator.onLine
+        startTime: 0,
+        endTime: 20,
+        gapDuration: 0,
+        speed: 1.0,
+        isLooping: false,
+        loopCount: 0
       }
     };
-    
-    this._subscribers = new Map();
-    this._eventBus = EventBus;
   }
-  
-  // Get entire state (immutable)
-  getState() {
-    return JSON.parse(JSON.stringify(this._state));
+
+  get(key) {
+    // Support nested keys like 'memoryMode.startTime'
+    if (key.includes('.')) {
+      const keys = key.split('.');
+      let value = this._state;
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value;
+    }
+    return this._state[key];
   }
-  
-  // Get specific state slice
-  get(path) {
-    const keys = path.split('.');
-    let value = this._state;
-    
-    for (const key of keys) {
-      if (value === undefined || value === null) return undefined;
-      value = value[key];
+
+  set(key, value) {
+    // Support nested keys
+    if (key.includes('.')) {
+      const keys = key.split('.');
+      let obj = this._state;
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!obj[keys[i]]) obj[keys[i]] = {};
+        obj = obj[keys[i]];
+      }
+      obj[keys[keys.length - 1]] = value;
+    } else {
+      this._state[key] = value;
     }
     
-    return value;
+    this._emitChange(key, value);
   }
-  
-  // Set state (immutable update)
-  set(path, value) {
-    const keys = path.split('.');
-    const lastKey = keys.pop();
-    let target = this._state;
-    
-    // Navigate to parent
-    for (const key of keys) {
-      if (!target[key]) target[key] = {};
-      target = target[key];
-    }
-    
-    // Update value
-    const oldValue = target[lastKey];
-    target[lastKey] = value;
-    
-    // Notify subscribers
-    this._notify(path, value, oldValue);
-    
-    // Emit global state change event
-    this._eventBus.emit('state:changed', { path, value, oldValue });
-  }
-  
-  // Update multiple paths at once
+
   update(updates) {
-    Object.entries(updates).forEach(([path, value]) => {
-      this.set(path, value);
+    Object.entries(updates).forEach(([key, value]) => {
+      this.set(key, value);
     });
   }
-  
-  // Subscribe to state changes
-  subscribe(path, callback) {
-    if (!this._subscribers.has(path)) {
-      this._subscribers.set(path, new Set());
-    }
-    this._subscribers.get(path).add(callback);
-    
-    // Return unsubscribe function
-    return () => {
-      const subscribers = this._subscribers.get(path);
-      if (subscribers) {
-        subscribers.delete(callback);
-      }
-    };
-  }
-  
-  // Notify subscribers
-  _notify(path, newValue, oldValue) {
-    // Notify exact path subscribers
-    const subscribers = this._subscribers.get(path);
-    if (subscribers) {
-      subscribers.forEach(callback => {
-        try {
-          callback(newValue, oldValue);
-        } catch (error) {
-          console.error('Subscriber error:', error);
-        }
-      });
-    }
-    
-    // Notify parent path subscribers (e.g., 'audio' when 'audio.isPlaying' changes)
-    const pathParts = path.split('.');
-    for (let i = pathParts.length - 1; i > 0; i--) {
-      const parentPath = pathParts.slice(0, i).join('.');
-      const parentSubscribers = this._subscribers.get(parentPath);
-      if (parentSubscribers) {
-        const parentValue = this.get(parentPath);
-        parentSubscribers.forEach(callback => {
-          try {
-            callback(parentValue, parentValue);
-          } catch (error) {
-            console.error('Parent subscriber error:', error);
-          }
-        });
-      }
-    }
-  }
-  
-  // Reset state
-  reset() {
-    this._state.selection.selectedTracks.clear();
-    this.update({
-      'audio.currentTrack': null,
-      'audio.isPlaying': false,
-      'playlist.tracks': [],
-      'playlist.currentIndex': 0,
-      'playlist.repeatCounter': 0
-    });
-  }
-  
-  // Mode helpers
-  isQuizMode() {
-    return this._state.currentMode === MODES.QUIZ;
-  }
-  
-  isRegularMode() {
-    return this._state.currentMode === MODES.REGULAR;
-  }
-  
+
   setMode(mode) {
-    if (mode !== MODES.REGULAR && mode !== MODES.QUIZ) {
-      throw new Error(`Invalid mode: ${mode}`);
-    }
-    const oldMode = this._state.currentMode;
-    this.set('currentMode', mode);
-    this._eventBus.emit('mode:changed', { from: oldMode, to: mode });
+    this._state.currentMode = mode;
+    this._state.isQuizMode = mode === MODES.QUIZ;
+    this._state.isMemoryMode = mode === MODES.MEMORY;
+    
+    EventBus.emit(EVENTS.MODE_CHANGED, { mode });
   }
-  
-  // Selection helpers
-  addToSelection(trackNum) {
-    this._state.selection.selectedTracks.add(trackNum);
-    this._notify('selection.selectedTracks', this._state.selection.selectedTracks, null);
-    this._eventBus.emit('selection:changed', { 
-      count: this._state.selection.selectedTracks.size 
-    });
+
+  isQuizMode() {
+    return this._state.isQuizMode;
   }
-  
-  removeFromSelection(trackNum) {
-    this._state.selection.selectedTracks.delete(trackNum);
-    this._notify('selection.selectedTracks', this._state.selection.selectedTracks, null);
-    this._eventBus.emit('selection:changed', { 
-      count: this._state.selection.selectedTracks.size 
-    });
+
+  isMemoryMode() {
+    return this._state.isMemoryMode;
   }
-  
-  clearSelection() {
-    this._state.selection.selectedTracks.clear();
-    this._state.selection.selectedPlaylist = null;
-    this._state.selection.selectedRecent = null;
-    this._notify('selection.selectedTracks', this._state.selection.selectedTracks, null);
-    this._eventBus.emit('selection:cleared');
+
+  getAll() {
+    return { ...this._state };
   }
-  
-  getSelectedTracks() {
-    return Array.from(this._state.selection.selectedTracks);
-  }
-  
-  getSelectionCount() {
-    return this._state.selection.selectedTracks.size;
+
+  _emitChange(key, value) {
+    EventBus.emit(EVENTS.STATE_CHANGED, { key, value });
   }
 }
 
-// Export singleton instance
+// Export singleton
 export const state = new State();
