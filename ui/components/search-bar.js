@@ -305,17 +305,34 @@ updateForMode(mode) {
     });
   }
 
-  selectGroup(groupNumber) {
-    const groupData = playlistService.getGroup(groupNumber);
-    if (!groupData) return;
+// search-bar.js - selectGroup method - Line 220-230 FIXED
 
-    selectionManager.selectGroup(groupNumber, groupData.tracks);
-
-    EventBus.emit(EVENTS.TOAST_SHOW, {
-      message: `Selected group ${groupNumber} (${groupData.start}-${groupData.end})`,
-      type: 'success'
-    });
+selectGroup(groupNumber) {
+  const currentMode = state.get('currentMode');
+  
+  const groupData = playlistService.getGroup(groupNumber);
+  if (!groupData) {
+    console.error(`Group ${groupNumber} not found`);
+    return;
   }
+
+  // ✅ FIX: Check if disabled in memory mode
+  if (currentMode === MODES.MEMORY) {
+    EventBus.emit(EVENTS.TOAST_SHOW, {
+      message: 'Groups disabled in memory mode',
+      type: 'warning'
+    });
+    return;
+  }
+
+  selectionManager.selectGroup(groupNumber, groupData.tracks);
+
+  EventBus.emit(EVENTS.TOAST_SHOW, {
+    message: `Selected group ${groupNumber} (${groupData.start}-${groupData.end})`,
+    type: 'success'
+  });
+}
+
 
   updateGroupSelections(source, sourceData) {
     if (source !== 'group') {
