@@ -73,71 +73,74 @@ class MemoryMode {
     console.log('✅ Memory mode cleaned up');
   }
 
-  async startLoop() {
-    if (!this._isActive) {
-      throw new Error('Memory mode not initialized');
-    }
+ // memory-mode.js - Line 88-98 FIXED
 
-    const selectedTracks = selectionManager.getSelection();
-    if (selectedTracks.length === 0) {
-      throw new Error('No track selected');
-    }
-
-    if (selectedTracks.length > 1) {
-      throw new Error('Memory mode supports only 1 track at a time');
-    }
-
-    this._currentTrack = selectedTracks[0];
-
-    if (this._settings.startTime >= this._settings.endTime) {
-      throw new Error('Start time must be less than end time');
-    }
-
-    console.log(`🧠 Starting memory loop for track ${this._currentTrack}`);
-    console.log(`Segment: ${this._formatTime(this._settings.startTime)} - ${this._formatTime(this._settings.endTime)}`);
-    console.log(`Gap: ${this._settings.gapDuration}s, Speed: ${this._settings.speed}×`);
-
-    try {
-      await audioService.loadTrack(this._currentTrack);
-      
-      this._trackDuration = audioService.getDuration();
-      
-      if (this._settings.endTime > this._trackDuration) {
-        this._settings.endTime = Math.floor(this._trackDuration);
-        state.set('memoryMode.endTime', this._settings.endTime);
-      }
-
-      audioService.setPlaybackRate(this._settings.speed);
-
-      this._loopCount = 0;
-      this._isLooping = true;
-      this._isInGap = false;
-      this._hasReachedEnd = false; // ✅ FIX: Reset flag
-
-      state.update({
-        'memoryMode.currentTrack': this._currentTrack,
-        'memoryMode.isLooping': true,
-        'memoryMode.loopCount': 0
-      });
-
-      this._setupTimeUpdateHandler();
-
-      audioService.seek(this._settings.startTime);
-      await audioService.play();
-
-      EventBus.emit(EVENTS.MEMORY_LOOP_STARTED, {
-        track: this._currentTrack,
-        startTime: this._settings.startTime,
-        endTime: this._settings.endTime,
-        gap: this._settings.gapDuration
-      });
-
-    } catch (error) {
-      console.error('Failed to start memory loop:', error);
-      this._stopLooping();
-      throw error;
-    }
+async startLoop() {
+  if (!this._isActive) {
+    throw new Error('Memory mode not initialized');
   }
+
+  const selectedTracks = selectionManager.getSelection();
+  if (selectedTracks.length === 0) {
+    throw new Error('No track selected');
+  }
+
+  if (selectedTracks.length > 1) {
+    throw new Error('Memory mode supports only 1 track at a time');
+  }
+
+  this._currentTrack = selectedTracks[0];
+
+  // ✅ FIX: Remove validation here - it's already validated in updateSegment()
+  // The inputs have already updated this._settings via updateSegment()
+  
+  console.log(`🧠 Starting memory loop for track ${this._currentTrack}`);
+  console.log(`Segment: ${this._formatTime(this._settings.startTime)} - ${this._formatTime(this._settings.endTime)}`);
+  console.log(`Gap: ${this._settings.gapDuration}s, Speed: ${this._settings.speed}×`);
+
+  try {
+    await audioService.loadTrack(this._currentTrack);
+    
+    this._trackDuration = audioService.getDuration();
+    
+    // Clamp end time to track duration
+    if (this._settings.endTime > this._trackDuration) {
+      this._settings.endTime = Math.floor(this._trackDuration);
+      state.set('memoryMode.endTime', this._settings.endTime);
+    }
+
+    audioService.setPlaybackRate(this._settings.speed);
+
+    this._loopCount = 0;
+    this._isLooping = true;
+    this._isInGap = false;
+    this._hasReachedEnd = false;
+
+    state.update({
+      'memoryMode.currentTrack': this._currentTrack,
+      'memoryMode.isLooping': true,
+      'memoryMode.loopCount': 0
+    });
+
+    this._setupTimeUpdateHandler();
+
+    audioService.seek(this._settings.startTime);
+    await audioService.play();
+
+    EventBus.emit(EVENTS.MEMORY_LOOP_STARTED, {
+      track: this._currentTrack,
+      startTime: this._settings.startTime,
+      endTime: this._settings.endTime,
+      gap: this._settings.gapDuration
+    });
+
+  } catch (error) {
+    console.error('Failed to start memory loop:', error);
+    this._stopLooping();
+    throw error;
+  }
+}
+
 
   _setupTimeUpdateHandler() {
     this._removeTimeUpdateHandler();
