@@ -52,7 +52,7 @@ class Controls {
         if (!state.isQuizMode()) {
           const speed = parseFloat(e.target.value);
           regularMode.updateSpeed(speed);
-          this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
+         this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
           e.target.setAttribute('aria-valuenow', speed.toString());
         }
       });
