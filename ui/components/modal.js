@@ -1,4 +1,4 @@
-// modal.js - Modal dialog component
+// modal.js - Modal dialog component (FIXED)
 import { createElement, $, addClass, removeClass } from '../../utils/dom-utils.js';
 import { escapeHtml } from '../../utils/dom-utils.js';
 
@@ -213,22 +213,26 @@ class Modal {
     const handleSubmit = () => {
       const value = input.value.trim();
       
-      // Validate
+      // Empty check
+      if (!value) {
+        feedback.textContent = 'This field cannot be empty';
+        removeClass(feedback, 'hidden');
+        input.focus();
+        return;
+      }
+      
+      // Custom validation
       if (validation) {
         const result = validation(value);
         if (!result.valid) {
           feedback.textContent = result.error;
           removeClass(feedback, 'hidden');
+          input.focus();
           return;
         }
       }
       
-      if (!value) {
-        feedback.textContent = 'This field cannot be empty';
-        removeClass(feedback, 'hidden');
-        return;
-      }
-      
+      // All good - submit
       this.hide();
       if (onSubmit) onSubmit(value);
     };
@@ -241,6 +245,11 @@ class Modal {
         e.preventDefault();
         handleSubmit();
       }
+    });
+    
+    // Clear feedback on input
+    input.addEventListener('input', () => {
+      addClass(feedback, 'hidden');
     });
     
     btnContainer.appendChild(cancelBtn);
