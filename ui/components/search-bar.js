@@ -1,194 +1,236 @@
-// search-bar.js - Search bar component with tabs (FIXED)
-import { $, $$, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
+// search-bar.js - Unified search bar component (UPDATED FOR MEMORY MODE)
+
+import { $, $$, addClass, removeClass, toggleClass, debounce } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
-import { EVENTS, TIMING, TOTAL_TRACKS } from '../../core/constants.js';
-import { debounce } from '../../utils/dom-utils.js';
+import { EVENTS, MODES, TIMING } from '../../core/constants.js';
+import { state } from '../../core/state.js';
+import { playlistService } from '../../services/playlist-service.js';
 import { selectionManager } from '../../managers/selection-manager.js';
-import { shlokaGrid } from './shloka-grid.js';
 
 class SearchBar {
   constructor() {
-    this._searchTab = null;
-    this._rangeTab = null;
-    this._groupsTab = null;
-    
-    this._searchPanel = null;
-    this._rangePanel = null;
-    this._groupsPanel = null;
-    this._searchContent = null;
-    
-    this._searchInput = null;
-    this._searchFeedback = null;
-    
-    this._rangeStart = null;
-    this._rangeEnd = null;
-    this._rangePreview = null;
-    this._applyRangeBtn = null;
-    
-    this._groupsGrid = null;
-    this._clearAllBtn = null;
-    
-    this._activeTab = 0;
-    this._isCollapsed = false;
-  }
-  
-  initialize() {
     // Tabs
-    this._searchTab = $('#searchTab');
-    this._rangeTab = $('#rangeTab');
-    this._groupsTab = $('#groupsTab');
+    this.searchTab = null;
+    this.rangeTab = null;
+    this.groupsTab = null;
     
     // Panels
-    this._searchPanel = $('#searchPanel');
-    this._rangePanel = $('#rangePanel');
-    this._groupsPanel = $('#groupsPanel');
-    this._searchContent = $('#searchContent');
+    this.searchPanel = null;
+    this.rangePanel = null;
+    this.groupsPanel = null;
     
     // Search elements
-    this._searchInput = $('#searchInput');
-    this._searchFeedback = $('#searchFeedback');
+    this.searchInput = null;
+    this.searchFeedback = null;
     
     // Range elements
-    this._rangeStart = $('#rangeStart');
-    this._rangeEnd = $('#rangeEnd');
-    this._rangePreview = $('#rangePreview');
-    this._applyRangeBtn = $('#applyRangeBtn');
+    this.rangeStart = null;
+    this.rangeEnd = null;
+    this.applyRangeBtn = null;
+    this.rangePreview = null;
     
-    // Groups grid
-    this._groupsGrid = $('#groupsGrid');
+    // Groups elements
+    this.groupsGrid = null;
     
-    // Clear all button
-    this._clearAllBtn = $('#clearAllBtn');
+    this.activeTab = 0; // 0=search, 1=range, 2=groups
+    this.currentMode = MODES.REGULAR;
+  }
+
+  initialize() {
+    // Tabs
+    this.searchTab = $('#searchTab');
+    this.rangeTab = $('#rangeTab');
+    this.groupsTab = $('#groupsTab');
     
-    this._setupEventListeners();
-    this._generateGroups();
+    // Panels
+    this.searchPanel = $('#searchPanel');
+    this.rangePanel = $('#rangePanel');
+    this.groupsPanel = $('#groupsPanel');
+    
+    // Search
+    this.searchInput = $('#searchInput');
+    this.searchFeedback = $('#searchFeedback');
+    
+    // Range
+    this.rangeStart = $('#rangeStart');
+    this.rangeEnd = $('#rangeEnd');
+    this.applyRangeBtn = $('#applyRangeBtn');
+    this.rangePreview = $('#rangePreview');
+    
+    // Groups
+    this.groupsGrid = $('#groupsGrid');
+    
+    this.setupEventListeners();
+    this.renderGroups();
     
     console.log('✅ Search bar initialized');
   }
-  
-  _setupEventListeners() {
+
+  setupEventListeners() {
     // Tab switching
-    [this._searchTab, this._rangeTab, this._groupsTab].forEach((tab, index) => {
+    [this.searchTab, this.rangeTab, this.groupsTab].forEach((tab, index) => {
       if (!tab) return;
-      
       tab.addEventListener('click', () => {
-        if (this._activeTab === index) {
-          // Toggle collapse
-          this._isCollapsed = !this._isCollapsed;
-          this._updateCollapse();
-        } else {
-          // Switch tab and expand
-          this._isCollapsed = false;
-          this._switchTab(index);
-        }
+        this.switchTab(index);
       });
     });
-    
-    // Clear all button
-    if (this._clearAllBtn) {
-      this._clearAllBtn.addEventListener('click', () => {
-        selectionManager.clear();
-        EventBus.emit(EVENTS.TOAST_SHOW, {
-          message: 'Selection cleared',
-          type: 'info'
+
+    // Search input with debounce
+    if (this.searchInput) {
+      const debouncedSearch = debounce((value) => {
+        this.handleSearch(value);
+      }, TIMING.DEBOUNCE_DELAY);
+
+      this.searchInput.addEventListener('input', (e) => {
+        debouncedSearch(e.target.value);
+      });
+
+      // Clear on escape
+      this.searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          this.searchInput.value = '';
+          this.handleSearch('');
+        }
+      });
+    }
+
+    // Range inputs
+    if (this.rangeStart && this.rangeEnd) {
+      [this.rangeStart, this.rangeEnd].forEach(input => {
+        input.addEventListener('input', () => {
+          this.updateRangePreview();
         });
       });
     }
-    
-    // Search input
-    if (this._searchInput) {
-      const debouncedSearch = debounce((term) => {
-        this._handleSearch(term);
-      }, TIMING.DEBOUNCE_DELAY);
-      
-      this._searchInput.addEventListener('input', (e) => {
-        // Only allow numbers
-        e.target.value = e.target.value.replace(/\D/g, '');
-        debouncedSearch(e.target.value);
+
+    // Apply range button
+    if (this.applyRangeBtn) {
+      this.applyRangeBtn.addEventListener('click', () => {
+        this.applyRange();
       });
     }
-    
-    // Range inputs
-    if (this._rangeStart && this._rangeEnd) {
-      this._rangeStart.addEventListener('input', () => this._updateRangePreview());
-      this._rangeEnd.addEventListener('input', () => this._updateRangePreview());
-      
-      const handleRangeEnter = (e) => {
-        if (e.key === 'Enter' && this._applyRangeBtn && !this._applyRangeBtn.disabled) {
-          this._applyRange();
-        }
-      };
-      
-      this._rangeStart.addEventListener('keydown', handleRangeEnter);
-      this._rangeEnd.addEventListener('keydown', handleRangeEnter);
-    }
-    
-    // Apply range button
-    if (this._applyRangeBtn) {
-      this._applyRangeBtn.addEventListener('click', () => this._applyRange());
-    }
-  }
-  
-  _switchTab(index) {
-    this._activeTab = index;
-    
-    // Update tab active states
-    [this._searchTab, this._rangeTab, this._groupsTab].forEach((tab, i) => {
-      toggleClass(tab, 'active', i === index);
+
+    // Listen to mode changes
+    EventBus.on(EVENTS.MODE_CHANGED, (data) => {
+      this.currentMode = data.to;
+      this.updateForMode(data.to);
     });
-    
-    // Update panel active states
-    [this._searchPanel, this._rangePanel, this._groupsPanel].forEach((panel, i) => {
-      toggleClass(panel, 'active', i === index);
-    });
-    
-    // Expand content
-    this._updateCollapse();
   }
-  
-  _updateCollapse() {
-    if (this._searchContent) {
-      if (this._isCollapsed) {
-        this._searchContent.style.transform = 'scaleY(0)';
-        this._searchContent.style.opacity = '0';
-        this._searchContent.style.maxHeight = '0';
-      } else {
-        this._searchContent.style.transform = 'scaleY(1)';
-        this._searchContent.style.opacity = '1';
-        this._searchContent.style.maxHeight = '1000px';
+
+  updateForMode(mode) {
+    if (mode === MODES.MEMORY) {
+      // Disable range and groups tabs in memory mode
+      if (this.rangeTab) {
+        this.rangeTab.disabled = true;
+        this.rangeTab.style.opacity = '0.5';
+        this.rangeTab.style.cursor = 'not-allowed';
+      }
+      if (this.groupsTab) {
+        this.groupsTab.disabled = true;
+        this.groupsTab.style.opacity = '0.5';
+        this.groupsTab.style.cursor = 'not-allowed';
+      }
+      
+      // Switch to search tab if on range/groups
+      if (this.activeTab !== 0) {
+        this.switchTab(0);
+      }
+    } else {
+      // Enable range and groups tabs
+      if (this.rangeTab) {
+        this.rangeTab.disabled = false;
+        this.rangeTab.style.opacity = '1';
+        this.rangeTab.style.cursor = 'pointer';
+      }
+      if (this.groupsTab) {
+        this.groupsTab.disabled = false;
+        this.groupsTab.style.opacity = '1';
+        this.groupsTab.style.cursor = 'pointer';
       }
     }
   }
-  
-  _handleSearch(term) {
-    const foundCount = shlokaGrid.applyFilter(term);
+
+  switchTab(index) {
+    // Don't switch if disabled
+    if (index === 1 && this.rangeTab?.disabled) return;
+    if (index === 2 && this.groupsTab?.disabled) return;
     
-    if (this._searchFeedback) {
-      toggleClass(this._searchFeedback, 'hidden', foundCount > 0 || !term);
+    this.activeTab = index;
+
+    // Update tab active states
+    [this.searchTab, this.rangeTab, this.groupsTab].forEach((tab, i) => {
+      toggleClass(tab, 'active', i === index);
+    });
+
+    // Update panel active states
+    [this.searchPanel, this.rangePanel, this.groupsPanel].forEach((panel, i) => {
+      toggleClass(panel, 'active', i === index);
+    });
+
+    // Focus input when switching to search
+    if (index === 0 && this.searchInput) {
+      setTimeout(() => this.searchInput.focus(), 100);
     }
   }
-  
-  _updateRangePreview() {
-    const start = parseInt(this._rangeStart.value);
-    const end = parseInt(this._rangeEnd.value);
-    
-    if (start && end && start <= end && start >= 1 && end <= TOTAL_TRACKS) {
-      const count = end - start + 1;
-      this._rangePreview.textContent = `${count} shloka${count > 1 ? 's' : ''}`;
-      this._applyRangeBtn.disabled = false;
-    } else if (start || end) {
-      this._rangePreview.textContent = 'Invalid range';
-      this._applyRangeBtn.disabled = true;
+
+  handleSearch(query) {
+    if (!this.searchInput || !this.searchFeedback) return;
+
+    const trimmed = query.trim();
+
+    if (!trimmed) {
+      addClass(this.searchFeedback, 'hidden');
+      // Emit search cleared event
+      EventBus.emit('search:cleared');
+      return;
+    }
+
+    // Parse search query (could be single number or comma-separated)
+    const numbers = trimmed.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 315);
+
+    if (numbers.length === 0) {
+      removeClass(this.searchFeedback, 'hidden');
+      return;
+    }
+
+    addClass(this.searchFeedback, 'hidden');
+
+    // Select the found tracks
+    if (this.currentMode === MODES.MEMORY && numbers.length > 1) {
+      // Memory mode: only select first
+      selectionManager.selectMultiple([numbers[0]], 'search');
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: 'Memory mode: Only 1 shloka selected',
+        type: 'info'
+      });
     } else {
-      this._rangePreview.textContent = '';
-      this._applyRangeBtn.disabled = false;
+      selectionManager.selectMultiple(numbers, 'search');
     }
   }
-  
-  _applyRange() {
-    const start = parseInt(this._rangeStart.value);
-    const end = parseInt(this._rangeEnd.value);
-    
+
+  updateRangePreview() {
+    if (!this.rangePreview || !this.rangeStart || !this.rangeEnd) return;
+
+    const start = parseInt(this.rangeStart.value);
+    const end = parseInt(this.rangeEnd.value);
+
+    if (!start || !end || start > end || start < 1 || end > 315) {
+      this.rangePreview.textContent = '';
+      addClass(this.rangePreview, 'empty');
+      return;
+    }
+
+    const count = end - start + 1;
+    this.rangePreview.textContent = `${count} shlokas selected (${start}-${end})`;
+    removeClass(this.rangePreview, 'empty');
+  }
+
+  applyRange() {
+    if (!this.rangeStart || !this.rangeEnd) return;
+
+    const start = parseInt(this.rangeStart.value);
+    const end = parseInt(this.rangeEnd.value);
+
     if (!start || !end) {
       EventBus.emit(EVENTS.TOAST_SHOW, {
         message: 'Please enter both start and end values',
@@ -196,116 +238,99 @@ class SearchBar {
       });
       return;
     }
-    
-    if (start < 1 || end > TOTAL_TRACKS || start > end) {
+
+    if (start > end) {
       EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: `Please enter a valid range between 1 and ${TOTAL_TRACKS}`,
+        message: 'Start must be less than or equal to end',
         type: 'error'
       });
       return;
     }
-    
-    try {
-      // Deselect sheet items first
-      this._deselectSheetItems();
-      
-      selectionManager.selectRange(start, end);
-      
+
+    if (start < 1 || end > 315) {
       EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: `Shlokas ${start}-${end} selected (${end - start + 1} total)`,
-        type: 'success'
-      });
-    } catch (error) {
-      EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: error.message,
+        message: 'Range must be between 1 and 315',
         type: 'error'
       });
+      return;
     }
+
+    // Create range playlist
+    const tracks = playlistService.createRangePlaylist(start, end);
+    
+    selectionManager.selectRange(start, end, tracks);
+
+    EventBus.emit(EVENTS.TOAST_SHOW, {
+      message: `Selected ${tracks.length} shlokas (${start}-${end})`,
+      type: 'success'
+    });
   }
-  
-  _generateGroups() {
-    if (!this._groupsGrid) return;
-    
-    const fragment = document.createDocumentFragment();
-    
-    for (let i = 1; i <= TOTAL_TRACKS; i += 10) {
-      const end = Math.min(i + 9, TOTAL_TRACKS);
-      
+
+  renderGroups() {
+    if (!this.groupsGrid) return;
+
+    const groups = playlistService.getGroups();
+    this.groupsGrid.innerHTML = '';
+
+    groups.forEach(group => {
       const btn = document.createElement('button');
       btn.className = 'group-btn';
-      btn.dataset.start = i.toString();
-      btn.dataset.end = end.toString();
-      btn.dataset.groupIndex = Math.floor((i - 1) / 10).toString();
-      
-      const rangeText = document.createTextNode(`${i}–${end}`);
+      btn.textContent = `${group.start}-${group.end}`;
+      btn.setAttribute('data-group', group.number);
+      btn.setAttribute('aria-label', `Select group ${group.number}: shlokas ${group.start} to ${group.end}`);
+
+      // Add checkmark (hidden by default)
       const checkmark = document.createElement('span');
       checkmark.className = 'checkmark';
-      checkmark.textContent = '✓';
-      
-      btn.appendChild(rangeText);
+      checkmark.innerHTML = '✓';
       btn.appendChild(checkmark);
-      
+
       btn.addEventListener('click', () => {
-        const groupIndex = parseInt(btn.dataset.groupIndex);
-        try {
-          // Deselect sheet items first
-          this._deselectSheetItems();
-          
-          selectionManager.selectGroup(groupIndex);
-        } catch (error) {
-          EventBus.emit(EVENTS.TOAST_SHOW, {
-            message: error.message,
-            type: 'error'
-          });
-        }
+        this.selectGroup(group.number);
       });
-      
-      fragment.appendChild(btn);
-    }
-    
-    this._groupsGrid.innerHTML = '';
-    this._groupsGrid.appendChild(fragment);
-    
-    // Listen to selection changes to update group button states
-    EventBus.on(EVENTS.SELECTION_CHANGED, () => {
-      this._updateGroupButtons();
+
+      this.groupsGrid.appendChild(btn);
     });
-    
+
+    // Listen to selection changes to update group buttons
+    EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
+      this.updateGroupSelections(data.source, data.sourceData);
+    });
+
     EventBus.on(EVENTS.SELECTION_CLEARED, () => {
-      this._updateGroupButtons();
+      this.clearGroupSelections();
     });
   }
-  
-  _updateGroupButtons() {
-    $$('.group-btn').forEach(btn => {
-      const start = parseInt(btn.dataset.start);
-      const end = parseInt(btn.dataset.end);
-      
-      let allSelected = true;
-      for (let i = start; i <= end; i++) {
-        if (!selectionManager.isSelected(i)) {
-          allSelected = false;
-          break;
-        }
-      }
-      
-      toggleClass(btn, 'selected', allSelected);
+
+  selectGroup(groupNumber) {
+    const groupData = playlistService.getGroup(groupNumber);
+    if (!groupData) return;
+
+    selectionManager.selectGroup(groupNumber, groupData.tracks);
+
+    EventBus.emit(EVENTS.TOAST_SHOW, {
+      message: `Selected group ${groupNumber} (${groupData.start}-${groupData.end})`,
+      type: 'success'
     });
   }
-  
-  _deselectSheetItems() {
-    $$('.sheet-item input:checked').forEach(cb => {
-      cb.checked = false;
-      removeClass(cb.closest('.sheet-item'), 'selected');
-    });
-  }
-  
-  clearSearch() {
-    if (this._searchInput) {
-      this._searchInput.value = '';
-      shlokaGrid.clearFilter();
-      addClass(this._searchFeedback, 'hidden');
+
+  updateGroupSelections(source, sourceData) {
+    if (source !== 'group') {
+      this.clearGroupSelections();
+      return;
     }
+
+    // Highlight the selected group
+    $$('.group-btn').forEach(btn => {
+      const groupNum = parseInt(btn.getAttribute('data-group'));
+      toggleClass(btn, 'selected', groupNum === sourceData?.groupNumber);
+    });
+  }
+
+  clearGroupSelections() {
+    $$('.group-btn').forEach(btn => {
+      removeClass(btn, 'selected');
+    });
   }
 }
 
