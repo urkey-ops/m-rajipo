@@ -1,4 +1,4 @@
-// memory-mode.js - Memory mode logic for single-track segment looping
+// memory-mode.js - FIXED VERSION (Loop counter issue)
 
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
@@ -24,6 +24,7 @@ class MemoryMode {
     this._gapTimerId = null;
     this._trackDuration = 0;
     this._timeUpdateHandler = null;
+    this._hasReachedEnd = false; // ✅ FIX: Prevent multiple loop triggers
   }
 
   initialize() {
@@ -34,13 +35,11 @@ class MemoryMode {
 
     console.log('🧠 Initializing Memory Mode');
 
-    // Load saved settings
     const savedSettings = storageService.load('memorySettings');
     if (savedSettings) {
       this._settings = { ...this._settings, ...savedSettings };
     }
 
-    // Update state
     state.update({
       'memoryMode.startTime': this._settings.startTime,
       'memoryMode.endTime': this._settings.endTime,
@@ -90,7 +89,6 @@ class MemoryMode {
 
     this._currentTrack = selectedTracks[0];
 
-    // Validate segment times
     if (this._settings.startTime >= this._settings.endTime) {
       throw new Error('Start time must be less than end time');
     }
@@ -102,34 +100,28 @@ class MemoryMode {
     try {
       await audioService.loadTrack(this._currentTrack);
       
-      // Get track duration
       this._trackDuration = audioService.getDuration();
       
-      // Validate times against duration
       if (this._settings.endTime > this._trackDuration) {
         this._settings.endTime = Math.floor(this._trackDuration);
         state.set('memoryMode.endTime', this._settings.endTime);
       }
 
-      // Set speed
       audioService.setPlaybackRate(this._settings.speed);
 
-      // Reset counters
       this._loopCount = 0;
       this._isLooping = true;
       this._isInGap = false;
+      this._hasReachedEnd = false; // ✅ FIX: Reset flag
 
-      // Update state
       state.update({
         'memoryMode.currentTrack': this._currentTrack,
         'memoryMode.isLooping': true,
         'memoryMode.loopCount': 0
       });
 
-      // Setup time update monitoring
       this._setupTimeUpdateHandler();
 
-      // Start from segment start
       audioService.seek(this._settings.startTime);
       await audioService.play();
 
@@ -155,12 +147,17 @@ class MemoryMode {
 
       const currentTime = audioService.getCurrentTime();
 
-      // Check if we've reached the end of segment
-      if (currentTime >= this._settings.endTime) {
+      // ✅ FIX: Only trigger once when crossing end threshold
+      if (currentTime >= this._settings.endTime && !this._hasReachedEnd) {
+        this._hasReachedEnd = true;
         this._handleSegmentEnd();
       }
 
-      // Emit progress update
+      // Reset flag when back before end (after seek)
+      if (currentTime < this._settings.endTime - 0.5) {
+        this._hasReachedEnd = false;
+      }
+
       EventBus.emit('memory:progress', {
         currentTime,
         segmentStart: this._settings.startTime,
@@ -190,7 +187,6 @@ class MemoryMode {
     
     console.log(`Loop ${this._loopCount} completed`);
 
-    // Update state
     state.set('memoryMode.loopCount', this._loopCount);
 
     EventBus.emit(EVENTS.MEMORY_LOOP_COMPLETED, {
@@ -199,11 +195,10 @@ class MemoryMode {
     });
 
     if (this._settings.gapDuration > 0) {
-      // Pause and start gap timer
       this._startGap();
     } else {
-      // Instant loop - seek back to start
       audioService.seek(this._settings.startTime);
+      // Flag will reset on next timeupdate when currentTime < endTime
     }
   }
 
@@ -230,7 +225,6 @@ class MemoryMode {
 
     console.log('▶️ Gap ended, resuming loop');
 
-    // Seek to start and play
     audioService.seek(this._settings.startTime);
     audioService.play().catch(console.error);
   }
@@ -240,7 +234,6 @@ class MemoryMode {
 
     audioService.pause();
     
-    // Clear gap timer if in gap
     if (this._gapTimerId) {
       timerManager.stopTimer(this._gapTimerId);
       this._gapTimerId = null;
@@ -253,8 +246,7 @@ class MemoryMode {
     if (!this._isLooping) return;
 
     if (this._isInGap) {
-      // If paused during gap, restart gap timer
-      const remainingGap = this._settings.gapDuration; // Simplified - could track partial
+      const remainingGap = this._settings.gapDuration;
       const gapMs = remainingGap * TIMING.MS_PER_SECOND;
       this._gapTimerId = timerManager.startDelay(gapMs, () => {
         this._endGap();
@@ -269,6 +261,7 @@ class MemoryMode {
   _stopLooping() {
     this._isLooping = false;
     this._isInGap = false;
+    this._hasReachedEnd = false; // ✅ FIX: Reset flag
     
     if (this._gapTimerId) {
       timerManager.stopTimer(this._gapTimerId);
@@ -295,7 +288,6 @@ class MemoryMode {
     state.set('memoryMode.loopCount', 0);
   }
 
-  // Update segment times
   updateSegment(startTime, endTime) {
     const start = Math.max(0, Math.floor(startTime));
     const end = Math.min(this._trackDuration || 9999, Math.floor(endTime));
@@ -382,5 +374,4 @@ class MemoryMode {
   }
 }
 
-// Export singleton
 export const memoryMode = new MemoryMode();
