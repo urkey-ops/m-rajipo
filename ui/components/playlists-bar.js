@@ -1,5 +1,5 @@
-// playlists-bar.js - Playlists and recent selections component (FULLY FIXED)
-import { $, $$, createElement, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
+// playlists-bar.js - Playlists and recent selections component (COMPLETE FIX)
+import { $, $$, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS } from '../../core/constants.js';
 import { storageService } from '../../services/storage-service.js';
@@ -86,6 +86,7 @@ class PlaylistsBar {
     // Save playlist button
     if (this._savePlaylistBtn) {
       this._savePlaylistBtn.addEventListener('click', () => {
+        console.log('Save playlist button clicked');
         this._showSavePlaylistModal();
       });
     }
@@ -93,6 +94,7 @@ class PlaylistsBar {
     // Clear history button
     if (this._clearHistoryBtn) {
       this._clearHistoryBtn.addEventListener('click', () => {
+        console.log('Clear history button clicked');
         this._confirmClearHistory();
       });
     }
@@ -130,6 +132,8 @@ class PlaylistsBar {
     
     const count = selectionManager.getCount();
     toggleClass(this._savePlaylistBtn, 'hidden', count === 0);
+    
+    console.log(`Save button visibility updated: count=${count}, hidden=${count === 0}`);
   }
   
   _switchTab(index) {
@@ -176,6 +180,8 @@ class PlaylistsBar {
     const playlists = storageService.getPlaylists();
     const names = Object.keys(playlists);
     
+    console.log('Rendering playlists:', names.length);
+    
     // Update count
     if (this._playlistCount) {
       this._playlistCount.textContent = names.length.toString();
@@ -201,7 +207,7 @@ class PlaylistsBar {
       const tracks = playlists[name];
       if (!Array.isArray(tracks)) return;
       
-      const li = createElement('li');
+      const li = document.createElement('li');
       const sheetItem = this._createPlaylistItem(name, tracks, index);
       li.appendChild(sheetItem);
       fragment.appendChild(li);
@@ -211,48 +217,53 @@ class PlaylistsBar {
   }
   
   _createPlaylistItem(name, tracks, index) {
-    const sheetItem = createElement('div', { className: 'sheet-item' });
+    // Create elements using native DOM API for better control
+    const sheetItem = document.createElement('div');
+    sheetItem.className = 'sheet-item';
     
     // Left side (checkbox + label)
-    const leftDiv = createElement('div', { className: 'sheet-item-left' });
+    const leftDiv = document.createElement('div');
+    leftDiv.className = 'sheet-item-left';
     
-    const checkbox = createElement('input', {
-      type: 'checkbox',
-      className: 'sheet-item-checkbox',
-      id: `playlist-${index}`,
-      dataset: { selection: JSON.stringify(tracks) }
-    });
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'sheet-item-checkbox';
+    checkbox.id = `playlist-${index}`;
+    checkbox.dataset.selection = JSON.stringify(tracks);
     
-    const label = createElement('label', {
-      htmlFor: `playlist-${index}`,
-      className: 'sheet-item-text'
-    }, [`${name} (${tracks.length})`]);
+    const label = document.createElement('label');
+    label.htmlFor = `playlist-${index}`;
+    label.className = 'sheet-item-text';
+    label.textContent = `${name} (${tracks.length})`;
     
     leftDiv.appendChild(checkbox);
     leftDiv.appendChild(label);
     
     // Actions
-    const actionsDiv = createElement('div', { className: 'sheet-item-actions' });
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'sheet-item-actions';
     
-    const loadBtn = createElement('button', {
-      className: 'sheet-item-btn',
-      title: 'Load playlist'
-    });
+    // Load button
+    const loadBtn = document.createElement('button');
+    loadBtn.className = 'sheet-item-btn';
+    loadBtn.title = 'Load playlist';
     loadBtn.innerHTML = '<i class="fa-solid fa-upload"></i>';
     
     loadBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      console.log('Load playlist clicked:', name);
       this._loadPlaylist(name, tracks);
     });
     
-    const deleteBtn = createElement('button', {
-      className: 'sheet-item-btn delete',
-      title: 'Delete playlist'
-    });
+    // Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'sheet-item-btn delete';
+    deleteBtn.title = 'Delete playlist';
     deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
     
     deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      console.log('Delete playlist clicked:', name);
       this._confirmDeletePlaylist(name);
     });
     
@@ -311,9 +322,12 @@ class PlaylistsBar {
   }
   
   _confirmDeletePlaylist(name) {
+    console.log('Confirming delete for:', name);
+    
     modal.showConfirm(
       `Are you sure you want to delete the playlist "${name}"? This action cannot be undone.`,
       () => {
+        console.log('Delete confirmed for:', name);
         try {
           storageService.deletePlaylist(name);
           
@@ -329,6 +343,7 @@ class PlaylistsBar {
             type: 'success'
           });
         } catch (error) {
+          console.error('Delete playlist error:', error);
           EventBus.emit(EVENTS.TOAST_SHOW, {
             message: error.message,
             type: 'error'
@@ -347,6 +362,8 @@ class PlaylistsBar {
     if (!this._recentList) return;
     
     const history = storageService.getHistory();
+    
+    console.log('Rendering recent:', history.length);
     
     // Update count
     if (this._recentCount) {
@@ -373,7 +390,7 @@ class PlaylistsBar {
       const tracks = playlistService.parseSelectionString(sel);
       if (tracks.length === 0) return;
       
-      const li = createElement('li');
+      const li = document.createElement('li');
       const sheetItem = this._createRecentItem(tracks, index);
       li.appendChild(sheetItem);
       fragment.appendChild(li);
@@ -383,23 +400,24 @@ class PlaylistsBar {
   }
   
   _createRecentItem(tracks, index) {
-    const sheetItem = createElement('div', { className: 'sheet-item' });
+    const sheetItem = document.createElement('div');
+    sheetItem.className = 'sheet-item';
     
     // Left side
-    const leftDiv = createElement('div', { className: 'sheet-item-left' });
+    const leftDiv = document.createElement('div');
+    leftDiv.className = 'sheet-item-left';
     
-    const checkbox = createElement('input', {
-      type: 'checkbox',
-      className: 'sheet-item-checkbox',
-      id: `recent-${index}`,
-      dataset: { selection: tracks.join(',') }
-    });
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'sheet-item-checkbox';
+    checkbox.id = `recent-${index}`;
+    checkbox.dataset.selection = tracks.join(',');
     
     const labelText = playlistService.formatPlaylistLabel(tracks);
-    const label = createElement('label', {
-      htmlFor: `recent-${index}`,
-      className: 'sheet-item-text'
-    }, [labelText]);
+    const label = document.createElement('label');
+    label.htmlFor = `recent-${index}`;
+    label.className = 'sheet-item-text';
+    label.textContent = labelText;
     
     leftDiv.appendChild(checkbox);
     leftDiv.appendChild(label);
@@ -439,7 +457,11 @@ class PlaylistsBar {
   }
   
   _showSavePlaylistModal() {
+    console.log('Opening save playlist modal');
+    
     const selectedTracks = selectionManager.getSelection();
+    
+    console.log('Selected tracks:', selectedTracks);
     
     if (selectedTracks.length === 0) {
       modal.show('Please select at least one shloka to save as a playlist.');
@@ -449,15 +471,19 @@ class PlaylistsBar {
     modal.showInput(
       'Save Playlist',
       (name) => {
+        console.log('Saving playlist with name:', name);
         try {
-          storageService.savePlaylist(name, selectedTracks);
+          const savedName = storageService.savePlaylist(name, selectedTracks);
           
-          EventBus.emit(EVENTS.PLAYLIST_SAVED, { name, tracks: selectedTracks });
+          console.log('Playlist saved successfully:', savedName);
+          
+          EventBus.emit(EVENTS.PLAYLIST_SAVED, { name: savedName, tracks: selectedTracks });
           EventBus.emit(EVENTS.TOAST_SHOW, {
-            message: `Playlist "${name}" saved!`,
+            message: `Playlist "${savedName}" saved!`,
             type: 'success'
           });
         } catch (error) {
+          console.error('Save playlist error:', error);
           EventBus.emit(EVENTS.TOAST_SHOW, {
             message: error.message,
             type: 'error'
@@ -473,9 +499,12 @@ class PlaylistsBar {
   }
   
   _confirmClearHistory() {
+    console.log('Confirming clear history');
+    
     modal.showConfirm(
       'Are you sure you want to clear your recently played history? This action cannot be undone.',
       () => {
+        console.log('Clear history confirmed');
         try {
           storageService.clearHistory();
           
@@ -488,6 +517,7 @@ class PlaylistsBar {
           // Re-render to show empty state
           this._renderRecent();
         } catch (error) {
+          console.error('Clear history error:', error);
           EventBus.emit(EVENTS.TOAST_SHOW, {
             message: 'Failed to clear history',
             type: 'error'
