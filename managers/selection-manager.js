@@ -1,220 +1,184 @@
-// selection-manager.js - Single source of truth for selections
-import { EVENTS } from '../core/constants.js';
+// selection-manager.js - Manages shloka selection (UPDATED FOR MEMORY MODE)
+
 import { EventBus } from '../core/events.js';
+import { EVENTS, MODES } from '../core/constants.js';
 import { state } from '../core/state.js';
-import { validateTrackNumber } from '../utils/validation.js';
-import { playlistService } from '../services/playlist-service.js';
 
 class SelectionManager {
   constructor() {
     this._selectedTracks = new Set();
-    this._selectedSource = null; // 'individual', 'playlist', 'recent', 'group', 'range'
-    this._sourceData = null; // Additional data about the source
+    this._source = null; // 'manual', 'playlist', 'recent', 'group', 'range'
+    this._sourceData = null;
   }
-  
-  // Select individual track
-  select(trackNum) {
-    const validation = validateTrackNumber(trackNum);
-    if (!validation.valid) {
-      throw new Error(validation.error);
+
+  // Select single track
+  select(trackNum, source = 'manual') {
+    const currentMode = state.get('currentMode');
+    
+    // Memory mode: only allow single selection
+    if (currentMode === MODES.MEMORY) {
+      this._selectedTracks.clear();
+      this._selectedTracks.add(trackNum);
+      this._source = source;
+      this._sourceData = null;
+      
+      this._emitChange();
+      console.log(`Selected track ${trackNum} (Memory Mode - single only)`);
+      return;
     }
-    
-    this._selectedTracks.add(validation.value);
-    this._updateSource('individual');
-    this._notifyChange();
-    
-    return true;
-  }
-  
-  // Deselect individual track
-  deselect(trackNum) {
-    const validation = validateTrackNumber(trackNum);
-    if (!validation.valid) {
-      throw new Error(validation.error);
-    }
-    
-    this._selectedTracks.delete(validation.value);
-    this._notifyChange();
-    
-    return true;
-  }
-  
-  // Toggle track selection
-  toggle(trackNum) {
-    if (this.isSelected(trackNum)) {
-      return this.deselect(trackNum);
+
+    // Regular/Quiz mode: normal selection
+    if (this._selectedTracks.has(trackNum)) {
+      this._selectedTracks.delete(trackNum);
     } else {
-      return this.select(trackNum);
-    }
-  }
-  
-  // Select range of tracks
-  selectRange(start, end) {
-    const tracks = playlistService.createRangePlaylist(start, end);
-    
-    this._selectedTracks.clear();
-    tracks.forEach(track => this._selectedTracks.add(track));
-    
-    this._updateSource('range', { start, end });
-    this._notifyChange();
-    
-    return tracks;
-  }
-  
-  // Select group
-  selectGroup(groupIndex) {
-    const group = playlistService.getGroup(groupIndex);
-    if (!group) {
-      throw new Error('Invalid group index');
+      this._selectedTracks.add(trackNum);
     }
     
-    this._selectedTracks.clear();
-    group.tracks.forEach(track => this._selectedTracks.add(track));
-    
-    this._updateSource('group', { groupIndex, group });
-    this._notifyChange();
-    
-    return group.tracks;
-  }
-  
-  // Select from playlist
-  selectPlaylist(playlistName, tracks) {
-    this._selectedTracks.clear();
-    tracks.forEach(track => this._selectedTracks.add(track));
-    
-    this._updateSource('playlist', { name: playlistName, tracks });
-    this._notifyChange();
-    
-    return tracks;
-  }
-  
-  // Select from recent
-  selectRecent(recentIndex, tracks) {
-    this._selectedTracks.clear();
-    tracks.forEach(track => this._selectedTracks.add(track));
-    
-    this._updateSource('recent', { index: recentIndex, tracks });
-    this._notifyChange();
-    
-    return tracks;
-  }
-  
-  // Select multiple tracks at once
-  selectMultiple(tracks) {
-    tracks.forEach(track => {
-      const validation = validateTrackNumber(track);
-      if (validation.valid) {
-        this._selectedTracks.add(validation.value);
-      }
-    });
-    
-    this._updateSource('multiple');
-    this._notifyChange();
-    
-    return Array.from(this._selectedTracks);
-  }
-  
-  // Clear all selections
-  clear() {
-    const hadSelection = this._selectedTracks.size > 0;
-    
-    this._selectedTracks.clear();
-    this._selectedSource = null;
+    this._source = source;
     this._sourceData = null;
     
-    if (hadSelection) {
-      this._notifyChange();
-      EventBus.emit(EVENTS.SELECTION_CLEARED);
-    }
+    this._emitChange();
+    console.log(`Selected tracks: ${Array.from(this._selectedTracks).join(', ')}`);
   }
-  
+
+  // Select multiple tracks
+  selectMultiple(tracks, source = 'manual', sourceData = null) {
+    const currentMode = state.get('currentMode');
+    
+    // Memory mode: only take first track
+    if (currentMode === MODES.MEMORY) {
+      this._selectedTracks.clear();
+      if (tracks.length > 0) {
+        this._selectedTracks.add(tracks[0]);
+      }
+      this._source = source;
+      this._sourceData = sourceData;
+      this._emitChange();
+      
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: 'Memory mode: Only 1 shloka selected',
+        type: 'info'
+      });
+      return;
+    }
+
+    // Regular/Quiz mode: select all
+    this._selectedTracks.clear();
+    tracks.forEach(track => this._selectedTracks.add(track));
+    this._source = source;
+    this._sourceData = sourceData;
+    
+    this._emitChange();
+    console.log(`Selected ${tracks.length} tracks from ${source}`);
+  }
+
+  // Select playlist
+  selectPlaylist(name, tracks) {
+    const currentMode = state.get('currentMode');
+    
+    if (currentMode === MODES.MEMORY && tracks.length > 1) {
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: 'Memory mode: Only first shloka from playlist selected',
+        type: 'info'
+      });
+    }
+    
+    this.selectMultiple(tracks, 'playlist', { name });
+  }
+
+  // Select recent
+  selectRecent(label, tracks) {
+    this.selectMultiple(tracks, 'recent', { label });
+  }
+
+  // Select group
+  selectGroup(groupNumber, tracks) {
+    this.selectMultiple(tracks, 'group', { groupNumber });
+  }
+
+  // Select range
+  selectRange(start, end, tracks) {
+    this.selectMultiple(tracks, 'range', { start, end });
+  }
+
+  // Toggle track
+  toggle(trackNum) {
+    const currentMode = state.get('currentMode');
+    
+    // Memory mode: replace selection
+    if (currentMode === MODES.MEMORY) {
+      this._selectedTracks.clear();
+      this._selectedTracks.add(trackNum);
+      this._emitChange();
+      return;
+    }
+
+    // Regular/Quiz mode: toggle
+    if (this._selectedTracks.has(trackNum)) {
+      this._selectedTracks.delete(trackNum);
+    } else {
+      this._selectedTracks.add(trackNum);
+    }
+    
+    this._emitChange();
+  }
+
+  // Clear selection
+  clear() {
+    this._selectedTracks.clear();
+    this._source = null;
+    this._sourceData = null;
+    
+    this._emitChange(true); // Force clear event
+    console.log('Selection cleared');
+  }
+
+  // Get selection as sorted array
+  getSelection() {
+    return Array.from(this._selectedTracks).sort((a, b) => a - b);
+  }
+
+  // Get count
+  getCount() {
+    return this._selectedTracks.size;
+  }
+
   // Check if track is selected
   isSelected(trackNum) {
     return this._selectedTracks.has(trackNum);
   }
-  
-  // Get all selected tracks (sorted)
-  getSelection() {
-    return Array.from(this._selectedTracks).sort((a, b) => a - b);
+
+  // Get source info
+  getSource() {
+    return {
+      type: this._source,
+      data: this._sourceData
+    };
   }
-  
-  // Get selection count
-  getCount() {
-    return this._selectedTracks.size;
-  }
-  
+
   // Check if has selection
   hasSelection() {
     return this._selectedTracks.size > 0;
   }
-  
-  // Get selection source info
-  getSource() {
-    return {
-      type: this._selectedSource,
-      data: this._sourceData
-    };
-  }
-  
-  // Get selection statistics
-  getStats() {
-    if (this._selectedTracks.size === 0) return null;
-    
+
+  _emitChange(isCleared = false) {
     const tracks = this.getSelection();
-    return {
-      count: tracks.length,
-      min: tracks[0],
-      max: tracks[tracks.length - 1],
-      source: this._selectedSource,
-      sourceData: this._sourceData
-    };
-  }
-  
-  // Update source tracking
-  _updateSource(type, data = null) {
-    this._selectedSource = type;
-    this._sourceData = data;
-  }
-  
-  // Notify of selection change
-  _notifyChange() {
-    const selection = this.getSelection();
-    
-    // Update state
-    state.set('selection.selectedTracks', new Set(this._selectedTracks));
-    
-    // Emit event with UI sync flag
+    const count = tracks.length;
+
+    if (isCleared || count === 0) {
+      EventBus.emit(EVENTS.SELECTION_CLEARED);
+    }
+
     EventBus.emit(EVENTS.SELECTION_CHANGED, {
-      count: this._selectedTracks.size,
-      tracks: selection,
-      source: this._selectedSource,
+      tracks,
+      count,
+      source: this._source,
       sourceData: this._sourceData,
-      shouldSyncUI: true // Flag for UI to update checkboxes
+      shouldSyncUI: true
     });
-  }
-  
-  // Export selection for storage
-  exportSelection() {
-    return {
-      tracks: this.getSelection(),
-      source: this._selectedSource,
-      sourceData: this._sourceData,
-      timestamp: Date.now()
-    };
-  }
-  
-  // Import selection from storage
-  importSelection(data) {
-    if (!data || !data.tracks) return false;
-    
-    this._selectedTracks.clear();
-    data.tracks.forEach(track => this._selectedTracks.add(track));
-    
-    this._selectedSource = data.source || 'imported';
-    this._sourceData = data.sourceData || null;
-    
-    this._notifyChange();
-    return true;
+
+    // Update state
+    state.set('selectedTracks', tracks);
   }
 }
 
