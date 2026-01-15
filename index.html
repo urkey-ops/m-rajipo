@@ -43,6 +43,10 @@
                     <i class="fa-solid fa-brain"></i>
                     <span>Quiz</span>
                 </button>
+                <button id="memoryModeBtn" class="mode-segment" data-mode="memory">
+                    <i class="fa-solid fa-repeat"></i>
+                    <span>Memory</span>
+                </button>
             </div>
         </div>
     </header>
@@ -203,6 +207,73 @@
                 <button id="playFullBtn" class="btn-quiz-full hidden" aria-label="Play full shloka">
                     <i class="fa-solid fa-volume-high"></i> Full
                 </button>
+            </div>
+
+            <!-- Memory Mode -->
+            <div id="memoryControls" class="memory-controls hidden">
+                <div class="memory-header">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>Memory Mode - Loop Learning</span>
+                </div>
+                
+                <div class="memory-speed">
+                    <span class="memory-label"><i class="fa-solid fa-gauge"></i> Speed:</span>
+                    <input type="range" id="memorySpeedSlider" min="0.5" max="2.0" step="0.1" value="1.0">
+                    <span id="memorySpeedDisplay" class="memory-value">1.0×</span>
+                </div>
+
+                <div class="memory-segment">
+                    <div class="memory-label">Segment Times:</div>
+                    <div class="time-inputs">
+                        <div class="time-input-group">
+                            <label>Start</label>
+                            <div class="time-picker">
+                                <input id="memoryStartMin" type="number" min="0" max="59" value="0" placeholder="00">
+                                <span>:</span>
+                                <input id="memoryStartSec" type="number" min="0" max="59" value="0" placeholder="00">
+                            </div>
+                        </div>
+                        <div class="time-input-group">
+                            <label>End</label>
+                            <div class="time-picker">
+                                <input id="memoryEndMin" type="number" min="0" max="59" value="0" placeholder="00">
+                                <span>:</span>
+                                <input id="memoryEndSec" type="number" min="0" max="59" value="20" placeholder="20">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="memory-gap">
+                    <span class="memory-label"><i class="fa-solid fa-pause"></i> Loop Gap:</span>
+                    <input type="range" id="memoryGapSlider" min="0" max="60" step="1" value="0">
+                    <span id="memoryGapDisplay" class="memory-value">0s</span>
+                </div>
+
+                <div class="memory-progress">
+                    <div class="progress-info">
+                        <span>Progress:</span>
+                        <span id="memoryProgressText">0:00 / 0:20</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="memoryProgressBar" class="progress-bar-fill"></div>
+                    </div>
+                    <div class="loop-info">
+                        <span>Loops completed: <strong id="memoryLoopCount">0</strong></span>
+                    </div>
+                </div>
+
+                <div class="memory-actions">
+                    <button id="memoryStartBtn" class="btn-memory-primary">
+                        <i class="fa-solid fa-play"></i> Start Loop
+                    </button>
+                    <button id="memoryPauseBtn" class="btn-memory-secondary hidden">
+                        <i class="fa-solid fa-pause"></i> Pause
+                    </button>
+                    <button id="memoryResetBtn" class="btn-memory-secondary">
+                        <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                </div>
             </div>
         </section>
 
