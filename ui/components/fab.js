@@ -1,7 +1,7 @@
-// fab.js - Floating Action Button component
+// fab.js - Floating Action Button component (FIXED)
 import { $, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
-import { EVENTS } from '../../core/constants.js';
+import { EVENTS, MODES } from '../../core/constants.js';
 import { state } from '../../core/state.js';
 
 class FAB {
@@ -25,6 +25,9 @@ class FAB {
     
     this._setupEventListeners();
     
+    // Set initial state
+    this.updateState(0);
+    
     console.log('✅ FAB initialized');
   }
   
@@ -45,14 +48,14 @@ class FAB {
     
     // Listen to mode changes
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this._isQuizMode = data.to === 'quiz';
+      this._isQuizMode = data.to === MODES.QUIZ;
       this.updateMode();
     });
   }
   
   _handleClick() {
     if (this._isQuizMode) {
-      // Quiz mode: play next
+      // Quiz mode: play next/start quiz
       EventBus.emit('fab:quiz-next-clicked');
     } else {
       // Regular mode: play selected
@@ -73,6 +76,7 @@ class FAB {
         ? `Quiz ${count} shloka${count > 1 ? 's' : ''}`
         : 'Select shlokas for quiz mode';
       this._fabBtn.setAttribute('title', title);
+      this._fabBtn.setAttribute('aria-label', title);
       
     } else {
       // Regular mode: show badge and count
@@ -80,11 +84,18 @@ class FAB {
         addClass(this._fabBtn, 'dimmed');
         addClass(this._fabBadge, 'hidden');
         this._fabBtn.setAttribute('title', 'Select shlokas to play');
+        this._fabBtn.setAttribute('aria-label', 'Select shlokas to play');
       } else {
         removeClass(this._fabBtn, 'dimmed');
         removeClass(this._fabBadge, 'hidden');
-        this._fabBadge.textContent = count > 999 ? '999+' : count.toString();
-        this._fabBtn.setAttribute('title', `Play ${count} shloka${count > 1 ? 's' : ''}`);
+        
+        // Update badge text
+        const displayCount = count > 999 ? '999+' : count.toString();
+        this._fabBadge.textContent = displayCount;
+        
+        const title = `Play ${count} shloka${count > 1 ? 's' : ''}`;
+        this._fabBtn.setAttribute('title', title);
+        this._fabBtn.setAttribute('aria-label', title);
       }
     }
   }
