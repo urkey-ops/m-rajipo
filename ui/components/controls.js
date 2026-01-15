@@ -52,7 +52,7 @@ class Controls {
         if (!state.isQuizMode()) {
           const speed = parseFloat(e.target.value);
           regularMode.updateSpeed(speed);
-          this._speedDisplay.textContent = ${speed.toFixed(1)}×;
+          this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
           e.target.setAttribute('aria-valuenow', speed.toString());
         }
       });
@@ -61,7 +61,7 @@ class Controls {
     // Regular mode - Repeat count
     if (this._repeatCount) {
       this._repeatCount.addEventListener('change', () => {
-        const value = parseInt(this._repeatCount.value);
+        const value = parseInt(this._repeatCount.value, 10);
         if (value < 1) this._repeatCount.value = 1;
         if (value > 10) this._repeatCount.value = 10;
 
@@ -76,7 +76,7 @@ class Controls {
       });
 
       this._repeatCount.addEventListener('input', () => {
-        const value = parseInt(this._repeatCount.value);
+        const value = parseInt(this._repeatCount.value, 10);
         if (value > 10) this._repeatCount.value = 10;
         if (value < 1) this._repeatCount.value = 1;
       });
@@ -146,21 +146,21 @@ class Controls {
   // Update speed display
   updateSpeedDisplay(speed) {
     if (this._speedDisplay) {
-      this._speedDisplay.textContent = ${speed.toFixed(1)}×;
+      this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
     }
   }
 
   // Update quiz time display
   updateQuizTimeDisplay(time) {
     if (this._quizTimeDisplay) {
-      this._quizTimeDisplay.textContent = ${time}s;
+      this._quizTimeDisplay.textContent = `${time}s`;
     }
   }
 
   // Update quiz delay display
   updateQuizDelayDisplay(delay) {
     if (this._quizDelayDisplay) {
-      this._quizDelayDisplay.textContent = ${delay}s;
+      this._quizDelayDisplay.textContent = `${delay}s`;
     }
   }
 }
