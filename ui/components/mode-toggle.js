@@ -1,119 +1,140 @@
-// mode-toggle.js - Mode toggle (segmented control) component
+// mode-toggle.js - Mode switching component (UPDATED FOR 3 MODES)
+
 import { $, $$, addClass, removeClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, MODES } from '../../core/constants.js';
+import { state } from '../../core/state.js';
 import { regularMode } from '../../modes/regular-mode.js';
 import { quizMode } from '../../modes/quiz-mode.js';
-import { audioService } from '../../services/audio-service.js';
+import { memoryMode } from '../../modes/memory-mode.js';
 
 class ModeToggle {
   constructor() {
-    this._regularBtn = null;
-    this._quizBtn = null;
-    this._currentMode = MODES.REGULAR;
+    this.regularBtn = null;
+    this.quizBtn = null;
+    this.memoryBtn = null;
+    this.currentMode = MODES.REGULAR;
   }
-  
+
   initialize() {
-    this._regularBtn = $('#regularModeBtn');
-    this._quizBtn = $('#quizModeBtn');
-    
-    if (!this._regularBtn || !this._quizBtn) {
-      console.error('Mode toggle buttons not found');
-      return;
-    }
-    
+    this.regularBtn = $('#regularModeBtn');
+    this.quizBtn = $('#quizModeBtn');
+    this.memoryBtn = $('#memoryModeBtn');
+
     this._setupEventListeners();
-    
-    // Initialize regular mode by default
-    this._switchMode(MODES.REGULAR);
-    
-    console.log('✅ Mode toggle initialized');
+    this._updateUI();
+
+    console.log('✅ Mode toggle initialized (3 modes)');
   }
-  
+
   _setupEventListeners() {
-    this._regularBtn.addEventListener('click', () => {
-      if (this._currentMode !== MODES.REGULAR) {
+    if (this.regularBtn) {
+      this.regularBtn.addEventListener('click', () => {
         this._switchMode(MODES.REGULAR);
-      }
-    });
-    
-    this._quizBtn.addEventListener('click', () => {
-      if (this._currentMode !== MODES.QUIZ) {
-        this._switchMode(MODES.QUIZ);
-      }
-    });
-  }
-  
-  _switchMode(toMode) {
-    const fromMode = this._currentMode;
-    
-    // Check if audio is playing
-    const wasPlaying = audioService.isPlaying();
-    
-    // Cleanup old mode
-    if (fromMode === MODES.REGULAR) {
-      regularMode.cleanup();
-    } else if (fromMode === MODES.QUIZ) {
-      quizMode.cleanup();
-    }
-    
-    // Stop any playing audio
-    if (wasPlaying) {
-      audioService.stop();
-    }
-    
-    // Update button UI
-    if (toMode === MODES.REGULAR) {
-      addClass(this._regularBtn, 'active');
-      removeClass(this._quizBtn, 'active');
-    } else {
-      removeClass(this._regularBtn, 'active');
-      addClass(this._quizBtn, 'active');
-    }
-    
-    // Show/hide appropriate controls
-    const regularControls = $('#regularControls');
-    const quizControls = $('#quizControls');
-    
-    if (toMode === MODES.REGULAR) {
-      if (regularControls) removeClass(regularControls, 'hidden');
-      if (quizControls) addClass(quizControls, 'hidden');
-    } else {
-      if (regularControls) addClass(regularControls, 'hidden');
-      if (quizControls) removeClass(quizControls, 'hidden');
-    }
-    
-    // Initialize new mode
-    if (toMode === MODES.REGULAR) {
-      regularMode.initialize();
-    } else if (toMode === MODES.QUIZ) {
-      quizMode.initialize();
-    }
-    
-    this._currentMode = toMode;
-    
-    // Show toast if audio was playing
-    if (wasPlaying) {
-      const modeName = toMode === MODES.QUIZ ? 'Quiz' : 'Regular';
-      EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: `Switched to ${modeName} mode. Playback stopped.`,
-        type: 'info'
       });
     }
-    
-    console.log(`Mode switched: ${fromMode} → ${toMode}`);
+
+    if (this.quizBtn) {
+      this.quizBtn.addEventListener('click', () => {
+        this._switchMode(MODES.QUIZ);
+      });
+    }
+
+    if (this.memoryBtn) {
+      this.memoryBtn.addEventListener('click', () => {
+        this._switchMode(MODES.MEMORY);
+      });
+    }
   }
-  
-  getCurrentMode() {
-    return this._currentMode;
+
+  _switchMode(newMode) {
+    if (this.currentMode === newMode) return;
+
+    const oldMode = this.currentMode;
+
+    console.log(`Switching mode: ${oldMode} → ${newMode}`);
+
+    // Cleanup old mode
+    switch (oldMode) {
+      case MODES.REGULAR:
+        regularMode.cleanup();
+        break;
+      case MODES.QUIZ:
+        quizMode.cleanup();
+        break;
+      case MODES.MEMORY:
+        memoryMode.cleanup();
+        break;
+    }
+
+    // Initialize new mode
+    switch (newMode) {
+      case MODES.REGULAR:
+        regularMode.initialize();
+        break;
+      case MODES.QUIZ:
+        quizMode.initialize();
+        break;
+      case MODES.MEMORY:
+        memoryMode.initialize();
+        break;
+    }
+
+    this.currentMode = newMode;
+    this._updateUI();
+
+    // Show/hide appropriate controls
+    this._toggleControlVisibility(newMode);
+
+    // Emit mode change event
+    EventBus.emit(EVENTS.MODE_CHANGED, {
+      from: oldMode,
+      to: newMode
+    });
   }
-  
-  isQuizMode() {
-    return this._currentMode === MODES.QUIZ;
+
+  _updateUI() {
+    // Remove active from all
+    [this.regularBtn, this.quizBtn, this.memoryBtn].forEach(btn => {
+      if (btn) removeClass(btn, 'active');
+    });
+
+    // Add active to current
+    switch (this.currentMode) {
+      case MODES.REGULAR:
+        if (this.regularBtn) addClass(this.regularBtn, 'active');
+        break;
+      case MODES.QUIZ:
+        if (this.quizBtn) addClass(this.quizBtn, 'active');
+        break;
+      case MODES.MEMORY:
+        if (this.memoryBtn) addClass(this.memoryBtn, 'active');
+        break;
+    }
   }
-  
-  isRegularMode() {
-    return this._currentMode === MODES.REGULAR;
+
+  _toggleControlVisibility(mode) {
+    const regularControls = $('#regularControls');
+    const quizControls = $('#quizControls');
+    const memoryControls = $('#memoryControls');
+
+    // Hide all
+    [regularControls, quizControls, memoryControls].forEach(el => {
+      if (el) addClass(el, 'hidden');
+    });
+
+    // Show active mode controls
+    switch (mode) {
+      case MODES.REGULAR:
+        if (regularControls) removeClass(regularControls, 'hidden');
+        break;
+      case MODES.QUIZ:
+        if (quizControls) removeClass(quizControls, 'hidden');
+        break;
+      case MODES.MEMORY:
+        if (memoryControls) removeClass(memoryControls, 'hidden');
+        break;
+    }
   }
 }
 
