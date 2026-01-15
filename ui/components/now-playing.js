@@ -1,7 +1,8 @@
-// now-playing.js - Now playing display component
+// now-playing.js - Now playing display component (FIXED)
 import { $, addClass, removeClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
-import { EVENTS } from '../../core/constants.js';
+import { EVENTS, MODES } from '../../core/constants.js';
+import { state } from '../../core/state.js';
 
 class NowPlaying {
   constructor() {
@@ -10,6 +11,7 @@ class NowPlaying {
     this._nowPlayingShloka = null;
     this._nowPlayingSpeed = null;
     this._isQuizMode = false;
+    this._currentSpeed = 1.0;
   }
   
   initialize() {
@@ -31,14 +33,27 @@ class NowPlaying {
     
     // Listen to mode changes
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this._isQuizMode = data.to === 'quiz';
+      this._isQuizMode = data.to === MODES.QUIZ;
       this.updateIcon();
+      // Update speed display for new mode
+      this.updateSpeed(this._isQuizMode ? 1.0 : this._currentSpeed);
     });
     
-    // Listen to speed changes
+    // Listen to speed changes (from playback manager)
     EventBus.on('regular-mode:speed-changed', (speed) => {
       if (!this._isQuizMode) {
+        this._currentSpeed = speed;
         this.updateSpeed(speed);
+      }
+    });
+    
+    // Listen to audio state changes
+    EventBus.on(EVENTS.PLAYBACK_STARTED, (data) => {
+      // Speed might have changed, update display
+      const currentSpeed = state.get('audio.speed') || 1.0;
+      if (!this._isQuizMode) {
+        this._currentSpeed = currentSpeed;
+        this.updateSpeed(currentSpeed);
       }
     });
     
@@ -64,6 +79,7 @@ class NowPlaying {
     if (this._nowPlayingSpeed) {
       this._nowPlayingSpeed.textContent = `${speed.toFixed(1)}×`;
     }
+    this._currentSpeed = speed;
   }
   
   // Update icon based on mode
@@ -90,7 +106,7 @@ class NowPlaying {
   // Reset to default state
   reset() {
     this.updateTrack(null);
-    this.updateSpeed(1.0);
+    this.updateSpeed(this._isQuizMode ? 1.0 : this._currentSpeed);
   }
 }
 
