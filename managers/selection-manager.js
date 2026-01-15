@@ -1,4 +1,4 @@
-// selection-manager.js - Manages shloka selection (UPDATED FOR MEMORY MODE)
+// selection-manager.js - COMPLETE FIXED VERSION
 
 import { EventBus } from '../core/events.js';
 import { EVENTS, MODES } from '../core/constants.js';
@@ -41,6 +41,22 @@ class SelectionManager {
     console.log(`Selected tracks: ${Array.from(this._selectedTracks).join(', ')}`);
   }
 
+  // ✅ FIX: Add deselect method
+  deselect(trackNum) {
+    const currentMode = state.get('currentMode');
+    
+    // In memory mode, deselecting means clearing all
+    if (currentMode === MODES.MEMORY) {
+      this._selectedTracks.clear();
+    } else {
+      // Regular/Quiz mode: remove specific track
+      this._selectedTracks.delete(trackNum);
+    }
+    
+    this._emitChange();
+    console.log(`Deselected track ${trackNum}`);
+  }
+
   // Select multiple tracks
   selectMultiple(tracks, source = 'manual', sourceData = null) {
     const currentMode = state.get('currentMode');
@@ -55,10 +71,12 @@ class SelectionManager {
       this._sourceData = sourceData;
       this._emitChange();
       
-      EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: 'Memory mode: Only 1 shloka selected',
-        type: 'info'
-      });
+      if (tracks.length > 1) {
+        EventBus.emit(EVENTS.TOAST_SHOW, {
+          message: 'Memory mode: Only 1 shloka selected',
+          type: 'info'
+        });
+      }
       return;
     }
 
@@ -107,8 +125,14 @@ class SelectionManager {
     
     // Memory mode: replace selection
     if (currentMode === MODES.MEMORY) {
+      const wasSelected = this._selectedTracks.has(trackNum);
       this._selectedTracks.clear();
-      this._selectedTracks.add(trackNum);
+      
+      // If it wasn't selected, select it. If it was, leave empty (deselect)
+      if (!wasSelected) {
+        this._selectedTracks.add(trackNum);
+      }
+      
       this._emitChange();
       return;
     }
