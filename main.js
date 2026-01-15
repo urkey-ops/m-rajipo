@@ -1,8 +1,9 @@
-// main.js - Application entry point (UPDATED FOR MEMORY MODE)
+// main.js - FIXED VERSION (Add $ import)
 
 import { EventBus } from './core/events.js';
 import { state } from './core/state.js';
 import { EVENTS } from './core/constants.js';
+import { $ } from './utils/dom-utils.js'; // ✅ FIX: Add this import
 
 // Services
 import { audioService } from './services/audio-service.js';
@@ -25,11 +26,11 @@ import { toast } from './ui/components/toast.js';
 
 class Application {
   constructor() {
-    this.isInitialized = false;
+    this._initialized = false; // ✅ FIX: Use underscore prefix
   }
 
   async initialize() {
-    if (this.isInitialized) {
+    if (this._initialized) {
       console.warn('Application already initialized');
       return;
     }
@@ -37,28 +38,16 @@ class Application {
     console.log('🚀 Starting Mission Rajipo...');
 
     try {
-      // Initialize core services
       this.initializeServices();
-
-      // Initialize UI
       uiManager.initialize();
-
-      // Wait for UI to be ready
       await this.waitForUIReady();
-
-      // Setup application event handlers
       this.setupEventHandlers();
-
-      // Restore last session if available
       this.restoreSession();
-
-      // Initialize default mode (regular)
       regularMode.initialize();
 
-      this.isInitialized = true;
+      this._initialized = true;
       console.log('✅ Application ready!');
 
-      // Auto-scroll to top after initialization
       setTimeout(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
       }, 300);
@@ -72,22 +61,18 @@ class Application {
   initializeServices() {
     console.log('🔧 Initializing services...');
 
-    // Initialize audio service
     const audioElement = document.getElementById('audioPlayer');
     if (!audioElement) {
       throw new Error('Audio element not found');
     }
     audioService.initialize(audioElement);
 
-    // Check storage availability
     if (!storageService.isAvailable()) {
       console.warn('Storage not available - playlists and history disabled');
       toast.info('Storage unavailable - playlists and history won\'t be saved.');
     }
 
-    // Network service is automatically initialized
     console.log('Network status:', networkService.isOnline() ? 'Online' : 'Offline');
-
     console.log('✅ Services initialized');
   }
 
@@ -104,7 +89,6 @@ class Application {
   setupEventHandlers() {
     console.log('🔌 Setting up event handlers...');
 
-    // FAB button handlers
     EventBus.on('fab:play-clicked', () => {
       this.handlePlaySelected();
     });
@@ -117,17 +101,14 @@ class Application {
       this.handleMemoryStart();
     });
 
-    // Global error handler
     window.addEventListener('error', (event) => {
       console.error('Global error:', event.error);
     });
 
-    // Unhandled promise rejection handler
     window.addEventListener('unhandledrejection', (event) => {
       console.error('Unhandled promise rejection:', event.reason);
     });
 
-    // Page unload cleanup
     window.addEventListener('beforeunload', () => {
       this.cleanup();
     });
@@ -137,29 +118,24 @@ class Application {
 
   async handlePlaySelected() {
     try {
-      // Validate mode
       const validation = regularMode.validate();
       if (!validation.valid) {
         toast.error(validation.error);
         return;
       }
 
-      // Get playback settings
       const settings = regularMode.getSettings();
-
-      // Get selected tracks
       const selectedTracks = selectionManager.getSelection();
+      
       if (selectedTracks.length === 0) {
         toast.info('Please select at least one shloka to play.');
         return;
       }
 
-      // Get UI settings
       const repeatCount = parseInt($('#repeatCount')?.value) || 1;
       const shuffle = $('#shuffle')?.checked || false;
       const repeatPlaylist = $('#repeatPlaylist')?.checked || false;
 
-      // Start playback
       await playbackManager.startPlayback(selectedTracks, {
         startIndex: 0,
         repeatEach: repeatCount,
@@ -178,9 +154,7 @@ class Application {
     try {
       const quizState = quizMode.getState();
 
-      // Check if quiz has started
       if (!quizMode.isActive()) {
-        // Quiz mode is active but quiz hasn't started yet
         const validation = quizMode.validate();
         if (!validation.valid) {
           toast.error(validation.error);
@@ -190,9 +164,7 @@ class Application {
         return;
       }
 
-      // Check if we have a playlist
       if (quizState.playlist.length === 0) {
-        // No playlist - start new quiz
         const validation = quizMode.validate();
         if (!validation.valid) {
           toast.error(validation.error);
@@ -200,7 +172,6 @@ class Application {
         }
         await quizMode.startQuiz();
       } else {
-        // Continue to next question
         await quizMode.nextQuestion();
       }
 
@@ -212,21 +183,18 @@ class Application {
 
   async handleMemoryStart() {
     try {
-      // Validate
       const validation = memoryMode.validate();
       if (!validation.valid) {
         toast.error(validation.error);
         return;
       }
 
-      // Check if already looping
       const memState = memoryMode.getState();
       if (memState.isLooping) {
         toast.info('Memory loop already running');
         return;
       }
 
-      // Start memory loop
       await memoryMode.startLoop();
       toast.success('Memory loop started!');
 
@@ -242,10 +210,8 @@ class Application {
     console.log('🔄 Restoring last session...');
 
     try {
-      // Restore last selection
       const lastSelection = storageService.loadLastSelection();
       if (lastSelection && lastSelection.length > 0) {
-        // Import selection
         selectionManager.selectMultiple(lastSelection);
         console.log(`Restored ${lastSelection.length} selected tracks`);
       }
@@ -257,15 +223,12 @@ class Application {
   cleanup() {
     console.log('🧹 Cleaning up...');
 
-    // Clear all timers
     timerManager.clearAll();
 
-    // Stop playback
     if (playbackManager.isPlaying()) {
       playbackManager.stop();
     }
 
-    // Save current selection
     if (storageService.isAvailable()) {
       const selection = selectionManager.getSelection();
       if (selection.length > 0) {
@@ -313,10 +276,8 @@ class Application {
   }
 }
 
-// Create application instance
 const app = new Application();
 
-// Initialize when DOM is ready
 function initApp() {
   app.initialize();
 }
@@ -327,7 +288,6 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
-// Export for debugging
 window.app = app;
 window.state = state;
 window.eventBus = EventBus;
