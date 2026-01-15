@@ -1,4 +1,5 @@
 // constants.js - All application constants
+
 export const TOTAL_TRACKS = 315;
 
 export const AUDIO_BASE_URL = 'https://ia601703.us.archive.org/35/items/satsang_diksha';
@@ -17,7 +18,8 @@ export const STORAGE_KEYS = {
   PLAYLISTS: 'personalPlaylists',
   RECENT: 'recentSelections',
   QUIZ_SETTINGS: 'quizSettings',
-  LAST_SELECTION: 'lastSelection'
+  LAST_SELECTION: 'lastSelection',
+  MEMORY_SETTINGS: 'memorySettings'
 };
 
 export const MAX_RECENT_ITEMS = 5;
@@ -37,7 +39,13 @@ export const DEFAULT_SETTINGS = {
   QUIZ_DELAY: 3,
   MIN_QUIZ_DELAY: 1,
   MAX_QUIZ_DELAY: 10,
-  AUTO_PLAY: false
+  AUTO_PLAY: false,
+  // Memory Mode settings
+  MEMORY_START_TIME: 0,
+  MEMORY_END_TIME: 20,
+  MEMORY_GAP: 0,
+  MIN_MEMORY_GAP: 0,
+  MAX_MEMORY_GAP: 60
 };
 
 export const AUDIO_ERRORS = {
@@ -49,7 +57,8 @@ export const AUDIO_ERRORS = {
 
 export const MODES = {
   REGULAR: 'regular',
-  QUIZ: 'quiz'
+  QUIZ: 'quiz',
+  MEMORY: 'memory'
 };
 
 export const EVENTS = {
@@ -81,6 +90,12 @@ export const EVENTS = {
   QUIZ_STARTED: 'quiz:started',
   QUIZ_COUNTDOWN_TICK: 'quiz:countdown:tick',
   QUIZ_COUNTDOWN_COMPLETE: 'quiz:countdown:complete',
+  
+  // Memory events
+  MEMORY_LOOP_STARTED: 'memory:loop:started',
+  MEMORY_LOOP_COMPLETED: 'memory:loop:completed',
+  MEMORY_GAP_STARTED: 'memory:gap:started',
+  MEMORY_SEGMENT_UPDATED: 'memory:segment:updated',
   
   // Network events
   NETWORK_ONLINE: 'network:online',
