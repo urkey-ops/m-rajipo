@@ -1,4 +1,4 @@
-// regular-mode.js - Regular playback mode logic
+// regular-mode.js - Regular playback mode logic (FIXED)
 import { EVENTS, MODES, DEFAULT_SETTINGS } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -118,6 +118,7 @@ class RegularMode {
     
     console.log(`Speed updated: ${validation.value}×`);
     
+    // Emit speed change event for UI updates
     EventBus.emit('regular-mode:speed-changed', validation.value);
   }
   
