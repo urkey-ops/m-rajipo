@@ -1,4 +1,5 @@
-// main.js - Application entry point
+// main.js - Application entry point (UPDATED FOR MEMORY MODE)
+
 import { EventBus } from './core/events.js';
 import { state } from './core/state.js';
 import { EVENTS } from './core/constants.js';
@@ -16,6 +17,7 @@ import { timerManager } from './managers/timer-manager.js';
 // Modes
 import { regularMode } from './modes/regular-mode.js';
 import { quizMode } from './modes/quiz-mode.js';
+import { memoryMode } from './modes/memory-mode.js';
 
 // UI
 import { uiManager } from './ui/ui-manager.js';
@@ -23,117 +25,117 @@ import { toast } from './ui/components/toast.js';
 
 class Application {
   constructor() {
-    this._isInitialized = false;
+    this.isInitialized = false;
   }
-  
+
   async initialize() {
-    if (this._isInitialized) {
+    if (this.isInitialized) {
       console.warn('Application already initialized');
       return;
     }
-    
+
     console.log('🚀 Starting Mission Rajipo...');
-    
+
     try {
       // Initialize core services
-      this._initializeServices();
-      
+      this.initializeServices();
+
       // Initialize UI
       uiManager.initialize();
-      
+
       // Wait for UI to be ready
-      await this._waitForUIReady();
-      
+      await this.waitForUIReady();
+
       // Setup application event handlers
-      this._setupEventHandlers();
-      
-      // Restore last session (if available)
-      this._restoreSession();
-      
+      this.setupEventHandlers();
+
+      // Restore last session if available
+      this.restoreSession();
+
       // Initialize default mode (regular)
       regularMode.initialize();
-      
-      this._isInitialized = true;
-      
+
+      this.isInitialized = true;
       console.log('✅ Application ready!');
-      
+
       // Auto-scroll to top after initialization
       setTimeout(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
       }, 300);
-      
+
     } catch (error) {
-      console.error('❌ Failed to initialize application:', error);
-      this._showFatalError(error);
+      console.error('Failed to initialize application:', error);
+      this.showFatalError(error);
     }
   }
-  
-  _initializeServices() {
-    console.log('📦 Initializing services...');
-    
+
+  initializeServices() {
+    console.log('🔧 Initializing services...');
+
     // Initialize audio service
     const audioElement = document.getElementById('audioPlayer');
     if (!audioElement) {
       throw new Error('Audio element not found');
     }
     audioService.initialize(audioElement);
-    
+
     // Check storage availability
     if (!storageService.isAvailable()) {
-      console.warn('⚠️ Storage not available - playlists and history disabled');
+      console.warn('Storage not available - playlists and history disabled');
       toast.info('Storage unavailable - playlists and history won\'t be saved.');
     }
-    
+
     // Network service is automatically initialized
-    console.log(`📡 Network status: ${networkService.isOnline() ? 'Online' : 'Offline'}`);
-    
+    console.log('Network status:', networkService.isOnline() ? 'Online' : 'Offline');
+
     console.log('✅ Services initialized');
   }
-  
-  _waitForUIReady() {
+
+  waitForUIReady() {
     return new Promise((resolve) => {
       if (uiManager.isInitialized()) {
         resolve();
       } else {
-        EventBus.once(EVENTS.UI_READY, () => {
-          resolve();
-        });
+        EventBus.once(EVENTS.UI_READY, resolve);
       }
     });
   }
-  
-  _setupEventHandlers() {
-    console.log('🔗 Setting up event handlers...');
-    
-    // FAB play button handler
-    window.handlePlaySelected = () => {
-      this._handlePlaySelected();
-    };
-    
-    // FAB quiz next handler
-    window.handleQuizNext = () => {
-      this._handleQuizNext();
-    };
-    
+
+  setupEventHandlers() {
+    console.log('🔌 Setting up event handlers...');
+
+    // FAB button handlers
+    EventBus.on('fab:play-clicked', () => {
+      this.handlePlaySelected();
+    });
+
+    EventBus.on('fab:quiz-next-clicked', () => {
+      this.handleQuizNext();
+    });
+
+    EventBus.on('fab:memory-clicked', () => {
+      this.handleMemoryStart();
+    });
+
     // Global error handler
     window.addEventListener('error', (event) => {
       console.error('Global error:', event.error);
     });
-    
+
     // Unhandled promise rejection handler
     window.addEventListener('unhandledrejection', (event) => {
       console.error('Unhandled promise rejection:', event.reason);
     });
-    
+
     // Page unload cleanup
     window.addEventListener('beforeunload', () => {
-      this._cleanup();
+      this.cleanup();
     });
-    
+
     console.log('✅ Event handlers setup complete');
   }
-  
-  async _handlePlaySelected() {
+
+  async handlePlaySelected() {
     try {
       // Validate mode
       const validation = regularMode.validate();
@@ -141,23 +143,22 @@ class Application {
         toast.error(validation.error);
         return;
       }
-      
+
       // Get playback settings
       const settings = regularMode.getSettings();
-      
+
       // Get selected tracks
       const selectedTracks = selectionManager.getSelection();
-      
       if (selectedTracks.length === 0) {
         toast.info('Please select at least one shloka to play.');
         return;
       }
-      
+
       // Get UI settings
-      const repeatCount = parseInt(document.getElementById('repeatCount')?.value) || 1;
-      const shuffle = document.getElementById('shuffle')?.checked || false;
-      const repeatPlaylist = document.getElementById('repeatPlaylist')?.checked || false;
-      
+      const repeatCount = parseInt($('#repeatCount')?.value) || 1;
+      const shuffle = $('#shuffle')?.checked || false;
+      const repeatPlaylist = $('#repeatPlaylist')?.checked || false;
+
       // Start playback
       await playbackManager.startPlayback(selectedTracks, {
         startIndex: 0,
@@ -166,17 +167,17 @@ class Application {
         shuffle: shuffle,
         speed: settings.speed
       });
-      
+
     } catch (error) {
       console.error('Failed to start playback:', error);
       toast.error(error.message || 'Failed to start playback');
     }
   }
-  
-  async _handleQuizNext() {
+
+  async handleQuizNext() {
     try {
       const quizState = quizMode.getState();
-      
+
       // Check if quiz has started
       if (!quizMode.isActive()) {
         // Quiz mode is active but quiz hasn't started yet
@@ -185,12 +186,10 @@ class Application {
           toast.error(validation.error);
           return;
         }
-        
-        // Start new quiz
         await quizMode.startQuiz();
         return;
       }
-      
+
       // Check if we have a playlist
       if (quizState.playlist.length === 0) {
         // No playlist - start new quiz
@@ -199,49 +198,73 @@ class Application {
           toast.error(validation.error);
           return;
         }
-        
         await quizMode.startQuiz();
       } else {
         // Continue to next question
         await quizMode.nextQuestion();
       }
-      
+
     } catch (error) {
       console.error('Quiz error:', error);
       toast.error(error.message || 'Quiz error occurred');
     }
   }
-  
-  _restoreSession() {
+
+  async handleMemoryStart() {
+    try {
+      // Validate
+      const validation = memoryMode.validate();
+      if (!validation.valid) {
+        toast.error(validation.error);
+        return;
+      }
+
+      // Check if already looping
+      const memState = memoryMode.getState();
+      if (memState.isLooping) {
+        toast.info('Memory loop already running');
+        return;
+      }
+
+      // Start memory loop
+      await memoryMode.startLoop();
+      toast.success('Memory loop started!');
+
+    } catch (error) {
+      console.error('Memory mode error:', error);
+      toast.error(error.message || 'Failed to start memory loop');
+    }
+  }
+
+  restoreSession() {
     if (!storageService.isAvailable()) return;
-    
+
     console.log('🔄 Restoring last session...');
-    
+
     try {
       // Restore last selection
       const lastSelection = storageService.loadLastSelection();
       if (lastSelection && lastSelection.length > 0) {
         // Import selection
         selectionManager.selectMultiple(lastSelection);
-        console.log(`✅ Restored ${lastSelection.length} selected tracks`);
+        console.log(`Restored ${lastSelection.length} selected tracks`);
       }
-      
     } catch (error) {
       console.warn('Failed to restore session:', error);
     }
   }
-  
-  _cleanup() {
+
+  cleanup() {
     console.log('🧹 Cleaning up...');
-    
+
     // Clear all timers
     timerManager.clearAll();
-    
+
     // Stop playback
     if (playbackManager.isPlaying()) {
       playbackManager.stop();
     }
-    
+
     // Save current selection
     if (storageService.isAvailable()) {
       const selection = selectionManager.getSelection();
@@ -249,14 +272,14 @@ class Application {
         storageService.saveLastSelection(selection);
       }
     }
-    
+
     console.log('✅ Cleanup complete');
   }
-  
-  _showFatalError(error) {
+
+  showFatalError(error) {
     const container = document.body;
     if (!container) return;
-    
+
     const errorDiv = document.createElement('div');
     errorDiv.style.cssText = `
       position: fixed;
@@ -266,46 +289,44 @@ class Application {
       background: var(--bg-elevated, #fff);
       padding: 32px;
       border-radius: 12px;
-      box-shadow: 0 4px 20px
-      rgba(0,0,0,0.2);
-max-width: 400px;
-text-align: center;
-z-index: 10000;
-`;
-errorDiv.innerHTML = `
-  <h2 style="color: var(--destructive, #ff3b30); margin-bottom: 16px;">
-    ⚠️ Initialization Failed
-  </h2>
-  <p style="margin-bottom: 16px; color: var(--text-primary, #000);">
-    ${error.message || 'An unexpected error occurred'}
-  </p>
-  <button onclick="window.location.reload()" style="
-    padding: 12px 24px;
-    background: var(--primary, #007aff);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-  ">
-    Reload App
-  </button>
-`;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      max-width: 400px;
+      text-align: center;
+      z-index: 10000;
+    `;
 
-container.appendChild(errorDiv);
+    errorDiv.innerHTML = `
+      <h2 style="color: var(--destructive, #ff3b30); margin-bottom: 16px;">Initialization Failed</h2>
+      <p style="margin-bottom: 16px; color: var(--text-primary, #000);">${error.message || 'An unexpected error occurred'}</p>
+      <button onclick="window.location.reload()" style="
+        padding: 12px 24px;
+        background: var(--primary, #007aff);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+      ">Reload App</button>
+    `;
+
+    container.appendChild(errorDiv);
+  }
 }
-}
+
 // Create application instance
 const app = new Application();
+
 // Initialize when DOM is ready
 function initApp() {
-app.initialize();
+  app.initialize();
 }
+
 if (document.readyState === 'loading') {
-document.addEventListener('DOMContentLoaded', initApp);
+  document.addEventListener('DOMContentLoaded', initApp);
 } else {
-initApp();
+  initApp();
 }
+
 // Export for debugging
 window.app = app;
 window.state = state;
