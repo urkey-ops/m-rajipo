@@ -117,38 +117,41 @@ class SearchBar {
     });
   }
 
-  updateForMode(mode) {
-    if (mode === MODES.MEMORY) {
-      // Disable range and groups tabs in memory mode
-      if (this.rangeTab) {
-        this.rangeTab.disabled = true;
-        this.rangeTab.style.opacity = '0.5';
-        this.rangeTab.style.cursor = 'not-allowed';
-      }
-      if (this.groupsTab) {
-        this.groupsTab.disabled = true;
-        this.groupsTab.style.opacity = '0.5';
-        this.groupsTab.style.cursor = 'not-allowed';
-      }
-      
-      // Switch to search tab if on range/groups
-      if (this.activeTab !== 0) {
-        this.switchTab(0);
-      }
-    } else {
-      // Enable range and groups tabs
-      if (this.rangeTab) {
-        this.rangeTab.disabled = false;
-        this.rangeTab.style.opacity = '1';
-        this.rangeTab.style.cursor = 'pointer';
-      }
-      if (this.groupsTab) {
-        this.groupsTab.disabled = false;
-        this.groupsTab.style.opacity = '1';
-        this.groupsTab.style.cursor = 'pointer';
-      }
+// search-bar.js - Line 81-94 FIXED
+
+updateForMode(mode) {
+  if (mode === MODES.MEMORY) {
+    // Disable range and groups tabs in memory mode
+    if (this.rangeTab) {
+      this.rangeTab.disabled = true;
+      this.rangeTab.style.opacity = '0.5';
+      this.rangeTab.style.cursor = 'not-allowed';
+    }
+    if (this.groupsTab) {
+      this.groupsTab.disabled = true;
+      this.groupsTab.style.opacity = '0.5';
+      this.groupsTab.style.cursor = 'not-allowed';
+    }
+    
+    // Switch to search tab if on range/groups
+    if (this.activeTab !== 0) {
+      this.switchTab(0);
+    }
+  } else {
+    // ✅ FIX: Enable range and groups tabs in regular/quiz mode
+    if (this.rangeTab) {
+      this.rangeTab.disabled = false;
+      this.rangeTab.style.opacity = '1';
+      this.rangeTab.style.cursor = 'pointer';
+    }
+    if (this.groupsTab) {
+      this.groupsTab.disabled = false;
+      this.groupsTab.style.opacity = '1';
+      this.groupsTab.style.cursor = 'pointer';
     }
   }
+}
+
 
   switchTab(index) {
     // Don't switch if disabled
