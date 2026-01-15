@@ -1,7 +1,8 @@
-// ui-manager.js - Coordinates all UI components
+// ui-manager.js - Coordinates all UI components (UPDATED FOR MEMORY MODE)
 
 import { EventBus } from '../core/events.js';
 import { EVENTS } from '../core/constants.js';
+
 import { modal } from './components/modal.js';
 import { toast } from './components/toast.js';
 import { fab } from './components/fab.js';
@@ -13,14 +14,15 @@ import { searchBar } from './components/search-bar.js';
 import { playlistsBar } from './components/playlists-bar.js';
 import { audioPlayer } from './components/audio-player.js';
 import { quizControls } from './components/quiz-controls.js';
+import { memoryControls } from './components/memory-controls.js';
 
 class UIManager {
   constructor() {
-    this._isInitialized = false;
+    this.isInitialized = false;
   }
 
   initialize() {
-    if (this._isInitialized) {
+    if (this.isInitialized) {
       console.warn('UI Manager already initialized');
       return;
     }
@@ -39,11 +41,12 @@ class UIManager {
     playlistsBar.initialize();
     audioPlayer.initialize();
     quizControls.initialize();
+    memoryControls.initialize(); // NEW
 
     // Setup global event listeners
-    this._setupGlobalEvents();
+    this.setupGlobalEvents();
 
-    this._isInitialized = true;
+    this.isInitialized = true;
 
     // Emit UI ready event
     EventBus.emit(EVENTS.UI_READY);
@@ -51,7 +54,7 @@ class UIManager {
     console.log('✅ UI Manager initialized');
   }
 
-  _setupGlobalEvents() {
+  setupGlobalEvents() {
     // Toast events
     EventBus.on(EVENTS.TOAST_SHOW, (data) => {
       toast.show(data.message, data.type, data.duration);
@@ -68,32 +71,17 @@ class UIManager {
       }
     });
 
-    // FAB events
+    // FAB events (handled by main.js)
     EventBus.on('fab:play-clicked', () => {
-      // Handled by main.js
-      if (window.handlePlaySelected) {
-        window.handlePlaySelected();
-      }
+      if (window.handlePlaySelected) window.handlePlaySelected();
     });
 
     EventBus.on('fab:quiz-next-clicked', () => {
-      // Handled by main.js
-      if (window.handleQuizNext) {
-        window.handleQuizNext();
-      }
+      if (window.handleQuizNext) window.handleQuizNext();
     });
 
-    // Playlist events - trigger re-renders
-    EventBus.on(EVENTS.PLAYLIST_SAVED, () => {
-      playlistsBar.renderPlaylists();
-    });
-
-    EventBus.on(EVENTS.PLAYLIST_DELETED, () => {
-      playlistsBar.renderPlaylists();
-    });
-
-    EventBus.on(EVENTS.HISTORY_CLEARED, () => {
-      playlistsBar.renderRecent();
+    EventBus.on('fab:memory-clicked', () => {
+      if (window.handleMemoryStart) window.handleMemoryStart();
     });
 
     // Network status
@@ -102,7 +90,6 @@ class UIManager {
       if (networkStatus) {
         networkStatus.classList.add('hidden');
       }
-      EventBus.emit(EVENTS.NETWORK_ONLINE);
     });
 
     window.addEventListener('offline', () => {
@@ -111,7 +98,6 @@ class UIManager {
         networkStatus.classList.remove('hidden');
       }
       toast.warning('You are offline. Playback may be affected.');
-      EventBus.emit(EVENTS.NETWORK_OFFLINE);
     });
 
     // Visibility change
@@ -131,7 +117,7 @@ class UIManager {
   }
 
   isInitialized() {
-    return this._isInitialized;
+    return this.isInitialized;
   }
 }
 
