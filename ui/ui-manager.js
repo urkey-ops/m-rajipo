@@ -1,4 +1,4 @@
-// ui-manager.js - Coordinates all UI components (UPDATED FOR MEMORY MODE)
+// ui-manager.js - Coordinates all UI components (FIXED)
 
 import { EventBus } from '../core/events.js';
 import { EVENTS } from '../core/constants.js';
@@ -18,11 +18,11 @@ import { memoryControls } from './components/memory-controls.js';
 
 class UIManager {
   constructor() {
-    this.isInitialized = false;
+    this._initialized = false; // ✅ FIXED: Renamed from isInitialized to _initialized
   }
 
   initialize() {
-    if (this.isInitialized) {
+    if (this._initialized) {
       console.warn('UI Manager already initialized');
       return;
     }
@@ -41,12 +41,12 @@ class UIManager {
     playlistsBar.initialize();
     audioPlayer.initialize();
     quizControls.initialize();
-    memoryControls.initialize(); // NEW
+    memoryControls.initialize();
 
     // Setup global event listeners
     this.setupGlobalEvents();
 
-    this.isInitialized = true;
+    this._initialized = true;
 
     // Emit UI ready event
     EventBus.emit(EVENTS.UI_READY);
@@ -69,19 +69,6 @@ class UIManager {
       } else {
         modal.show(data.message, data.options);
       }
-    });
-
-    // FAB events (handled by main.js)
-    EventBus.on('fab:play-clicked', () => {
-      if (window.handlePlaySelected) window.handlePlaySelected();
-    });
-
-    EventBus.on('fab:quiz-next-clicked', () => {
-      if (window.handleQuizNext) window.handleQuizNext();
-    });
-
-    EventBus.on('fab:memory-clicked', () => {
-      if (window.handleMemoryStart) window.handleMemoryStart();
     });
 
     // Network status
@@ -117,7 +104,7 @@ class UIManager {
   }
 
   isInitialized() {
-    return this.isInitialized;
+    return this._initialized; // ✅ FIXED: Return the renamed property
   }
 }
 
