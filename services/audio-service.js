@@ -178,32 +178,69 @@ class AudioService {
   }
   
   // Load track
-  async loadTrack(trackNum) {
-    // Validate track number
-    const validation = validateTrackNumber(trackNum);
-    if (!validation.valid) {
-      throw new Error(validation.error);
-    }
-    
-    // Abort previous load if any
-    if (this._loadAbortController) {
-      this._loadAbortController.abort();
-    }
-    
-    this._loadAbortController = new AbortController();
-    this._currentTrack = validation.value;
-    
-    const url = this._getAudioUrl(validation.value);
-    console.log(`Loading track ${validation.value}: ${url}`);
-    
-    this._audioElement.src = url;
+  // Load track and wait for metadata
+async loadTrack(trackNum) {
+  // Validate track number
+  const validation = validateTrackNumber(trackNum);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  // Abort previous load if any
+  if (this._loadAbortController) {
+    this._loadAbortController.abort();
+  }
+
+  this._loadAbortController = new AbortController();
+  const { signal } = this._loadAbortController;
+
+  this._currentTrack = validation.value;
+
+  const url = this._getAudioUrl(validation.value);
+  console.log(`Loading track ${validation.value}: ${url}`);
+
+  const audio = this._audioElement;
+
+  // Return a promise that resolves ONLY when metadata is ready
+  await new Promise((resolve, reject) => {
+    const onLoadedMetadata = () => {
+      cleanup();
+      resolve();
+    };
+
+    const onError = () => {
+      cleanup();
+      reject(new Error('Failed to load audio metadata'));
+    };
+
+    const onAbort = () => {
+      cleanup();
+      reject(new DOMException('Audio load aborted', 'AbortError'));
+    };
+
+    const cleanup = () => {
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('error', onError);
+      signal.removeEventListener('abort', onAbort);
+    };
+
+    audio.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
+    audio.addEventListener('error', onError, { once: true });
+    signal.addEventListener('abort', onAbort, { once: true });
+
+    // Trigger load
+    audio.src = url;
+    audio.load();
+
     this._updateMediaSession(validation.value);
-    
+
     EventBus.emit(EVENTS.TRACK_CHANGED, {
       track: validation.value,
-      url: url
+      url
     });
-  }
+  });
+}
+
   
   // Play audio with retry logic
   async play() {
