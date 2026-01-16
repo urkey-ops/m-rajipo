@@ -1,5 +1,4 @@
-// memory-mode.js - COMPLETE FIXED VERSION (Validation Order Fixed)
-
+// memory-mode.js - FULL UPDATED VERSION
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -52,6 +51,9 @@ class MemoryMode {
     this._isActive = true;
     state.setMode(MODES.MEMORY);
 
+    // Ensure speed is applied fresh for Memory Mode
+    audioService.setPlaybackRate(this._settings.speed);
+
     console.log('✅ Memory mode initialized', this._settings);
   }
 
@@ -73,6 +75,33 @@ class MemoryMode {
     console.log('✅ Memory mode cleaned up');
   }
 
+  async _seekAndPlay(time) {
+    const audio = audioService.getAudioElement();
+    if (!audio) return;
+
+    return new Promise((resolve, reject) => {
+      const onSeeked = () => {
+        cleanup();
+        audioService.play().then(resolve).catch(reject);
+      };
+
+      const onError = (e) => {
+        cleanup();
+        reject(e);
+      };
+
+      const cleanup = () => {
+        audio.removeEventListener('seeked', onSeeked);
+        audio.removeEventListener('error', onError);
+      };
+
+      audio.addEventListener('seeked', onSeeked, { once: true });
+      audio.addEventListener('error', onError, { once: true });
+
+      audioService.seek(time);
+    });
+  }
+
   async startLoop() {
     if (!this._isActive) {
       throw new Error('Memory mode not initialized');
@@ -88,30 +117,28 @@ class MemoryMode {
     }
 
     this._currentTrack = selectedTracks[0];
-    
+
     console.log(`🧠 Starting memory loop for track ${this._currentTrack}`);
     console.log(`Segment: ${this._formatTime(this._settings.startTime)} - ${this._formatTime(this._settings.endTime)}`);
     console.log(`Gap: ${this._settings.gapDuration}s, Speed: ${this._settings.speed}×`);
 
     try {
-      // ✅ FIX: Load track FIRST to get duration
       await audioService.loadTrack(this._currentTrack);
-      
+
       this._trackDuration = audioService.getDuration();
       console.log(`Track duration: ${this._trackDuration}s`);
-      
-      // ✅ FIX: Clamp end time to track duration BEFORE validation
+
       if (this._settings.endTime > this._trackDuration) {
         this._settings.endTime = Math.floor(this._trackDuration);
         state.set('memoryMode.endTime', this._settings.endTime);
         console.log(`End time clamped to track duration: ${this._settings.endTime}s`);
       }
 
-      // ✅ FIX: NOW validate segment (after duration is known)
       if (this._settings.startTime >= this._settings.endTime) {
         throw new Error(`Start time (${this._settings.startTime}s) must be less than end time (${this._settings.endTime}s)`);
       }
 
+      // Ensure memory mode speed is applied
       audioService.setPlaybackRate(this._settings.speed);
 
       this._loopCount = 0;
@@ -125,12 +152,10 @@ class MemoryMode {
         'memoryMode.loopCount': 0
       });
 
-      // Setup time update handler BEFORE playing
       this._setupTimeUpdateHandler();
 
-      // Seek to start time BEFORE playing
-      audioService.seek(this._settings.startTime);
-      await audioService.play();
+      // ✅ Start at correct segment start
+      await this._seekAndPlay(this._settings.startTime);
 
       EventBus.emit(EVENTS.MEMORY_LOOP_STARTED, {
         track: this._currentTrack,
@@ -154,19 +179,16 @@ class MemoryMode {
 
       const currentTime = audioService.getCurrentTime();
 
-      // Check if we've reached or passed the end time
       if (currentTime >= this._settings.endTime && !this._hasReachedEnd) {
         this._hasReachedEnd = true;
         this._handleSegmentEnd();
         return;
       }
 
-      // Reset flag when back before end (after seek)
       if (currentTime < this._settings.endTime - 0.2) {
         this._hasReachedEnd = false;
       }
 
-      // Emit progress
       EventBus.emit('memory:progress', {
         currentTime,
         segmentStart: this._settings.startTime,
@@ -193,9 +215,8 @@ class MemoryMode {
 
   _handleSegmentEnd() {
     this._loopCount++;
-    
-    console.log(`✅ Loop ${this._loopCount} completed`);
 
+    console.log(`✅ Loop ${this._loopCount} completed`);
     state.set('memoryMode.loopCount', this._loopCount);
 
     EventBus.emit(EVENTS.MEMORY_LOOP_COMPLETED, {
@@ -206,9 +227,9 @@ class MemoryMode {
     if (this._settings.gapDuration > 0) {
       this._startGap();
     } else {
-      // Immediately seek back and continue
-      audioService.seek(this._settings.startTime);
+      // Gap = 0 → immediately continue
       this._hasReachedEnd = false;
+      this._seekAndPlay(this._settings.startTime).catch(console.error);
     }
   }
 
@@ -236,15 +257,14 @@ class MemoryMode {
 
     console.log('▶️ Gap ended, resuming loop');
 
-    audioService.seek(this._settings.startTime);
-    audioService.play().catch(console.error);
+    this._seekAndPlay(this._settings.startTime).catch(console.error);
   }
 
   pause() {
     if (!this._isLooping) return;
 
     audioService.pause();
-    
+
     if (this._gapTimerId) {
       timerManager.stopTimer(this._gapTimerId);
       this._gapTimerId = null;
@@ -263,7 +283,7 @@ class MemoryMode {
         this._endGap();
       });
     } else {
-      audioService.play().catch(console.error);
+      this._seekAndPlay(this._settings.startTime).catch(console.error);
     }
 
     console.log('▶️ Memory loop resumed');
@@ -273,7 +293,7 @@ class MemoryMode {
     this._isLooping = false;
     this._isInGap = false;
     this._hasReachedEnd = false;
-    
+
     if (this._gapTimerId) {
       timerManager.stopTimer(this._gapTimerId);
       this._gapTimerId = null;
@@ -303,12 +323,10 @@ class MemoryMode {
     const start = Math.max(0, Math.floor(startTime));
     let end = Math.floor(endTime);
 
-    // ✅ FIX: If track is loaded, clamp to duration, otherwise allow any value
     if (this._trackDuration > 0) {
       end = Math.min(this._trackDuration, end);
     }
 
-    // ✅ FIX: Only validate if we have a valid duration
     if (this._trackDuration > 0 && start >= end) {
       throw new Error('Start time must be less than end time');
     }
@@ -380,7 +398,7 @@ class MemoryMode {
 
   validate() {
     const selectedCount = selectionManager.getCount();
-    
+
     if (selectedCount === 0) {
       return { valid: false, error: 'Please select 1 shloka for memory mode' };
     }
