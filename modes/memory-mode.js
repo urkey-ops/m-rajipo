@@ -1,4 +1,4 @@
-// memory-mode.js - PATCHED VERSION
+// memory-mode.js - READY TO DROP
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -83,7 +83,8 @@ class MemoryMode {
     const selectedTracks = selectionManager.getSelection();
     if (selectedTracks.length !== 1) throw new Error('Memory mode requires exactly 1 selected track');
 
-    this._currentTrack = selectedTracks[0];
+    // PATCH: Convert selection to number for Archive.org URL generation
+    this._currentTrack = Number(selectedTracks[0]);
     console.log(`🧠 Starting memory loop for track ${this._currentTrack}`);
 
     try {
@@ -227,7 +228,6 @@ class MemoryMode {
     console.log('🔄 Resetting memory loop');
     this.stop();
 
-    // Restore saved/default segment
     const savedSettings = storageService.load('memorySettings') || {};
     this._settings.startTime = savedSettings.startTime ?? DEFAULT_SETTINGS.MEMORY_START_TIME;
     this._settings.endTime = savedSettings.endTime ?? DEFAULT_SETTINGS.MEMORY_END_TIME;
@@ -236,7 +236,6 @@ class MemoryMode {
     this._loopCount = 0;
     state.set('memoryMode.loopCount', 0);
 
-    // Auto-restart loop with current track
     if (this._currentTrack) {
       this.startLoop().catch(console.error);
     }
@@ -257,7 +256,6 @@ class MemoryMode {
 
     EventBus.emit(EVENTS.MEMORY_SEGMENT_UPDATED, { start, end });
 
-    // Restart loop if currently looping
     if (this._isLooping) {
       this._stopLooping();
       this.startLoop().catch(console.error);
