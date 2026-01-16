@@ -1,4 +1,4 @@
-// memory-mode.js - COMPLETE FIXED VERSION
+// memory-mode.js - COMPLETE FIXED VERSION (Validation Order Fixed)
 
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
@@ -94,19 +94,22 @@ class MemoryMode {
     console.log(`Gap: ${this._settings.gapDuration}s, Speed: ${this._settings.speed}×`);
 
     try {
+      // ✅ FIX: Load track FIRST to get duration
       await audioService.loadTrack(this._currentTrack);
       
       this._trackDuration = audioService.getDuration();
+      console.log(`Track duration: ${this._trackDuration}s`);
       
-      // Clamp end time to track duration
+      // ✅ FIX: Clamp end time to track duration BEFORE validation
       if (this._settings.endTime > this._trackDuration) {
         this._settings.endTime = Math.floor(this._trackDuration);
         state.set('memoryMode.endTime', this._settings.endTime);
+        console.log(`End time clamped to track duration: ${this._settings.endTime}s`);
       }
 
-      // ✅ FIX: Validate segment is valid
+      // ✅ FIX: NOW validate segment (after duration is known)
       if (this._settings.startTime >= this._settings.endTime) {
-        throw new Error('Start time must be less than end time');
+        throw new Error(`Start time (${this._settings.startTime}s) must be less than end time (${this._settings.endTime}s)`);
       }
 
       audioService.setPlaybackRate(this._settings.speed);
@@ -122,10 +125,10 @@ class MemoryMode {
         'memoryMode.loopCount': 0
       });
 
-      // ✅ FIX: Setup time update handler BEFORE playing
+      // Setup time update handler BEFORE playing
       this._setupTimeUpdateHandler();
 
-      // ✅ FIX: Seek to start time BEFORE playing
+      // Seek to start time BEFORE playing
       audioService.seek(this._settings.startTime);
       await audioService.play();
 
@@ -143,7 +146,6 @@ class MemoryMode {
     }
   }
 
-  // ✅ FIX: Better time tracking with tighter tolerance
   _setupTimeUpdateHandler() {
     this._removeTimeUpdateHandler();
 
@@ -152,11 +154,11 @@ class MemoryMode {
 
       const currentTime = audioService.getCurrentTime();
 
-      // ✅ FIX: Check if we've reached or passed the end time
+      // Check if we've reached or passed the end time
       if (currentTime >= this._settings.endTime && !this._hasReachedEnd) {
         this._hasReachedEnd = true;
         this._handleSegmentEnd();
-        return; // Exit immediately
+        return;
       }
 
       // Reset flag when back before end (after seek)
@@ -175,7 +177,6 @@ class MemoryMode {
 
     const audioElement = audioService.getAudioElement();
     if (audioElement) {
-      // ✅ FIX: Use 'timeupdate' event for more frequent checks
       audioElement.addEventListener('timeupdate', this._timeUpdateHandler);
     }
   }
@@ -205,9 +206,9 @@ class MemoryMode {
     if (this._settings.gapDuration > 0) {
       this._startGap();
     } else {
-      // ✅ FIX: Immediately seek back and continue
+      // Immediately seek back and continue
       audioService.seek(this._settings.startTime);
-      this._hasReachedEnd = false; // Reset flag after seek
+      this._hasReachedEnd = false;
     }
   }
 
@@ -231,7 +232,7 @@ class MemoryMode {
   _endGap() {
     this._isInGap = false;
     this._gapTimerId = null;
-    this._hasReachedEnd = false; // Reset flag
+    this._hasReachedEnd = false;
 
     console.log('▶️ Gap ended, resuming loop');
 
@@ -300,9 +301,15 @@ class MemoryMode {
 
   updateSegment(startTime, endTime) {
     const start = Math.max(0, Math.floor(startTime));
-    const end = Math.min(this._trackDuration || 9999, Math.floor(endTime));
+    let end = Math.floor(endTime);
 
-    if (start >= end) {
+    // ✅ FIX: If track is loaded, clamp to duration, otherwise allow any value
+    if (this._trackDuration > 0) {
+      end = Math.min(this._trackDuration, end);
+    }
+
+    // ✅ FIX: Only validate if we have a valid duration
+    if (this._trackDuration > 0 && start >= end) {
       throw new Error('Start time must be less than end time');
     }
 
@@ -331,7 +338,9 @@ class MemoryMode {
 
   updateSpeed(speed) {
     this._settings.speed = speed;
-    audioService.setPlaybackRate(speed);
+    if (this._isLooping) {
+      audioService.setPlaybackRate(speed);
+    }
     state.set('memoryMode.speed', speed);
     this._saveSettings();
     console.log(`Speed updated: ${speed}×`);
