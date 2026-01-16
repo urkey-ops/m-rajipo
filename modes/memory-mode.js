@@ -1,4 +1,4 @@
-// memory-mode.js - FIXED VERSION (Loop counter issue)
+// memory-mode.js - COMPLETE FIXED VERSION
 
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
@@ -24,7 +24,7 @@ class MemoryMode {
     this._gapTimerId = null;
     this._trackDuration = 0;
     this._timeUpdateHandler = null;
-    this._hasReachedEnd = false; // ✅ FIX: Prevent multiple loop triggers
+    this._hasReachedEnd = false;
   }
 
   initialize() {
@@ -73,75 +73,77 @@ class MemoryMode {
     console.log('✅ Memory mode cleaned up');
   }
 
- // memory-mode.js - Line 88-98 FIXED
-
-async startLoop() {
-  if (!this._isActive) {
-    throw new Error('Memory mode not initialized');
-  }
-
-  const selectedTracks = selectionManager.getSelection();
-  if (selectedTracks.length === 0) {
-    throw new Error('No track selected');
-  }
-
-  if (selectedTracks.length > 1) {
-    throw new Error('Memory mode supports only 1 track at a time');
-  }
-
-  this._currentTrack = selectedTracks[0];
-
-  // ✅ FIX: Remove validation here - it's already validated in updateSegment()
-  // The inputs have already updated this._settings via updateSegment()
-  
-  console.log(`🧠 Starting memory loop for track ${this._currentTrack}`);
-  console.log(`Segment: ${this._formatTime(this._settings.startTime)} - ${this._formatTime(this._settings.endTime)}`);
-  console.log(`Gap: ${this._settings.gapDuration}s, Speed: ${this._settings.speed}×`);
-
-  try {
-    await audioService.loadTrack(this._currentTrack);
-    
-    this._trackDuration = audioService.getDuration();
-    
-    // Clamp end time to track duration
-    if (this._settings.endTime > this._trackDuration) {
-      this._settings.endTime = Math.floor(this._trackDuration);
-      state.set('memoryMode.endTime', this._settings.endTime);
+  async startLoop() {
+    if (!this._isActive) {
+      throw new Error('Memory mode not initialized');
     }
 
-    audioService.setPlaybackRate(this._settings.speed);
+    const selectedTracks = selectionManager.getSelection();
+    if (selectedTracks.length === 0) {
+      throw new Error('No track selected');
+    }
 
-    this._loopCount = 0;
-    this._isLooping = true;
-    this._isInGap = false;
-    this._hasReachedEnd = false;
+    if (selectedTracks.length > 1) {
+      throw new Error('Memory mode supports only 1 track at a time');
+    }
 
-    state.update({
-      'memoryMode.currentTrack': this._currentTrack,
-      'memoryMode.isLooping': true,
-      'memoryMode.loopCount': 0
-    });
+    this._currentTrack = selectedTracks[0];
+    
+    console.log(`🧠 Starting memory loop for track ${this._currentTrack}`);
+    console.log(`Segment: ${this._formatTime(this._settings.startTime)} - ${this._formatTime(this._settings.endTime)}`);
+    console.log(`Gap: ${this._settings.gapDuration}s, Speed: ${this._settings.speed}×`);
 
-    this._setupTimeUpdateHandler();
+    try {
+      await audioService.loadTrack(this._currentTrack);
+      
+      this._trackDuration = audioService.getDuration();
+      
+      // Clamp end time to track duration
+      if (this._settings.endTime > this._trackDuration) {
+        this._settings.endTime = Math.floor(this._trackDuration);
+        state.set('memoryMode.endTime', this._settings.endTime);
+      }
 
-    audioService.seek(this._settings.startTime);
-    await audioService.play();
+      // ✅ FIX: Validate segment is valid
+      if (this._settings.startTime >= this._settings.endTime) {
+        throw new Error('Start time must be less than end time');
+      }
 
-    EventBus.emit(EVENTS.MEMORY_LOOP_STARTED, {
-      track: this._currentTrack,
-      startTime: this._settings.startTime,
-      endTime: this._settings.endTime,
-      gap: this._settings.gapDuration
-    });
+      audioService.setPlaybackRate(this._settings.speed);
 
-  } catch (error) {
-    console.error('Failed to start memory loop:', error);
-    this._stopLooping();
-    throw error;
+      this._loopCount = 0;
+      this._isLooping = true;
+      this._isInGap = false;
+      this._hasReachedEnd = false;
+
+      state.update({
+        'memoryMode.currentTrack': this._currentTrack,
+        'memoryMode.isLooping': true,
+        'memoryMode.loopCount': 0
+      });
+
+      // ✅ FIX: Setup time update handler BEFORE playing
+      this._setupTimeUpdateHandler();
+
+      // ✅ FIX: Seek to start time BEFORE playing
+      audioService.seek(this._settings.startTime);
+      await audioService.play();
+
+      EventBus.emit(EVENTS.MEMORY_LOOP_STARTED, {
+        track: this._currentTrack,
+        startTime: this._settings.startTime,
+        endTime: this._settings.endTime,
+        gap: this._settings.gapDuration
+      });
+
+    } catch (error) {
+      console.error('Failed to start memory loop:', error);
+      this._stopLooping();
+      throw error;
+    }
   }
-}
 
-
+  // ✅ FIX: Better time tracking with tighter tolerance
   _setupTimeUpdateHandler() {
     this._removeTimeUpdateHandler();
 
@@ -150,17 +152,19 @@ async startLoop() {
 
       const currentTime = audioService.getCurrentTime();
 
-      // ✅ FIX: Only trigger once when crossing end threshold
+      // ✅ FIX: Check if we've reached or passed the end time
       if (currentTime >= this._settings.endTime && !this._hasReachedEnd) {
         this._hasReachedEnd = true;
         this._handleSegmentEnd();
+        return; // Exit immediately
       }
 
       // Reset flag when back before end (after seek)
-      if (currentTime < this._settings.endTime - 0.5) {
+      if (currentTime < this._settings.endTime - 0.2) {
         this._hasReachedEnd = false;
       }
 
+      // Emit progress
       EventBus.emit('memory:progress', {
         currentTime,
         segmentStart: this._settings.startTime,
@@ -171,6 +175,7 @@ async startLoop() {
 
     const audioElement = audioService.getAudioElement();
     if (audioElement) {
+      // ✅ FIX: Use 'timeupdate' event for more frequent checks
       audioElement.addEventListener('timeupdate', this._timeUpdateHandler);
     }
   }
@@ -188,7 +193,7 @@ async startLoop() {
   _handleSegmentEnd() {
     this._loopCount++;
     
-    console.log(`Loop ${this._loopCount} completed`);
+    console.log(`✅ Loop ${this._loopCount} completed`);
 
     state.set('memoryMode.loopCount', this._loopCount);
 
@@ -200,8 +205,9 @@ async startLoop() {
     if (this._settings.gapDuration > 0) {
       this._startGap();
     } else {
+      // ✅ FIX: Immediately seek back and continue
       audioService.seek(this._settings.startTime);
-      // Flag will reset on next timeupdate when currentTime < endTime
+      this._hasReachedEnd = false; // Reset flag after seek
     }
   }
 
@@ -225,6 +231,7 @@ async startLoop() {
   _endGap() {
     this._isInGap = false;
     this._gapTimerId = null;
+    this._hasReachedEnd = false; // Reset flag
 
     console.log('▶️ Gap ended, resuming loop');
 
@@ -264,7 +271,7 @@ async startLoop() {
   _stopLooping() {
     this._isLooping = false;
     this._isInGap = false;
-    this._hasReachedEnd = false; // ✅ FIX: Reset flag
+    this._hasReachedEnd = false;
     
     if (this._gapTimerId) {
       timerManager.stopTimer(this._gapTimerId);
