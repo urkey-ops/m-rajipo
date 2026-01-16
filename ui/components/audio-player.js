@@ -24,11 +24,11 @@ class AudioPlayer {
   _setupEventListeners() {
     // Listen to user interactions with audio element
     this._audioElement.addEventListener('play', () => {
-      console.log('User clicked play on audio element');
+      console.log('Audio Play Event');
     });
     
     this._audioElement.addEventListener('pause', () => {
-      console.log('User clicked pause on audio element');
+      console.log('Audio Pause Event');
     });
     
     this._audioElement.addEventListener('volumechange', () => {
