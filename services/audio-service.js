@@ -3,70 +3,57 @@
 import { EventBus } from '../core/events.js';
 import { EVENTS } from '../core/constants.js';
 
+// audio-service.js - PATCHEd FOR AUTOMATIC TRACK URLS AND CORS
+
 class AudioService {
   constructor() {
     this.audio = null;
-    this.currentTrackNumber = null;
-    this.playbackRate = 1.0;
+    this.currentTrack = null;
   }
 
   initialize(audioElement) {
     if (!audioElement) throw new Error('Audio element not found');
     this.audio = audioElement;
-    this.audio.preload = 'auto';
-    this.audio.crossOrigin = 'anonymous';
-    this.setPlaybackRate(this.playbackRate);
+    this.audio.crossOrigin = "anonymous"; // ✅ CORS
+    this.audio.addEventListener('error', (e) => this._onError(e));
     console.log('✅ AudioService initialized');
   }
 
-  getAudioElement() {
-    return this.audio;
+  _onError(e) {
+    console.error('Audio error:', e);
+    // Optionally emit an event to notify UI
   }
 
-  async loadTrack(trackNumber) {
-    if (!this.audio) throw new Error('Audio not initialized');
-    if (!trackNumber) throw new Error('Invalid track number');
+  // ✅ Automatically generates Archive.org URL for a given track number
+  getTrackUrl(trackNum) {
+    const padded = String(trackNum).padStart(3, '0'); // 1 -> 001
+    return `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${padded}.mp3`;
+  }
 
-    this.currentTrackNumber = trackNumber;
-    const url = this._getTrackUrl(trackNumber);
+  async loadTrack(trackNum) {
+    if (!this.audio) throw new Error('AudioService not initialized');
+    this.currentTrack = trackNum;
+
+    const url = this.getTrackUrl(trackNum);
+    this.audio.src = url;
 
     return new Promise((resolve, reject) => {
-      const onCanPlay = () => {
-        cleanup();
+      const onLoaded = () => {
+        this.audio.removeEventListener('canplay', onLoaded);
         resolve();
       };
-      const onError = (e) => {
-        cleanup();
-        console.error('Audio error:', e);
-        reject(e);
-      };
-      const cleanup = () => {
-        this.audio.removeEventListener('canplay', onCanPlay);
+      const onError = (err) => {
         this.audio.removeEventListener('error', onError);
+        reject(err);
       };
-
-      this.audio.addEventListener('canplay', onCanPlay, { once: true });
-      this.audio.addEventListener('error', onError, { once: true });
-      this.audio.src = url;
+      this.audio.addEventListener('canplay', onLoaded);
+      this.audio.addEventListener('error', onError);
       this.audio.load();
     });
   }
 
-  _getTrackUrl(trackNumber) {
-    if (!trackNumber || trackNumber < 1 || trackNumber > 315) {
-      throw new Error(`Invalid track number: ${trackNumber}`);
-    }
-
-    const baseUrl = 'https://ia601703.us.archive.org/35/items/satsang_diksha/';
-    const prefix = 'sanskrit_';
-    const ext = '.mp3';
-    const numStr = trackNumber.toString().padStart(3, '0');
-
-    return `${baseUrl}${prefix}${numStr}${ext}`;
-  }
-
   play() {
-    if (!this.audio) return;
+    if (!this.audio) return Promise.reject('Audio not initialized');
     return this.audio.play();
   }
 
@@ -86,6 +73,11 @@ class AudioService {
     this.audio.currentTime = time;
   }
 
+  setPlaybackRate(rate) {
+    if (!this.audio) return;
+    this.audio.playbackRate = rate;
+  }
+
   getCurrentTime() {
     return this.audio ? this.audio.currentTime : 0;
   }
@@ -98,9 +90,8 @@ class AudioService {
     return this.audio && !this.audio.paused && !this.audio.ended;
   }
 
-  setPlaybackRate(rate) {
-    this.playbackRate = rate;
-    if (this.audio) this.audio.playbackRate = rate;
+  getAudioElement() {
+    return this.audio;
   }
 }
 
