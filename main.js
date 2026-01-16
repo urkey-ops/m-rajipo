@@ -1,9 +1,9 @@
-// main.js - FIXED VERSION (Add $ import)
+// main.js - COMPLETE FIXED VERSION
 
 import { EventBus } from './core/events.js';
 import { state } from './core/state.js';
-import { EVENTS } from './core/constants.js';
-import { $ } from './utils/dom-utils.js'; // ✅ FIX: Add this import
+import { EVENTS, MODES } from './core/constants.js'; // ✅ FIXED: Added MODES import
+import { $ } from './utils/dom-utils.js';
 
 // Services
 import { audioService } from './services/audio-service.js';
@@ -26,7 +26,7 @@ import { toast } from './ui/components/toast.js';
 
 class Application {
   constructor() {
-    this._initialized = false; // ✅ FIX: Use underscore prefix
+    this._initialized = false;
   }
 
   async initialize() {
@@ -116,65 +116,63 @@ class Application {
     console.log('✅ Event handlers setup complete');
   }
 
-// main.js - handlePlaySelected - Lines 148-180 FIXED
+  // ✅ FIXED: Complete method with MODES import
+  async handlePlaySelected() {
+    try {
+      const currentMode = state.get('currentMode');
+      
+      // Ensure we're in regular mode
+      if (currentMode !== MODES.REGULAR) {
+        toast.warning('Switch to Regular mode to use this feature');
+        return;
+      }
 
-async handlePlaySelected() {
-  try {
-    const currentMode = state.get('currentMode');
-    
-    // ✅ FIX: Ensure we're in regular mode
-    if (currentMode !== MODES.REGULAR) {
-      toast.warning('Switch to Regular mode to use this feature');
-      return;
+      const validation = regularMode.validate();
+      if (!validation.valid) {
+        toast.error(validation.error);
+        return;
+      }
+
+      const selectedTracks = selectionManager.getSelection();
+      
+      if (selectedTracks.length === 0) {
+        toast.info('Please select at least one shloka to play.');
+        return;
+      }
+
+      // Get values safely
+      const repeatCountEl = $('#repeatCount');
+      const shuffleEl = $('#shuffle');
+      const repeatPlaylistEl = $('#repeatPlaylist');
+
+      const repeatCount = repeatCountEl ? parseInt(repeatCountEl.value) || 1 : 1;
+      const shuffle = shuffleEl ? shuffleEl.checked : false;
+      const repeatPlaylist = repeatPlaylistEl ? repeatPlaylistEl.checked : false;
+      const speed = regularMode.getSettings().speed || 1.0;
+
+      console.log('Starting playback with settings:', {
+        tracks: selectedTracks,
+        repeatCount,
+        shuffle,
+        repeatPlaylist,
+        speed
+      });
+
+      await playbackManager.startPlayback(selectedTracks, {
+        startIndex: 0,
+        repeatEach: repeatCount,
+        repeatPlaylist: repeatPlaylist,
+        shuffle: shuffle,
+        speed: speed
+      });
+
+      toast.success(`Playing ${selectedTracks.length} shloka${selectedTracks.length > 1 ? 's' : ''}`);
+
+    } catch (error) {
+      console.error('Failed to start playback:', error);
+      toast.error(error.message || 'Failed to start playback');
     }
-
-    const validation = regularMode.validate();
-    if (!validation.valid) {
-      toast.error(validation.error);
-      return;
-    }
-
-    const selectedTracks = selectionManager.getSelection();
-    
-    if (selectedTracks.length === 0) {
-      toast.info('Please select at least one shloka to play.');
-      return;
-    }
-
-    // ✅ FIX: Get values safely
-    const repeatCountEl = $('#repeatCount');
-    const shuffleEl = $('#shuffle');
-    const repeatPlaylistEl = $('#repeatPlaylist');
-
-    const repeatCount = repeatCountEl ? parseInt(repeatCountEl.value) || 1 : 1;
-    const shuffle = shuffleEl ? shuffleEl.checked : false;
-    const repeatPlaylist = repeatPlaylistEl ? repeatPlaylistEl.checked : false;
-    const speed = regularMode.getSettings().speed || 1.0;
-
-    console.log('Starting playback with settings:', {
-      tracks: selectedTracks,
-      repeatCount,
-      shuffle,
-      repeatPlaylist,
-      speed
-    });
-
-    await playbackManager.startPlayback(selectedTracks, {
-      startIndex: 0,
-      repeatEach: repeatCount,
-      repeatPlaylist: repeatPlaylist,
-      shuffle: shuffle,
-      speed: speed
-    });
-
-    toast.success(`Playing ${selectedTracks.length} shloka${selectedTracks.length > 1 ? 's' : ''}`);
-
-  } catch (error) {
-    console.error('Failed to start playback:', error);
-    toast.error(error.message || 'Failed to start playback');
   }
-}
-
 
   async handleQuizNext() {
     try {
