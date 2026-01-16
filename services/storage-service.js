@@ -1,7 +1,8 @@
-// storage-service.js - All localStorage operations
+// storage-service.js - ENHANCED VERSION with better error handling
 
 import { STORAGE_KEYS, MAX_RECENT_ITEMS } from '../core/constants.js';
-import { errorHandler } from '../utils/error-handler.js';
+import { EventBus } from '../core/events.js';
+import { EVENTS } from '../core/constants.js';
 import { validatePlaylistName, validatePlaylist } from '../utils/validation.js';
 
 class StorageService {
@@ -9,7 +10,6 @@ class StorageService {
     this.available = this._checkAvailability();
   }
 
-  // Check if localStorage is available
   _checkAvailability() {
     try {
       const test = '__storage_test__';
@@ -26,21 +26,30 @@ class StorageService {
     return this.available;
   }
 
-  // Generic save
+  // ✅ ENHANCED: Returns result object instead of boolean
   save(key, value) {
-    if (!this.available) return false;
+    if (!this.available) {
+      return { success: false, error: 'Storage not available' };
+    }
 
     try {
       const serialized = JSON.stringify(value);
       localStorage.setItem(key, serialized);
-      return true;
+      return { success: true };
     } catch (error) {
-      errorHandler.handle(error, { type: 'storage', operation: 'save', key });
-      return false;
+      console.error('Storage save error:', error);
+      
+      if (error.name === 'QuotaExceededError') {
+        EventBus.emit(EVENTS.TOAST_SHOW, {
+          message: 'Storage full. Please delete some playlists.',
+          type: 'error'
+        });
+      }
+      
+      return { success: false, error: error.message };
     }
   }
 
-  // Generic load
   load(key, defaultValue = null) {
     if (!this.available) return defaultValue;
 
@@ -48,47 +57,45 @@ class StorageService {
       const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
-      errorHandler.handle(error, { type: 'storage', operation: 'load', key });
+      console.error('Storage load error:', error);
       return defaultValue;
     }
   }
 
-  // Generic remove
   remove(key) {
-    if (!this.available) return false;
+    if (!this.available) {
+      return { success: false, error: 'Storage not available' };
+    }
 
     try {
       localStorage.removeItem(key);
-      return true;
+      return { success: true };
     } catch (error) {
-      errorHandler.handle(error, { type: 'storage', operation: 'remove', key });
-      return false;
+      console.error('Storage remove error:', error);
+      return { success: false, error: error.message };
     }
   }
 
-  // Clear all storage
   clear() {
-    if (!this.available) return false;
+    if (!this.available) {
+      return { success: false, error: 'Storage not available' };
+    }
 
     try {
       localStorage.clear();
-      return true;
+      return { success: true };
     } catch (error) {
-      errorHandler.handle(error, { type: 'storage', operation: 'clear' });
-      return false;
+      console.error('Storage clear error:', error);
+      return { success: false, error: error.message };
     }
   }
 
-  // Playlist Operations
-
   savePlaylist(name, tracks) {
-    // Validate name
     const nameValidation = validatePlaylistName(name);
     if (!nameValidation.valid) {
       throw new Error(nameValidation.error);
     }
 
-    // Validate tracks
     const tracksValidation = validatePlaylist(tracks);
     if (!tracksValidation.valid) {
       throw new Error(tracksValidation.error);
@@ -96,16 +103,15 @@ class StorageService {
 
     const playlists = this.getPlaylists();
 
-    // Check if playlist exists
     if (playlists[nameValidation.value]) {
       throw new Error(`Playlist "${nameValidation.value}" already exists. Please choose a different name or delete the existing playlist first.`);
     }
 
     playlists[nameValidation.value] = tracksValidation.value;
 
-    const success = this.save(STORAGE_KEYS.PLAYLISTS, playlists);
-    if (!success) {
-      throw new Error('Failed to save playlist');
+    const result = this.save(STORAGE_KEYS.PLAYLISTS, playlists);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save playlist');
     }
 
     return nameValidation.value;
@@ -125,9 +131,9 @@ class StorageService {
 
     delete playlists[name];
 
-    const success = this.save(STORAGE_KEYS.PLAYLISTS, playlists);
-    if (!success) {
-      throw new Error('Failed to delete playlist');
+    const result = this.save(STORAGE_KEYS.PLAYLISTS, playlists);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to delete playlist');
     }
 
     return true;
@@ -146,21 +152,17 @@ class StorageService {
     return Object.keys(this.getPlaylists()).length;
   }
 
-  // History Operations
-
   saveToHistory(tracks) {
     if (!tracks || tracks.length === 0) return false;
 
     const history = this.getHistory();
     const trackString = tracks.join(',');
 
-    // Remove if already exists
     const filtered = history.filter(h => h !== trackString);
-
-    // Add to front
     const updated = [trackString, ...filtered.slice(0, MAX_RECENT_ITEMS - 1)];
 
-    return this.save(STORAGE_KEYS.RECENT, updated);
+    const result = this.save(STORAGE_KEYS.RECENT, updated);
+    return result.success;
   }
 
   getHistory() {
@@ -168,36 +170,32 @@ class StorageService {
   }
 
   clearHistory() {
-    return this.remove(STORAGE_KEYS.RECENT);
+    const result = this.remove(STORAGE_KEYS.RECENT);
+    return result.success;
   }
 
   getHistoryCount() {
     return this.getHistory().length;
   }
 
-  // Settings Operations
-
   saveSettings(settings) {
-    return this.save(STORAGE_KEYS.QUIZ_SETTINGS, settings);
+    const result = this.save(STORAGE_KEYS.QUIZ_SETTINGS, settings);
+    return result.success;
   }
 
   loadSettings() {
     return this.load(STORAGE_KEYS.QUIZ_SETTINGS, null);
   }
 
-  // Last Selection
-
   saveLastSelection(tracks) {
-    return this.save(STORAGE_KEYS.LAST_SELECTION, tracks);
+    const result = this.save(STORAGE_KEYS.LAST_SELECTION, tracks);
+    return result.success;
   }
 
   loadLastSelection() {
     return this.load(STORAGE_KEYS.LAST_SELECTION, []);
   }
 
-  // Utilities
-
-  // Get storage usage estimate
   getStorageSize() {
     if (!this.available) return 0;
 
@@ -210,11 +208,9 @@ class StorageService {
     return total;
   }
 
-  // Get storage size in KB
   getStorageSizeKB() {
     return (this.getStorageSize() / 1024).toFixed(2);
   }
 }
 
-// Export singleton
 export const storageService = new StorageService();
