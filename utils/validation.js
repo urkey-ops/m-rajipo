@@ -1,4 +1,5 @@
-// validation.js - Input validation utilities
+// validation.js - ENHANCED VERSION with better sanitization
+
 import { TOTAL_TRACKS, DEFAULT_SETTINGS } from '../core/constants.js';
 
 export function validateTrackNumber(num) {
@@ -111,10 +112,16 @@ export function validateQuizDelay(delay) {
   return { valid: true, value: parsed };
 }
 
+// ✅ ENHANCED: Better input sanitization
 export function sanitizeInput(input) {
   if (typeof input !== 'string') return '';
+  
   return input
-    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/<[^>]*>/g, '')
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
