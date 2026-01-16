@@ -1,4 +1,4 @@
-// selection-manager.js - COMPLETE FIXED VERSION
+// selection-manager.js - ENHANCED VERSION
 
 import { EventBus } from '../core/events.js';
 import { EVENTS, MODES } from '../core/constants.js';
@@ -11,8 +11,9 @@ class SelectionManager {
     this._sourceData = null;
   }
 
-  // Select single track
-  select(trackNum, source = 'manual') {
+  // ✅ ENHANCED: Select with options parameter
+  select(trackNum, options = {}) {
+    const { silent = false, source = 'manual' } = options;
     const currentMode = state.get('currentMode');
     
     // Memory mode: only allow single selection
@@ -22,7 +23,9 @@ class SelectionManager {
       this._source = source;
       this._sourceData = null;
       
-      this._emitChange();
+      if (!silent) {
+        this._emitChange();
+      }
       console.log(`Selected track ${trackNum} (Memory Mode - single only)`);
       return;
     }
@@ -37,12 +40,15 @@ class SelectionManager {
     this._source = source;
     this._sourceData = null;
     
-    this._emitChange();
+    if (!silent) {
+      this._emitChange();
+    }
     console.log(`Selected tracks: ${Array.from(this._selectedTracks).join(', ')}`);
   }
 
-  // ✅ FIX: Add deselect method
-  deselect(trackNum) {
+  // Deselect method
+  deselect(trackNum, options = {}) {
+    const { silent = false } = options;
     const currentMode = state.get('currentMode');
     
     // In memory mode, deselecting means clearing all
@@ -53,7 +59,9 @@ class SelectionManager {
       this._selectedTracks.delete(trackNum);
     }
     
-    this._emitChange();
+    if (!silent) {
+      this._emitChange();
+    }
     console.log(`Deselected track ${trackNum}`);
   }
 
@@ -197,8 +205,7 @@ class SelectionManager {
       tracks,
       count,
       source: this._source,
-      sourceData: this._sourceData,
-      shouldSyncUI: true
+      sourceData: this._sourceData
     });
 
     // Update state
