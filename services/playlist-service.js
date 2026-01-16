@@ -1,4 +1,5 @@
-// playlist-service.js - Playlist operations and utilities
+// playlist-service.js - COMPLETE FIXED VERSION
+
 import { TOTAL_TRACKS } from '../core/constants.js';
 import { shuffleArray, range, uniqueSorted } from '../utils/array-utils.js';
 import { validatePlaylist, validateRange } from '../utils/validation.js';
@@ -33,24 +34,28 @@ class PlaylistService {
     return range(validation.value.start, validation.value.end);
   }
   
-  // Generate group playlists (groups of 10)
+  // ✅ FIXED: Generate group playlists with number property
   getGroups() {
     const groups = [];
+    let groupNumber = 1;
+    
     for (let i = 1; i <= TOTAL_TRACKS; i += 10) {
       const end = Math.min(i + 9, TOTAL_TRACKS);
       groups.push({
+        number: groupNumber,  // ✅ FIXED: Added number property
         start: i,
         end: end,
         tracks: range(i, end)
       });
+      groupNumber++;
     }
     return groups;
   }
   
-  // Get specific group
-  getGroup(groupIndex) {
+  // Get specific group by number (1-based)
+  getGroup(groupNumber) {
     const groups = this.getGroups();
-    return groups[groupIndex] || null;
+    return groups.find(g => g.number === groupNumber) || null;
   }
   
   // Get next track in playlist
