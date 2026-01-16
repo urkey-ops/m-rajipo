@@ -1,4 +1,4 @@
-// memory-mode.js - FULL UPDATED VERSION
+// memory-mode.js - PATCHED VERSION
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -27,17 +27,10 @@ class MemoryMode {
   }
 
   initialize() {
-    if (this._isActive) {
-      console.warn('Memory mode already active');
-      return;
-    }
-
-    console.log('🧠 Initializing Memory Mode');
+    if (this._isActive) return;
 
     const savedSettings = storageService.load('memorySettings');
-    if (savedSettings) {
-      this._settings = { ...this._settings, ...savedSettings };
-    }
+    if (savedSettings) this._settings = { ...this._settings, ...savedSettings };
 
     state.update({
       'memoryMode.startTime': this._settings.startTime,
@@ -50,8 +43,6 @@ class MemoryMode {
 
     this._isActive = true;
     state.setMode(MODES.MEMORY);
-
-    // Ensure speed is applied fresh for Memory Mode
     audioService.setPlaybackRate(this._settings.speed);
 
     console.log('✅ Memory mode initialized', this._settings);
@@ -59,14 +50,10 @@ class MemoryMode {
 
   cleanup() {
     if (!this._isActive) return;
-    console.log('🧹 Cleaning up Memory Mode');
 
     this._stopLooping();
     this._removeTimeUpdateHandler();
-
-    if (audioService.isPlaying()) {
-      audioService.stop();
-    }
+    if (audioService.isPlaying()) audioService.stop();
 
     this._currentTrack = null;
     this._isActive = false;
@@ -80,65 +67,38 @@ class MemoryMode {
     if (!audio) return;
 
     return new Promise((resolve, reject) => {
-      const onSeeked = () => {
-        cleanup();
-        audioService.play().then(resolve).catch(reject);
-      };
-
-      const onError = (e) => {
-        cleanup();
-        reject(e);
-      };
-
-      const cleanup = () => {
-        audio.removeEventListener('seeked', onSeeked);
-        audio.removeEventListener('error', onError);
-      };
+      const onSeeked = () => { cleanup(); audioService.play().then(resolve).catch(reject); };
+      const onError = (e) => { cleanup(); reject(e); };
+      const cleanup = () => { audio.removeEventListener('seeked', onSeeked); audio.removeEventListener('error', onError); };
 
       audio.addEventListener('seeked', onSeeked, { once: true });
       audio.addEventListener('error', onError, { once: true });
-
       audioService.seek(time);
     });
   }
 
   async startLoop() {
-    if (!this._isActive) {
-      throw new Error('Memory mode not initialized');
-    }
+    if (!this._isActive) throw new Error('Memory mode not initialized');
 
     const selectedTracks = selectionManager.getSelection();
-    if (selectedTracks.length === 0) {
-      throw new Error('No track selected');
-    }
-
-    if (selectedTracks.length > 1) {
-      throw new Error('Memory mode supports only 1 track at a time');
-    }
+    if (selectedTracks.length !== 1) throw new Error('Memory mode requires exactly 1 selected track');
 
     this._currentTrack = selectedTracks[0];
-
     console.log(`🧠 Starting memory loop for track ${this._currentTrack}`);
-    console.log(`Segment: ${this._formatTime(this._settings.startTime)} - ${this._formatTime(this._settings.endTime)}`);
-    console.log(`Gap: ${this._settings.gapDuration}s, Speed: ${this._settings.speed}×`);
 
     try {
       await audioService.loadTrack(this._currentTrack);
 
       this._trackDuration = audioService.getDuration();
-      console.log(`Track duration: ${this._trackDuration}s`);
-
+      // Clamp endTime to track duration
       if (this._settings.endTime > this._trackDuration) {
         this._settings.endTime = Math.floor(this._trackDuration);
         state.set('memoryMode.endTime', this._settings.endTime);
-        console.log(`End time clamped to track duration: ${this._settings.endTime}s`);
       }
 
-      if (this._settings.startTime >= this._settings.endTime) {
-        throw new Error(`Start time (${this._settings.startTime}s) must be less than end time (${this._settings.endTime}s)`);
-      }
+      // Ensure start < end
+      if (this._settings.startTime >= this._settings.endTime) this._settings.startTime = Math.max(0, this._settings.endTime - 1);
 
-      // Ensure memory mode speed is applied
       audioService.setPlaybackRate(this._settings.speed);
 
       this._loopCount = 0;
@@ -154,7 +114,7 @@ class MemoryMode {
 
       this._setupTimeUpdateHandler();
 
-      // ✅ Start at correct segment start
+      // Start at correct segment
       await this._seekAndPlay(this._settings.startTime);
 
       EventBus.emit(EVENTS.MEMORY_LOOP_STARTED, {
@@ -173,19 +133,14 @@ class MemoryMode {
 
   _setupTimeUpdateHandler() {
     this._removeTimeUpdateHandler();
-
     this._timeUpdateHandler = () => {
       if (!this._isLooping || this._isInGap) return;
-
       const currentTime = audioService.getCurrentTime();
 
       if (currentTime >= this._settings.endTime && !this._hasReachedEnd) {
         this._hasReachedEnd = true;
         this._handleSegmentEnd();
-        return;
-      }
-
-      if (currentTime < this._settings.endTime - 0.2) {
+      } else if (currentTime < this._settings.endTime - 0.2) {
         this._hasReachedEnd = false;
       }
 
@@ -197,37 +152,26 @@ class MemoryMode {
       });
     };
 
-    const audioElement = audioService.getAudioElement();
-    if (audioElement) {
-      audioElement.addEventListener('timeupdate', this._timeUpdateHandler);
-    }
+    const audio = audioService.getAudioElement();
+    if (audio) audio.addEventListener('timeupdate', this._timeUpdateHandler);
   }
 
   _removeTimeUpdateHandler() {
     if (this._timeUpdateHandler) {
-      const audioElement = audioService.getAudioElement();
-      if (audioElement) {
-        audioElement.removeEventListener('timeupdate', this._timeUpdateHandler);
-      }
+      const audio = audioService.getAudioElement();
+      if (audio) audio.removeEventListener('timeupdate', this._timeUpdateHandler);
       this._timeUpdateHandler = null;
     }
   }
 
   _handleSegmentEnd() {
     this._loopCount++;
-
-    console.log(`✅ Loop ${this._loopCount} completed`);
     state.set('memoryMode.loopCount', this._loopCount);
-
-    EventBus.emit(EVENTS.MEMORY_LOOP_COMPLETED, {
-      loopCount: this._loopCount,
-      track: this._currentTrack
-    });
+    EventBus.emit(EVENTS.MEMORY_LOOP_COMPLETED, { loopCount: this._loopCount, track: this._currentTrack });
 
     if (this._settings.gapDuration > 0) {
       this._startGap();
     } else {
-      // Gap = 0 → immediately continue
       this._hasReachedEnd = false;
       this._seekAndPlay(this._settings.startTime).catch(console.error);
     }
@@ -236,78 +180,45 @@ class MemoryMode {
   _startGap() {
     audioService.pause();
     this._isInGap = true;
-
-    console.log(`⏸️ Gap started: ${this._settings.gapDuration}s`);
-
-    EventBus.emit(EVENTS.MEMORY_GAP_STARTED, {
-      duration: this._settings.gapDuration
-    });
-
     const gapMs = this._settings.gapDuration * TIMING.MS_PER_SECOND;
-
-    this._gapTimerId = timerManager.startDelay(gapMs, () => {
-      this._endGap();
-    });
+    this._gapTimerId = timerManager.startDelay(gapMs, () => this._endGap());
   }
 
   _endGap() {
     this._isInGap = false;
     this._gapTimerId = null;
     this._hasReachedEnd = false;
-
-    console.log('▶️ Gap ended, resuming loop');
-
     this._seekAndPlay(this._settings.startTime).catch(console.error);
   }
 
   pause() {
     if (!this._isLooping) return;
-
     audioService.pause();
-
-    if (this._gapTimerId) {
-      timerManager.stopTimer(this._gapTimerId);
-      this._gapTimerId = null;
-    }
-
-    console.log('⏸️ Memory loop paused');
+    if (this._gapTimerId) timerManager.stopTimer(this._gapTimerId);
+    this._gapTimerId = null;
   }
 
   resume() {
     if (!this._isLooping) return;
-
     if (this._isInGap) {
-      const remainingGap = this._settings.gapDuration;
-      const gapMs = remainingGap * TIMING.MS_PER_SECOND;
-      this._gapTimerId = timerManager.startDelay(gapMs, () => {
-        this._endGap();
-      });
+      const gapMs = this._settings.gapDuration * TIMING.MS_PER_SECOND;
+      this._gapTimerId = timerManager.startDelay(gapMs, () => this._endGap());
     } else {
       this._seekAndPlay(this._settings.startTime).catch(console.error);
     }
-
-    console.log('▶️ Memory loop resumed');
   }
 
   _stopLooping() {
     this._isLooping = false;
     this._isInGap = false;
     this._hasReachedEnd = false;
-
-    if (this._gapTimerId) {
-      timerManager.stopTimer(this._gapTimerId);
-      this._gapTimerId = null;
-    }
-
+    if (this._gapTimerId) timerManager.stopTimer(this._gapTimerId);
+    this._gapTimerId = null;
     this._removeTimeUpdateHandler();
-
-    state.update({
-      'memoryMode.isLooping': false
-    });
+    state.update({ 'memoryMode.isLooping': false });
   }
 
   stop() {
-    console.log('⏹️ Stopping memory loop');
     this._stopLooping();
     audioService.stop();
   }
@@ -315,98 +226,60 @@ class MemoryMode {
   reset() {
     console.log('🔄 Resetting memory loop');
     this.stop();
+
+    // Restore saved/default segment
+    const savedSettings = storageService.load('memorySettings') || {};
+    this._settings.startTime = savedSettings.startTime ?? DEFAULT_SETTINGS.MEMORY_START_TIME;
+    this._settings.endTime = savedSettings.endTime ?? DEFAULT_SETTINGS.MEMORY_END_TIME;
+    state.update({ 'memoryMode.startTime': this._settings.startTime, 'memoryMode.endTime': this._settings.endTime });
+
     this._loopCount = 0;
     state.set('memoryMode.loopCount', 0);
+
+    // Auto-restart loop with current track
+    if (this._currentTrack) {
+      this.startLoop().catch(console.error);
+    }
   }
 
   updateSegment(startTime, endTime) {
+    if (!this._currentTrack) return;
+
     const start = Math.max(0, Math.floor(startTime));
     let end = Math.floor(endTime);
-
-    if (this._trackDuration > 0) {
-      end = Math.min(this._trackDuration, end);
-    }
-
-    if (this._trackDuration > 0 && start >= end) {
-      throw new Error('Start time must be less than end time');
-    }
+    if (this._trackDuration > 0) end = Math.min(this._trackDuration, end);
+    if (start >= end) throw new Error('Start time must be less than end time');
 
     this._settings.startTime = start;
     this._settings.endTime = end;
-
-    state.update({
-      'memoryMode.startTime': start,
-      'memoryMode.endTime': end
-    });
-
+    state.update({ 'memoryMode.startTime': start, 'memoryMode.endTime': end });
     this._saveSettings();
 
     EventBus.emit(EVENTS.MEMORY_SEGMENT_UPDATED, { start, end });
 
+    // Restart loop if currently looping
+    if (this._isLooping) {
+      this._stopLooping();
+      this.startLoop().catch(console.error);
+    }
+
     console.log(`Segment updated: ${this._formatTime(start)} - ${this._formatTime(end)}`);
   }
 
-  updateGap(seconds) {
-    const gap = Math.max(DEFAULT_SETTINGS.MIN_MEMORY_GAP, Math.min(DEFAULT_SETTINGS.MAX_MEMORY_GAP, seconds));
-    this._settings.gapDuration = gap;
-    state.set('memoryMode.gapDuration', gap);
-    this._saveSettings();
-    console.log(`Gap updated: ${gap}s`);
-  }
+  updateGap(seconds) { this._settings.gapDuration = seconds; state.set('memoryMode.gapDuration', seconds); this._saveSettings(); }
+  updateSpeed(speed) { this._settings.speed = speed; audioService.setPlaybackRate(speed); state.set('memoryMode.speed', speed); this._saveSettings(); }
+  _saveSettings() { storageService.save('memorySettings', this._settings); }
+  _formatTime(seconds) { const m = Math.floor(seconds/60), s = Math.floor(seconds%60); return `${m}:${s.toString().padStart(2,'0')}`; }
 
-  updateSpeed(speed) {
-    this._settings.speed = speed;
-    if (this._isLooping) {
-      audioService.setPlaybackRate(speed);
-    }
-    state.set('memoryMode.speed', speed);
-    this._saveSettings();
-    console.log(`Speed updated: ${speed}×`);
-  }
-
-  _saveSettings() {
-    storageService.save('memorySettings', this._settings);
-  }
-
-  _formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  getSettings() {
-    return { ...this._settings };
-  }
-
-  getState() {
-    return {
-      currentTrack: this._currentTrack,
-      isLooping: this._isLooping,
-      isInGap: this._isInGap,
-      loopCount: this._loopCount,
-      trackDuration: this._trackDuration
-    };
-  }
-
-  isActive() {
-    return this._isActive;
-  }
-
-  isLooping() {
-    return this._isLooping;
-  }
+  getSettings() { return { ...this._settings }; }
+  getState() { return { currentTrack: this._currentTrack, isLooping: this._isLooping, isInGap: this._isInGap, loopCount: this._loopCount, trackDuration: this._trackDuration }; }
+  isActive() { return this._isActive; }
+  isLooping() { return this._isLooping; }
 
   validate() {
-    const selectedCount = selectionManager.getCount();
-
-    if (selectedCount === 0) {
-      return { valid: false, error: 'Please select 1 shloka for memory mode' };
-    }
-
-    if (selectedCount > 1) {
-      return { valid: false, error: 'Memory mode supports only 1 shloka at a time' };
-    }
-
+    const count = selectionManager.getCount();
+    if (count === 0) return { valid: false, error: 'Please select 1 shloka for memory mode' };
+    if (count > 1) return { valid: false, error: 'Memory mode supports only 1 shloka at a time' };
     return { valid: true };
   }
 }
