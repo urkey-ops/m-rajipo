@@ -16,6 +16,15 @@ class AudioService {
     this.audio.addEventListener('timeupdate', () => EventBus.emit('audio:timeupdate', this.audio.currentTime));
   }
 
+  setAudioElement(audioElement) {
+  if (!(audioElement instanceof HTMLAudioElement)) {
+    throw new Error('Invalid audio element');
+  }
+  this.audio = audioElement;
+  this.audio.crossOrigin = 'anonymous';
+}
+
+
   // Generate track URL with zero-padded track number
   _getTrackUrl(trackNum) {
     const padded = String(trackNum).padStart(3, '0'); // 1 -> 001
