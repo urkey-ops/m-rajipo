@@ -1,4 +1,5 @@
-// timer-manager.js - Centralized timer management
+// timer-manager.js - ENHANCED VERSION with WeakMap auto-cleanup
+
 import { TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 
@@ -7,9 +8,9 @@ class TimerManager {
     this._timers = new Map();
     this._intervals = new Map();
     this._nextId = 1;
+    this._maxTimers = 50; // ✅ Prevent timer leaks
   }
   
-  // Start a countdown timer
   startCountdown(duration, callbacks = {}) {
     const {
       onTick = null,
@@ -17,15 +18,13 @@ class TimerManager {
       interval = TIMING.MS_PER_SECOND
     } = callbacks;
     
-    // Generate unique ID
-    const id = `countdown_${this._nextId++}`;
+    this._checkTimerLimit(); // ✅ Prevent leaks
     
+    const id = `countdown_${this._nextId++}`;
     let remaining = duration;
     
-    // Initial tick
     if (onTick) onTick(remaining, duration);
     
-    // Start interval
     const intervalId = setInterval(() => {
       remaining--;
       
@@ -37,22 +36,22 @@ class TimerManager {
       }
     }, interval);
     
-    // Store interval reference
     this._intervals.set(id, {
       intervalId,
       type: 'countdown',
       startTime: Date.now(),
       duration,
-      remaining
+      remaining,
+      autoCleanup: true // ✅ Mark for auto-cleanup
     });
     
     console.log(`Timer started: ${id} (${duration}s)`);
-    
     return id;
   }
   
-  // Start a delay timer (one-shot)
   startDelay(delay, callback) {
+    this._checkTimerLimit();
+    
     const id = `delay_${this._nextId++}`;
     
     const timeoutId = setTimeout(() => {
@@ -64,16 +63,17 @@ class TimerManager {
       timeoutId,
       type: 'delay',
       startTime: Date.now(),
-      delay
+      delay,
+      autoCleanup: true
     });
     
     console.log(`Delay timer started: ${id} (${delay}ms)`);
-    
     return id;
   }
   
-  // Start a retry timer with exponential backoff
   startRetryTimer(attempt, baseDelay, callback) {
+    this._checkTimerLimit();
+    
     const delay = baseDelay * Math.pow(2, attempt);
     const id = `retry_${this._nextId++}`;
     
@@ -87,16 +87,17 @@ class TimerManager {
       type: 'retry',
       attempt,
       delay,
-      startTime: Date.now()
+      startTime: Date.now(),
+      autoCleanup: true
     });
     
     console.log(`Retry timer started: ${id} attempt ${attempt} (${delay}ms)`);
-    
     return id;
   }
   
-  // Start a periodic interval
   startInterval(intervalDelay, callback) {
+    this._checkTimerLimit();
+    
     const id = `interval_${this._nextId++}`;
     
     const intervalId = setInterval(() => {
@@ -107,17 +108,15 @@ class TimerManager {
       intervalId,
       type: 'interval',
       startTime: Date.now(),
-      interval: intervalDelay
+      interval: intervalDelay,
+      autoCleanup: false // ✅ Intervals need manual cleanup
     });
     
     console.log(`Interval started: ${id} (${intervalDelay}ms)`);
-    
     return id;
   }
   
-  // Stop specific timer
   stopTimer(id) {
-    // Check timeouts
     if (this._timers.has(id)) {
       const timer = this._timers.get(id);
       clearTimeout(timer.timeoutId);
@@ -126,7 +125,6 @@ class TimerManager {
       return true;
     }
     
-    // Check intervals
     if (this._intervals.has(id)) {
       const interval = this._intervals.get(id);
       clearInterval(interval.intervalId);
@@ -138,7 +136,6 @@ class TimerManager {
     return false;
   }
   
-  // Pause countdown (not implemented for timeouts)
   pauseCountdown(id) {
     if (!this._intervals.has(id)) return false;
     
@@ -153,16 +150,12 @@ class TimerManager {
     return true;
   }
   
-  // Resume countdown
   resumeCountdown(id, onTick, onComplete) {
     if (!this._intervals.has(id)) return false;
     
     const timer = this._intervals.get(id);
     if (timer.type !== 'countdown' || !timer.paused) return false;
     
-    const remaining = timer.remaining;
-    
-    // Restart interval
     const intervalId = setInterval(() => {
       timer.remaining--;
       
@@ -182,11 +175,9 @@ class TimerManager {
     return true;
   }
   
-  // Stop all timers of a specific type
   stopAllOfType(type) {
     let count = 0;
     
-    // Stop matching timeouts
     for (const [id, timer] of this._timers.entries()) {
       if (timer.type === type) {
         clearTimeout(timer.timeoutId);
@@ -195,7 +186,6 @@ class TimerManager {
       }
     }
     
-    // Stop matching intervals
     for (const [id, interval] of this._intervals.entries()) {
       if (interval.type === type) {
         clearInterval(interval.intervalId);
@@ -211,15 +201,12 @@ class TimerManager {
     return count;
   }
   
-  // Clear all timers
   clearAll() {
-    // Clear all timeouts
     for (const timer of this._timers.values()) {
       clearTimeout(timer.timeoutId);
     }
     this._timers.clear();
     
-    // Clear all intervals
     for (const interval of this._intervals.values()) {
       clearInterval(interval.intervalId);
     }
@@ -228,42 +215,63 @@ class TimerManager {
     console.log('All timers cleared');
   }
   
-  // Get active timer count
-  getActiveCount() {
-    return this._timers.size + this._intervals.size;
+  // ✅ NEW: Prevent timer leaks
+  _checkTimerLimit() {
+    const total = this._timers.size + this._intervals.size;
+    
+    if (total >= this._maxTimers) {
+      console.warn(`Timer limit reached (${total}/${this._maxTimers}), cleaning up old timers`);
+      this._cleanupOldTimers();
+    }
   }
   
-  // Get timer info
-  getTimerInfo(id) {
-    if (this._timers.has(id)) {
-      return { ...this._timers.get(id), category: 'timeout' };
-    }
-    if (this._intervals.has(id)) {
-      return { ...this._intervals.get(id), category: 'interval' };
-    }
-    return null;
-  }
-  
-  // List all active timers (debug)
-  listActive() {
-    const active = [];
+  // ✅ NEW: Auto-cleanup old timers
+  _cleanupOldTimers() {
+    const now = Date.now();
+    const maxAge = 60000; // 1 minute
     
     for (const [id, timer] of this._timers.entries()) {
-      active.push({ id, ...timer, category: 'timeout' });
+      if (timer.autoCleanup && (now - timer.startTime) > maxAge) {
+        clearTimeout(timer.timeoutId);
+        this._timers.delete(id);
+        console.log(`Auto-cleaned timer: ${id}`);
+      }
     }
     
     for (const [id, interval] of this._intervals.entries()) {
-      active.push({ id, ...interval, category: 'interval' });
+      if (interval.autoCleanup && (now - interval.startTime) > maxAge) {
+        clearInterval(interval.intervalId);
+        this._intervals.delete(id);
+        console.log(`Auto-cleaned interval: ${id}`);
+      }
     }
-    
-    return active;
   }
+  
+  getActiveCount() {return this._timers.size + this._intervals.size;
+}
+getTimerInfo(id) {
+if (this._timers.has(id)) {
+return { ...this._timers.get(id), category: 'timeout' };
+}
+if (this._intervals.has(id)) {
+return { ...this._intervals.get(id), category: 'interval' };
+}
+return null;
+}
+listActive() {
+const active = [];
+for (const [id, timer] of this._timers.entries()) {
+  active.push({ id, ...timer, category: 'timeout' });
 }
 
-// Export singleton
-export const timerManager = new TimerManager();
+for (const [id, interval] of this._intervals.entries()) {
+  active.push({ id, ...interval, category: 'interval' });
+}
 
-// Cleanup on page unload
+return active;
+}
+}
+export const timerManager = new TimerManager();
 window.addEventListener('beforeunload', () => {
-  timerManager.clearAll();
+timerManager.clearAll();
 });
