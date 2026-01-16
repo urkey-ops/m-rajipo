@@ -1,98 +1,103 @@
-// audio-service.js - FIXED VERSION
-
-import { EventBus } from '../core/events.js';
+// audio-service.js - Centralized audio handling with CORS support
 import { EVENTS } from '../core/constants.js';
+import { EventBus } from '../core/events.js';
 
-// audio-service.js - PATCHEd FOR AUTOMATIC TRACK URLS AND CORS
+const ARCHIVE_BASE_URL = 'https://ia601703.us.archive.org/35/items/satsang_diksha';
 
 class AudioService {
   constructor() {
-    this.audio = null;
-    this.currentTrack = null;
+    this.audio = new Audio();
+    this.audio.crossOrigin = 'anonymous'; // ✅ ensure CORS-safe playback
+    this._currentTrack = null;
+
+    // Track native events and forward via EventBus
+    this.audio.addEventListener('ended', () => EventBus.emit(EVENTS.TRACK_ENDED));
+    this.audio.addEventListener('error', (e) => EventBus.emit(EVENTS.PLAYBACK_ERROR, e));
+    this.audio.addEventListener('timeupdate', () => EventBus.emit('audio:timeupdate', this.audio.currentTime));
   }
 
-  initialize(audioElement) {
-    if (!audioElement) throw new Error('Audio element not found');
-    this.audio = audioElement;
-    this.audio.crossOrigin = "anonymous"; // ✅ CORS
-    this.audio.addEventListener('error', (e) => this._onError(e));
-    console.log('✅ AudioService initialized');
-  }
-
-  _onError(e) {
-    console.error('Audio error:', e);
-    // Optionally emit an event to notify UI
-  }
-
-  // ✅ Automatically generates Archive.org URL for a given track number
-  getTrackUrl(trackNum) {
+  // Generate track URL with zero-padded track number
+  _getTrackUrl(trackNum) {
     const padded = String(trackNum).padStart(3, '0'); // 1 -> 001
-    return `https://ia601703.us.archive.org/35/items/satsang_diksha/sanskrit_${padded}.mp3`;
+    return `${ARCHIVE_BASE_URL}/sanskrit_${padded}.mp3`;
   }
 
+  // Load track by track number
   async loadTrack(trackNum) {
-    if (!this.audio) throw new Error('AudioService not initialized');
-    this.currentTrack = trackNum;
+    if (!trackNum) throw new Error('Invalid track number');
 
-    const url = this.getTrackUrl(trackNum);
+    this._currentTrack = trackNum;
+    const url = this._getTrackUrl(trackNum);
+
     this.audio.src = url;
 
     return new Promise((resolve, reject) => {
-      const onLoaded = () => {
-        this.audio.removeEventListener('canplay', onLoaded);
+      const onCanPlay = () => {
+        this.audio.removeEventListener('canplay', onCanPlay);
         resolve();
       };
-      const onError = (err) => {
+      const onError = (e) => {
         this.audio.removeEventListener('error', onError);
-        reject(err);
+        reject(e);
       };
-      this.audio.addEventListener('canplay', onLoaded);
+
+      this.audio.addEventListener('canplay', onCanPlay);
       this.audio.addEventListener('error', onError);
+
       this.audio.load();
     });
   }
 
+  // Playback controls
   play() {
-    if (!this.audio) return Promise.reject('Audio not initialized');
-    return this.audio.play();
+    return this.audio.play().catch((err) => {
+      console.error('Playback failed:', err);
+      throw err;
+    });
   }
 
   pause() {
-    if (!this.audio) return;
     this.audio.pause();
   }
 
   stop() {
-    if (!this.audio) return;
     this.audio.pause();
     this.audio.currentTime = 0;
   }
 
   seek(time) {
-    if (!this.audio) return;
-    this.audio.currentTime = time;
+    if (typeof time === 'number' && !isNaN(time)) {
+      this.audio.currentTime = Math.max(0, Math.min(time, this.audio.duration || 0));
+    }
   }
 
   setPlaybackRate(rate) {
-    if (!this.audio) return;
-    this.audio.playbackRate = rate;
+    if (typeof rate === 'number' && rate > 0) {
+      this.audio.playbackRate = rate;
+    }
+  }
+
+  // Utility getters
+  isPlaying() {
+    return !this.audio.paused;
   }
 
   getCurrentTime() {
-    return this.audio ? this.audio.currentTime : 0;
+    return this.audio.currentTime || 0;
   }
 
   getDuration() {
-    return this.audio ? this.audio.duration : 0;
-  }
-
-  isPlaying() {
-    return this.audio && !this.audio.paused && !this.audio.ended;
+    return this.audio.duration || 0;
   }
 
   getAudioElement() {
     return this.audio;
   }
+
+  getCurrentTrack() {
+    return this._currentTrack;
+  }
 }
 
+// Export singleton
 export const audioService = new AudioService();
