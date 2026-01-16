@@ -1,15 +1,17 @@
-// shloka-grid.js - COMPLETE FIXED VERSION (No EventBus override)
+// shloka-grid.js - FIXED with Memory Mode single-selection enforcement
 
 import { $, $$, createElement, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
-import { EVENTS, TOTAL_TRACKS } from '../../core/constants.js';
+import { EVENTS, TOTAL_TRACKS, MODES } from '../../core/constants.js';
+import { state } from '../../core/state.js';
 import { selectionManager } from '../../managers/selection-manager.js';
 
 class ShlokaGrid {
   constructor() {
     this._grid = null;
     this._searchTerm = '';
-    this._isUpdatingFromManager = false; // ✅ FIXED: Flag to prevent loops
+    this._isUpdatingFromManager = false;
+    this._currentMode = MODES.REGULAR;
   }
   
   initialize() {
@@ -23,7 +25,6 @@ class ShlokaGrid {
     this._generateGrid();
     this._setupEventListeners();
     
-    // Update selection actions on init (for restored selections)
     setTimeout(() => {
       this._updateSelectionActions();
     }, 100);
@@ -61,31 +62,26 @@ class ShlokaGrid {
   }
   
   _setupEventListeners() {
-    // Use event delegation for better performance
     this._grid.addEventListener('click', (e) => {
       const label = e.target.closest('.shloka-item');
       if (!label) return;
       
-      // Check if visible
       const style = window.getComputedStyle(label);
       if (style.display === 'none') return;
       
       const checkbox = label.querySelector('.shloka-checkbox');
       if (!checkbox) return;
       
-      // If click was on checkbox, let browser handle it
       if (e.target === checkbox) {
         this._handleCheckboxChange(checkbox);
         return;
       }
       
-      // Otherwise toggle manually
       e.preventDefault();
       checkbox.checked = !checkbox.checked;
       this._handleCheckboxChange(checkbox);
     });
     
-    // Listen to selection manager changes to update visual state
     EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
       if (!this._isUpdatingFromManager) {
         this._updateVisualStateFromManager();
@@ -97,39 +93,61 @@ class ShlokaGrid {
         this._clearAllVisualSelection();
       }
     });
+
+    // ✅ FIX: Listen to mode changes
+    EventBus.on(EVENTS.MODE_CHANGED, (data) => {
+      this._currentMode = data.to;
+      this._updateGridForMode(data.to);
+    });
   }
   
-  // ✅ FIXED: Removed EventBus override, use flag instead
+  // ✅ NEW: Update grid behavior for different modes
+  _updateGridForMode(mode) {
+    // In memory mode, show visual feedback that only 1 can be selected
+    if (mode === MODES.MEMORY) {
+      this._grid.setAttribute('data-mode', 'memory');
+      console.log('🧠 Grid set to Memory Mode - single selection only');
+    } else {
+      this._grid.setAttribute('data-mode', 'multi');
+    }
+  }
+  
+  // ✅ FIX: Handle single-selection in Memory Mode
   _handleCheckboxChange(checkbox) {
     const trackNum = parseInt(checkbox.value);
     const isChecked = checkbox.checked;
     
-    // Set flag to prevent loop
     this._isUpdatingFromManager = true;
     
-    // Update visual state immediately
     const label = checkbox.closest('.shloka-item');
+    
+    // ✅ FIX: In Memory Mode, enforce single selection
+    if (this._currentMode === MODES.MEMORY && isChecked) {
+      // Uncheck ALL other checkboxes first
+      $$('.shloka-checkbox').forEach(cb => {
+        if (cb !== checkbox && cb.checked) {
+          cb.checked = false;
+          removeClass(cb.closest('.shloka-item'), 'selected');
+        }
+      });
+    }
+    
     toggleClass(label, 'selected', isChecked);
     
-    // Update selection manager
     if (isChecked) {
       selectionManager.select(trackNum);
-      // Deselect playlists/recent when selecting individual
       this._deselectSheetItems();
     } else {
       selectionManager.deselect(trackNum);
     }
     
-    // Update selection actions
     this._updateSelectionActions();
     
-    // Reset flag after a tick
     setTimeout(() => {
       this._isUpdatingFromManager = false;
     }, 0);
   }
   
-  // Update visual state from selection manager
   _updateVisualStateFromManager() {
     const selectedTracks = selectionManager.getSelection();
     const selectedSet = new Set(selectedTracks);
@@ -142,18 +160,15 @@ class ShlokaGrid {
       toggleClass(checkbox.closest('.shloka-item'), 'selected', isSelected);
     });
     
-    // Update selection actions
     this._updateSelectionActions();
   }
   
-  // Clear all visual selection
   _clearAllVisualSelection() {
     $$('.shloka-checkbox').forEach(checkbox => {
       checkbox.checked = false;
       removeClass(checkbox.closest('.shloka-item'), 'selected');
     });
     
-    // Update selection actions
     this._updateSelectionActions();
   }
   
@@ -167,11 +182,15 @@ class ShlokaGrid {
     }
     
     if (selectionCount) {
-      selectionCount.textContent = `Selected: ${count}`;
+      // ✅ FIX: Show different message in Memory Mode
+      if (this._currentMode === MODES.MEMORY) {
+        selectionCount.textContent = count === 1 ? 'Selected: 1 (Memory Mode)' : 'Select 1 shloka';
+      } else {
+        selectionCount.textContent = `Selected: ${count}`;
+      }
       
-      // Add pulse animation
       removeClass(selectionCount, 'pulse');
-      void selectionCount.offsetWidth; // Trigger reflow
+      void selectionCount.offsetWidth;
       addClass(selectionCount, 'pulse');
       
       setTimeout(() => {
@@ -180,7 +199,6 @@ class ShlokaGrid {
     }
   }
   
-  // Deselect all sheet items (playlists/recent)
   _deselectSheetItems() {
     $$('.sheet-item input:checked').forEach(cb => {
       cb.checked = false;
@@ -188,7 +206,6 @@ class ShlokaGrid {
     });
   }
   
-  // Apply search filter
   applyFilter(searchTerm) {
     this._searchTerm = searchTerm;
     let foundCount = 0;
@@ -207,7 +224,6 @@ class ShlokaGrid {
     return foundCount;
   }
   
-  // Clear filter
   clearFilter() {
     this._searchTerm = '';
     $$('.shloka-item').forEach(item => {
@@ -215,7 +231,6 @@ class ShlokaGrid {
     });
   }
   
-  // Get grid statistics
   getStats() {
     const total = $$('.shloka-item').length;
     const selected = $$('.shloka-checkbox:checked').length;
@@ -225,5 +240,4 @@ class ShlokaGrid {
   }
 }
 
-// Export singleton
 export const shlokaGrid = new ShlokaGrid();
