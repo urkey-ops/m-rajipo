@@ -65,7 +65,9 @@ class Application {
     if (!audioElement) {
       throw new Error('Audio element not found');
     }
-    audioService.initialize(audioElement);
+    if (audioElement) {
+  audioService.setAudioElement(audioElement);
+}
 
     if (!storageService.isAvailable()) {
       console.warn('Storage not available - playlists and history disabled');
