@@ -5,113 +5,102 @@ import { EVENTS } from '../core/constants.js';
 
 class AudioService {
   constructor() {
-    this._audio = null;
-    this._isPlaying = false;
+    this.audio = null;
+    this.currentTrackNumber = null;
+    this.playbackRate = 1.0;
   }
 
   initialize(audioElement) {
-    if (!audioElement) throw new Error('Audio element not provided');
-
-    this._audio = audioElement;
-    this._audio.preload = 'auto';
-
-    // ✅ Setup event listeners
-    this._audio.addEventListener('ended', () => {
-      this._isPlaying = false;
-      EventBus.emit(EVENTS.AUDIO_ENDED);
-    });
-
-    this._audio.addEventListener('error', (e) => {
-      console.error('Audio error:', e);
-      EventBus.emit(EVENTS.AUDIO_ERROR, e);
-    });
-
-    // ✅ Optional Media Session support
-    this._setupMediaSession();
-
+    if (!audioElement) throw new Error('Audio element not found');
+    this.audio = audioElement;
+    this.audio.preload = 'auto';
+    this.audio.crossOrigin = 'anonymous';
+    this.setPlaybackRate(this.playbackRate);
     console.log('✅ AudioService initialized');
   }
 
-  // Optional: integrates with OS-level media controls
-  _setupMediaSession() {
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Shloka Player',
-        artist: '',
-        album: '',
-        artwork: []
-      });
-
-      navigator.mediaSession.setActionHandler('play', () => this.play());
-      navigator.mediaSession.setActionHandler('pause', () => this.pause());
-      navigator.mediaSession.setActionHandler('seekbackward', () => this.seek(this.getCurrentTime() - 10));
-      navigator.mediaSession.setActionHandler('seekforward', () => this.seek(this.getCurrentTime() + 10));
-      navigator.mediaSession.setActionHandler('stop', () => this.stop());
-    }
+  getAudioElement() {
+    return this.audio;
   }
 
   async loadTrack(trackNumber) {
-    if (!this._audio) throw new Error('AudioService not initialized');
+    if (!this.audio) throw new Error('Audio not initialized');
+    if (!trackNumber) throw new Error('Invalid track number');
 
-    // Assume you have a method to get track URL from track number
+    this.currentTrackNumber = trackNumber;
     const url = this._getTrackUrl(trackNumber);
-    this._audio.src = url;
 
     return new Promise((resolve, reject) => {
-      this._audio.addEventListener('canplaythrough', () => resolve(), { once: true });
-      this._audio.addEventListener('error', reject, { once: true });
+      const onCanPlay = () => {
+        cleanup();
+        resolve();
+      };
+      const onError = (e) => {
+        cleanup();
+        console.error('Audio error:', e);
+        reject(e);
+      };
+      const cleanup = () => {
+        this.audio.removeEventListener('canplay', onCanPlay);
+        this.audio.removeEventListener('error', onError);
+      };
+
+      this.audio.addEventListener('canplay', onCanPlay, { once: true });
+      this.audio.addEventListener('error', onError, { once: true });
+      this.audio.src = url;
+      this.audio.load();
     });
   }
 
+  _getTrackUrl(trackNumber) {
+    if (!trackNumber || trackNumber < 1 || trackNumber > 315) {
+      throw new Error(`Invalid track number: ${trackNumber}`);
+    }
+
+    const baseUrl = 'https://ia601703.us.archive.org/35/items/satsang_diksha/';
+    const prefix = 'sanskrit_';
+    const ext = '.mp3';
+    const numStr = trackNumber.toString().padStart(3, '0');
+
+    return `${baseUrl}${prefix}${numStr}${ext}`;
+  }
+
   play() {
-    if (!this._audio) return;
-    this._audio.play().then(() => {
-      this._isPlaying = true;
-    }).catch(console.error);
+    if (!this.audio) return;
+    return this.audio.play();
   }
 
   pause() {
-    if (!this._audio) return;
-    this._audio.pause();
-    this._isPlaying = false;
+    if (!this.audio) return;
+    this.audio.pause();
   }
 
   stop() {
-    if (!this._audio) return;
-    this._audio.pause();
-    this._audio.currentTime = 0;
-    this._isPlaying = false;
+    if (!this.audio) return;
+    this.audio.pause();
+    this.audio.currentTime = 0;
   }
 
   seek(time) {
-    if (!this._audio) return;
-    this._audio.currentTime = Math.max(0, Math.min(time, this.getDuration()));
-  }
-
-  setPlaybackRate(rate) {
-    if (!this._audio) return;
-    this._audio.playbackRate = rate;
-  }
-
-  getAudioElement() {
-    return this._audio;
+    if (!this.audio) return;
+    this.audio.currentTime = time;
   }
 
   getCurrentTime() {
-    return this._audio ? this._audio.currentTime : 0;
+    return this.audio ? this.audio.currentTime : 0;
   }
 
   getDuration() {
-    return this._audio ? this._audio.duration || 0 : 0;
+    return this.audio ? this.audio.duration : 0;
   }
 
   isPlaying() {
-    return this._isPlaying;
+    return this.audio && !this.audio.paused && !this.audio.ended;
   }
 
-  // Dummy method: replace with your actual track URL logic
-  _getTrackUrl(trackNumber) {
-    return `tracks/track_${trackNumber}.mp3`;
+  setPlaybackRate(rate) {
+    this.playbackRate = rate;
+    if (this.audio) this.audio.playbackRate = rate;
   }
 }
 
