@@ -1,4 +1,4 @@
-// quiz-mode.js - Quiz mode logic with autoPlayFull support
+// quiz-mode.js - Quiz mode logic with autoPlayFull support (FIXED)
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -16,12 +16,13 @@ class QuizMode {
       quizTime: DEFAULT_SETTINGS.QUIZ_TIME,
       quizDelay: DEFAULT_SETTINGS.QUIZ_DELAY,
       autoPlay: DEFAULT_SETTINGS.AUTO_PLAY,
-      autoPlayFull: false // NEW: auto-play full shloka after countdown
+      autoPlayFull: DEFAULT_SETTINGS.AUTO_PLAY_FULL
     };
     
     this._currentPlaylist = [];
     this._currentIndex = 0;
     this._isPaused = false;
+    this._isPlayingFull = false; // ✅ NEW: Track if playing full shloka
     this._countdownTimerId = null;
     this._pauseTimerId = null;
     
@@ -35,9 +36,29 @@ class QuizMode {
       }
     });
 
+    // ✅ FIXED: Handle track ended properly
     EventBus.on(EVENTS.TRACK_ENDED, () => {
-      if (this._isActive) {
-        console.log('Quiz mode: Track ended, waiting for user action');
+      if (!this._isActive) return;
+      
+      // If we just finished playing the full shloka
+      if (this._isPlayingFull) {
+        this._isPlayingFull = false;
+        console.log('✅ Full shloka finished');
+        
+        // Auto-advance if enabled
+        if (this._settings.autoPlay) {
+          console.log('▶️ Auto-advancing to next question...');
+          setTimeout(() => this.nextQuestion(), 500);
+        } else {
+          console.log('⏸️ Waiting for manual next...');
+          EventBus.emit(EVENTS.TOAST_SHOW, {
+            message: 'Click Next for the next question',
+            type: 'info'
+          });
+        }
+      } else {
+        // Normal quiz track ended (shouldn't happen in quiz mode)
+        console.log('Quiz mode: Track ended during quiz play, waiting for user action');
       }
     });
   }
@@ -81,6 +102,7 @@ class QuizMode {
     this._currentPlaylist = [];
     this._currentIndex = 0;
     this._isPaused = false;
+    this._isPlayingFull = false; // ✅ Reset flag
     this._isActive = false;
 
     EventBus.emit('quiz-mode:cleanup');
@@ -96,6 +118,7 @@ class QuizMode {
     this._currentPlaylist = playlistService.shufflePlaylist(selectedTracks);
     this._currentIndex = 0;
     this._isPaused = false;
+    this._isPlayingFull = false; // ✅ Reset flag
 
     state.update({
       'quizMode.currentTrack': this._currentPlaylist[0],
@@ -122,6 +145,7 @@ class QuizMode {
     }
 
     this._isPaused = false;
+    this._isPlayingFull = false; // ✅ Reset flag
     state.update({
       'quizMode.currentTrack': this._currentPlaylist[this._currentIndex],
       'quizMode.isPaused': false
@@ -133,6 +157,7 @@ class QuizMode {
   async _playCurrentTrack() {
     const trackNum = this._currentPlaylist[this._currentIndex];
     this._isPaused = false;
+    this._isPlayingFull = false; // ✅ This is quiz playback, not full playback
 
     try {
       await audioService.loadTrack(trackNum);
@@ -183,25 +208,37 @@ class QuizMode {
           this._countdownTimerId = null;
           EventBus.emit(EVENTS.QUIZ_COUNTDOWN_COMPLETE);
 
-          // Auto-play next track
-          if (this._settings.autoPlay) {
-            console.log('▶️ Auto-playing next track...');
-            setTimeout(() => this.nextQuestion(), 500);
-          }
-          // NEW: Auto-play full shloka if enabled
-          else if (this._settings.autoPlayFull && this._isPaused) {
+          // ✅ FIXED: Handle both settings properly
+          // Play full shloka if enabled
+          if (this._settings.autoPlayFull && this._isPaused) {
             console.log('🔊 Auto-playing full shloka...');
             await this.playFullShloka();
+            // Note: TRACK_ENDED handler will handle autoPlay after full shloka
+          }
+          // If not playing full, but autoPlay is enabled, skip immediately
+          else if (this._settings.autoPlay) {
+            console.log('▶️ Auto-playing next track (no full shloka)...');
+            setTimeout(() => this.nextQuestion(), 500);
+          }
+          // else: wait for manual action
+          else {
+            console.log('⏸️ Waiting for manual action...');
+            EventBus.emit(EVENTS.TOAST_SHOW, {
+              message: 'Timer complete. Click Next or Play Full.',
+              type: 'info'
+            });
           }
         }
       }
     );
   }
 
+  // ✅ FIXED: Mark that we're playing full shloka
   async playFullShloka() {
     if (!this._isActive || !this._isPaused) return;
 
     this._clearAllTimers();
+    this._isPlayingFull = true; // ✅ Set flag before playing
     const trackNum = this._currentPlaylist[this._currentIndex];
 
     try {
@@ -212,13 +249,24 @@ class QuizMode {
       console.log(`🔊 Playing full shloka ${trackNum}`);
       EventBus.emit('quiz-mode:playing-full', { track: trackNum });
     } catch (error) {
+      this._isPlayingFull = false; // ✅ Reset flag on error
       console.error('Failed to play full shloka:', error);
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: 'Failed to play full shloka',
+        type: 'error'
+      });
     }
   }
 
   _clearAllTimers() {
-    if (this._countdownTimerId) { timerManager.stopTimer(this._countdownTimerId); this._countdownTimerId = null; }
-    if (this._pauseTimerId) { timerManager.stopTimer(this._pauseTimerId); this._pauseTimerId = null; }
+    if (this._countdownTimerId) { 
+      timerManager.stopTimer(this._countdownTimerId); 
+      this._countdownTimerId = null; 
+    }
+    if (this._pauseTimerId) { 
+      timerManager.stopTimer(this._pauseTimerId); 
+      this._pauseTimerId = null; 
+    }
   }
 
   updateQuizTime(time) {
@@ -271,6 +319,7 @@ class QuizMode {
       currentIndex: this._currentIndex,
       currentTrack: this._currentPlaylist[this._currentIndex] || null,
       isPaused: this._isPaused,
+      isPlayingFull: this._isPlayingFull, // ✅ Expose this state
       isCountdownActive: this._countdownTimerId !== null
     };
   }
