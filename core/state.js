@@ -1,7 +1,7 @@
 // state.js - Global application state
 
 import { EventBus } from './events.js';
-import { EVENTS, MODES } from './constants.js';
+import { EVENTS, MODES, DEFAULT_SETTINGS } from './constants.js';
 
 class State {
   constructor() {
@@ -15,18 +15,21 @@ class State {
       playbackSpeed: 1.0,
       
       // Quiz mode state
-      quizSettings: {
-        recitationTime: 20,
-        audioDelay: 3,
-        autoAdvance: false
+      quizMode: {
+        quizTime: DEFAULT_SETTINGS.QUIZ_TIME,
+        quizDelay: DEFAULT_SETTINGS.QUIZ_DELAY,
+        autoPlay: DEFAULT_SETTINGS.AUTO_PLAY,
+        autoPlayFull: DEFAULT_SETTINGS.AUTO_PLAY_FULL, // ✅ New
+        currentTrack: null,
+        isPaused: false
       },
       
       // Memory mode state
       memoryMode: {
         currentTrack: null,
-        startTime: 0,
-        endTime: 20,
-        gapDuration: 0,
+        startTime: DEFAULT_SETTINGS.MEMORY_START_TIME,
+        endTime: DEFAULT_SETTINGS.MEMORY_END_TIME,
+        gapDuration: DEFAULT_SETTINGS.MEMORY_GAP,
         speed: 1.0,
         isLooping: false,
         loopCount: 0
@@ -35,7 +38,6 @@ class State {
   }
 
   get(key) {
-    // Support nested keys like 'memoryMode.startTime'
     if (key.includes('.')) {
       const keys = key.split('.');
       let value = this._state;
@@ -48,7 +50,6 @@ class State {
   }
 
   set(key, value) {
-    // Support nested keys
     if (key.includes('.')) {
       const keys = key.split('.');
       let obj = this._state;
