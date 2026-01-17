@@ -1,4 +1,4 @@
-// storage-service.js - ENHANCED VERSION with better error handling
+// storage-service.js - ENHANCED VERSION with quiz autoPlayFull support
 
 import { STORAGE_KEYS, MAX_RECENT_ITEMS } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
@@ -26,7 +26,6 @@ class StorageService {
     return this.available;
   }
 
-  // ✅ ENHANCED: Returns result object instead of boolean
   save(key, value) {
     if (!this.available) {
       return { success: false, error: 'Storage not available' };
@@ -38,14 +37,12 @@ class StorageService {
       return { success: true };
     } catch (error) {
       console.error('Storage save error:', error);
-      
       if (error.name === 'QuotaExceededError') {
         EventBus.emit(EVENTS.TOAST_SHOW, {
           message: 'Storage full. Please delete some playlists.',
           type: 'error'
         });
       }
-      
       return { success: false, error: error.message };
     }
   }
@@ -63,10 +60,7 @@ class StorageService {
   }
 
   remove(key) {
-    if (!this.available) {
-      return { success: false, error: 'Storage not available' };
-    }
-
+    if (!this.available) return { success: false, error: 'Storage not available' };
     try {
       localStorage.removeItem(key);
       return { success: true };
@@ -77,10 +71,7 @@ class StorageService {
   }
 
   clear() {
-    if (!this.available) {
-      return { success: false, error: 'Storage not available' };
-    }
-
+    if (!this.available) return { success: false, error: 'Storage not available' };
     try {
       localStorage.clear();
       return { success: true };
@@ -90,52 +81,58 @@ class StorageService {
     }
   }
 
+  // ------------------------
+  // Quiz Settings Handling
+  // ------------------------
+  saveSettings(settings) {
+    const result = this.save(STORAGE_KEYS.QUIZ_SETTINGS, settings);
+    return result.success;
+  }
+
+  loadSettings() {
+    const saved = this.load(STORAGE_KEYS.QUIZ_SETTINGS, null);
+    if (saved) {
+      // Ensure autoPlayFull exists in loaded settings
+      if (typeof saved.autoPlayFull === 'undefined') {
+        saved.autoPlayFull = false;
+      }
+    }
+    return saved;
+  }
+
+  // ------------------------
+  // Other methods remain unchanged
+  // ------------------------
   savePlaylist(name, tracks) {
     const nameValidation = validatePlaylistName(name);
-    if (!nameValidation.valid) {
-      throw new Error(nameValidation.error);
-    }
+    if (!nameValidation.valid) throw new Error(nameValidation.error);
 
     const tracksValidation = validatePlaylist(tracks);
-    if (!tracksValidation.valid) {
-      throw new Error(tracksValidation.error);
-    }
+    if (!tracksValidation.valid) throw new Error(tracksValidation.error);
 
     const playlists = this.getPlaylists();
-
     if (playlists[nameValidation.value]) {
-      throw new Error(`Playlist "${nameValidation.value}" already exists. Please choose a different name or delete the existing playlist first.`);
+      throw new Error(`Playlist "${nameValidation.value}" already exists. Please delete or rename.`);
     }
 
     playlists[nameValidation.value] = tracksValidation.value;
 
     const result = this.save(STORAGE_KEYS.PLAYLISTS, playlists);
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to save playlist');
-    }
+    if (!result.success) throw new Error(result.error || 'Failed to save playlist');
 
     return nameValidation.value;
   }
 
   loadPlaylist(name) {
-    const playlists = this.getPlaylists();
-    return playlists[name] || null;
+    return this.getPlaylists()[name] || null;
   }
 
   deletePlaylist(name) {
     const playlists = this.getPlaylists();
-
-    if (!playlists[name]) {
-      throw new Error('Playlist not found');
-    }
-
+    if (!playlists[name]) throw new Error('Playlist not found');
     delete playlists[name];
-
     const result = this.save(STORAGE_KEYS.PLAYLISTS, playlists);
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to delete playlist');
-    }
-
+    if (!result.success) throw new Error(result.error || 'Failed to delete playlist');
     return true;
   }
 
@@ -144,8 +141,7 @@ class StorageService {
   }
 
   playlistExists(name) {
-    const playlists = this.getPlaylists();
-    return playlists.hasOwnProperty(name);
+    return this.getPlaylists().hasOwnProperty(name);
   }
 
   getPlaylistCount() {
@@ -170,26 +166,15 @@ class StorageService {
   }
 
   clearHistory() {
-    const result = this.remove(STORAGE_KEYS.RECENT);
-    return result.success;
+    return this.remove(STORAGE_KEYS.RECENT).success;
   }
 
   getHistoryCount() {
     return this.getHistory().length;
   }
 
-  saveSettings(settings) {
-    const result = this.save(STORAGE_KEYS.QUIZ_SETTINGS, settings);
-    return result.success;
-  }
-
-  loadSettings() {
-    return this.load(STORAGE_KEYS.QUIZ_SETTINGS, null);
-  }
-
   saveLastSelection(tracks) {
-    const result = this.save(STORAGE_KEYS.LAST_SELECTION, tracks);
-    return result.success;
+    return this.save(STORAGE_KEYS.LAST_SELECTION, tracks).success;
   }
 
   loadLastSelection() {
