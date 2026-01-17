@@ -16,6 +16,9 @@ class QuizControls {
     this._quizDelaySlider = null;
     this._quizDelayDisplay = null;
     this._autoPlayToggle = null;
+
+    // NEW: auto-play full shloka toggle
+    this._autoPlayFullToggle = null;
   }
   
   initialize() {
@@ -29,6 +32,9 @@ class QuizControls {
     this._quizDelaySlider = $('#quizDelaySlider');
     this._quizDelayDisplay = $('#quizDelayDisplay');
     this._autoPlayToggle = $('#autoPlayToggle');
+
+    // NEW: auto-play full toggle
+    this._autoPlayFullToggle = $('#autoPlayFullToggle');
     
     this._setupEventListeners();
     
@@ -42,7 +48,7 @@ class QuizControls {
         quizMode.playFullShloka();
       });
     }
-    
+
     // Quiz time slider
     if (this._quizTimeSlider && this._quizTimeDisplay) {
       this._quizTimeSlider.addEventListener('input', (e) => {
@@ -52,7 +58,7 @@ class QuizControls {
         e.target.setAttribute('aria-valuenow', time.toString());
       });
     }
-    
+
     // Quiz delay slider
     if (this._quizDelaySlider && this._quizDelayDisplay) {
       this._quizDelaySlider.addEventListener('input', (e) => {
@@ -62,11 +68,18 @@ class QuizControls {
         e.target.setAttribute('aria-valuenow', delay.toString());
       });
     }
-    
+
     // Auto-play toggle
     if (this._autoPlayToggle) {
       this._autoPlayToggle.addEventListener('change', () => {
         quizMode.toggleAutoPlay();
+      });
+    }
+
+    // NEW: Auto-play full shloka toggle
+    if (this._autoPlayFullToggle) {
+      this._autoPlayFullToggle.addEventListener('change', () => {
+        quizMode.toggleAutoPlayFull();
       });
     }
     
@@ -173,6 +186,11 @@ class QuizControls {
     
     if (this._autoPlayToggle) {
       this._autoPlayToggle.checked = settings.autoPlay;
+    }
+
+    // NEW: auto-play full toggle
+    if (this._autoPlayFullToggle) {
+      this._autoPlayFullToggle.checked = settings.autoPlayFull || false;
     }
   }
   
