@@ -1,4 +1,4 @@
-// quiz-mode.js - Quiz mode logic with FIXED 3-second pause
+// quiz-mode.js - Quiz mode logic with FIXED precise timing
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -26,18 +26,13 @@ class QuizMode {
     this._countdownTimerId = null;
     this._pauseTimerId = null;
     
-    // ✅ NEW: Track when quiz playback started
-    this._quizPlaybackStartTime = null;
-    this._timeUpdateHandler = null;
-    
     this._setupEventListeners();
   }
   
   _setupEventListeners() {
     EventBus.on(EVENTS.PLAYBACK_STARTED, () => {
       if (this._isActive && !this._isPaused && !this._isPlayingFull) {
-        // ✅ This is quiz playback (not full shloka)
-        this._quizPlaybackStartTime = Date.now();
+        // This is quiz playback (not full shloka)
         this._startMonitoringPlayback();
       }
     });
@@ -62,60 +57,68 @@ class QuizMode {
           });
         }
       } else {
-        // Normal quiz track ended (shouldn't happen)
+        // Normal quiz track ended (shouldn't happen during quiz play)
         console.log('Quiz mode: Track ended during quiz play, waiting for user action');
       }
     });
   }
   
-  // ✅ NEW: Monitor playback time and pause at quizDelay
+  // ✅ NEW: Precise interval-based monitoring (replaces timeupdate)
   _startMonitoringPlayback() {
-    this._removeTimeUpdateHandler();
+    // Clear any existing monitoring
+    this._clearMonitoringTimer();
     
     const targetDelay = this._settings.quizDelay;
+    const startTime = Date.now();
+    const startAudioTime = audioService.getCurrentTime();
     
-    this._timeUpdateHandler = () => {
+    console.log(`👁️ Starting monitoring: will pause at ${targetDelay}s (current: ${startAudioTime.toFixed(2)}s)`);
+    
+    // Use precise 50ms interval for ±25ms accuracy
+    this._pauseTimerId = setInterval(() => {
+      // Safety check: ensure we're still in valid state
       if (!this._isActive || this._isPaused || this._isPlayingFull) {
-        this._removeTimeUpdateHandler();
+        this._clearMonitoringTimer();
         return;
       }
       
       const currentTime = audioService.getCurrentTime();
+      const elapsed = (Date.now() - startTime) / 1000;
       
-      // Check if we've reached the quiz delay time
-      if (currentTime >= targetDelay) {
-        console.log(`⏸️ Quiz: Reached ${targetDelay}s, pausing now`);
+      // Pause when we've reached the target (with 50ms tolerance for precision)
+      if (currentTime >= targetDelay - 0.05) {
+        console.log(`⏸️ Quiz: Reached ${currentTime.toFixed(2)}s (target: ${targetDelay}s), pausing now`);
         this._pauseForRecitation();
-        this._removeTimeUpdateHandler();
+        this._clearMonitoringTimer();
+        return;
       }
-    };
+      
+      // Safety timeout: if we've been monitoring for longer than expected, something's wrong
+      if (elapsed > targetDelay + 2) {
+        console.warn(`⚠️ Quiz monitoring timeout at ${elapsed.toFixed(2)}s, forcing pause`);
+        this._pauseForRecitation();
+        this._clearMonitoringTimer();
+      }
+    }, 50); // Check every 50ms for ±25ms accuracy
     
-    const audio = audioService.getAudioElement();
-    if (audio) {
-      audio.addEventListener('timeupdate', this._timeUpdateHandler);
-    }
-    
-    console.log(`👁️ Monitoring playback, will pause at ${targetDelay}s`);
+    console.log(`👁️ Monitoring started, will pause at ${targetDelay}s`);
   }
   
-  // ✅ NEW: Remove time update handler
-  _removeTimeUpdateHandler() {
-    if (this._timeUpdateHandler) {
-      const audio = audioService.getAudioElement();
-      if (audio) {
-        audio.removeEventListener('timeupdate', this._timeUpdateHandler);
-      }
-      this._timeUpdateHandler = null;
+  // ✅ NEW: Clear monitoring timer
+  _clearMonitoringTimer() {
+    if (this._pauseTimerId) {
+      clearInterval(this._pauseTimerId);
+      this._pauseTimerId = null;
+      console.log('🛑 Quiz monitoring timer cleared');
     }
   }
   
-  // ✅ NEW: Extracted pause logic
+  // ✅ EXTRACTED: Pause logic
   _pauseForRecitation() {
     if (this._isPaused) return;
     
     audioService.pause();
     this._isPaused = true;
-    this._quizPlaybackStartTime = null;
     state.set('quizMode.isPaused', true);
 
     console.log('⏸️ Quiz: Audio paused, your turn!');
@@ -147,7 +150,7 @@ class QuizMode {
     this._isActive = true;
     state.setMode(MODES.QUIZ);
     this._clearAllTimers();
-    this._removeTimeUpdateHandler(); // ✅ Clean up any handlers
+    this._clearMonitoringTimer(); // ✅ Clean up monitoring timer
     audioService.setPlaybackRate(1.0);
 
     EventBus.emit('quiz-mode:initialized', this._settings);
@@ -159,7 +162,7 @@ class QuizMode {
 
     console.log('🧹 Cleaning up Quiz Mode');
     this._clearAllTimers();
-    this._removeTimeUpdateHandler(); // ✅ Clean up handlers
+    this._clearMonitoringTimer(); // ✅ Clean up monitoring timer
 
     if (audioService.isPlaying()) audioService.stop();
 
@@ -167,7 +170,6 @@ class QuizMode {
     this._currentIndex = 0;
     this._isPaused = false;
     this._isPlayingFull = false;
-    this._quizPlaybackStartTime = null;
     this._isActive = false;
 
     EventBus.emit('quiz-mode:cleanup');
@@ -184,7 +186,6 @@ class QuizMode {
     this._currentIndex = 0;
     this._isPaused = false;
     this._isPlayingFull = false;
-    this._quizPlaybackStartTime = null;
 
     state.update({
       'quizMode.currentTrack': this._currentPlaylist[0],
@@ -199,7 +200,7 @@ class QuizMode {
     if (!this._isActive) throw new Error('Quiz mode not initialized');
 
     this._clearAllTimers();
-    this._removeTimeUpdateHandler(); // ✅ Clean up handlers
+    this._clearMonitoringTimer(); // ✅ Clean up monitoring timer
     this._currentIndex++;
 
     if (this._currentIndex >= this._currentPlaylist.length) {
@@ -213,7 +214,6 @@ class QuizMode {
 
     this._isPaused = false;
     this._isPlayingFull = false;
-    this._quizPlaybackStartTime = null;
     
     state.update({
       'quizMode.currentTrack': this._currentPlaylist[this._currentIndex],
@@ -287,7 +287,7 @@ class QuizMode {
     if (!this._isActive || !this._isPaused) return;
 
     this._clearAllTimers();
-    this._removeTimeUpdateHandler(); // ✅ Clean up monitoring
+    this._clearMonitoringTimer(); // ✅ Clean up monitoring timer
     this._isPlayingFull = true;
     const trackNum = this._currentPlaylist[this._currentIndex];
 
@@ -313,10 +313,7 @@ class QuizMode {
       timerManager.stopTimer(this._countdownTimerId); 
       this._countdownTimerId = null; 
     }
-    if (this._pauseTimerId) { 
-      timerManager.stopTimer(this._pauseTimerId); 
-      this._pauseTimerId = null; 
-    }
+    // Note: _pauseTimerId is now cleared by _clearMonitoringTimer()
   }
 
   updateQuizTime(time) {
