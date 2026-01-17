@@ -1,4 +1,4 @@
-// memory-mode.js - READY TO DROP
+// memory-mode.js - COMPLETE FIXED VERSION
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -24,6 +24,33 @@ class MemoryMode {
     this._trackDuration = 0;
     this._timeUpdateHandler = null;
     this._hasReachedEnd = false;
+    
+    // ✅ NEW: Setup event listeners
+    this._setupEventListeners();
+  }
+
+  // ✅ NEW: Event listener setup
+  _setupEventListeners() {
+    // Handle unexpected track ending
+    EventBus.on(EVENTS.TRACK_ENDED, () => {
+      if (!this._isActive || !this._isLooping) return;
+      
+      console.log('⚠️ Memory: Track ended unexpectedly, restarting segment');
+      this._hasReachedEnd = false;
+      this._seekAndPlay(this._settings.startTime).catch(console.error);
+    });
+    
+    // Handle audio errors
+    EventBus.on(EVENTS.PLAYBACK_ERROR, () => {
+      if (!this._isActive || !this._isLooping) return;
+      
+      console.error('❌ Memory: Playback error, stopping loop');
+      this._stopLooping();
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: 'Audio error in memory loop',
+        type: 'error'
+      });
+    });
   }
 
   initialize() {
@@ -83,7 +110,7 @@ class MemoryMode {
     const selectedTracks = selectionManager.getSelection();
     if (selectedTracks.length !== 1) throw new Error('Memory mode requires exactly 1 selected track');
 
-    // PATCH: Convert selection to number for Archive.org URL generation
+    // Convert selection to number for Archive.org URL generation
     this._currentTrack = Number(selectedTracks[0]);
     console.log(`🧠 Starting memory loop for track ${this._currentTrack}`);
 
@@ -98,7 +125,9 @@ class MemoryMode {
       }
 
       // Ensure start < end
-      if (this._settings.startTime >= this._settings.endTime) this._settings.startTime = Math.max(0, this._settings.endTime - 1);
+      if (this._settings.startTime >= this._settings.endTime) {
+        this._settings.startTime = Math.max(0, this._settings.endTime - 1);
+      }
 
       audioService.setPlaybackRate(this._settings.speed);
 
@@ -165,23 +194,37 @@ class MemoryMode {
     }
   }
 
+  // ✅ FIXED: Pause first to prevent race condition
   _handleSegmentEnd() {
+    // Pause first to prevent race condition
+    audioService.pause();
+    
     this._loopCount++;
     state.set('memoryMode.loopCount', this._loopCount);
-    EventBus.emit(EVENTS.MEMORY_LOOP_COMPLETED, { loopCount: this._loopCount, track: this._currentTrack });
+    EventBus.emit(EVENTS.MEMORY_LOOP_COMPLETED, { 
+      loopCount: this._loopCount, 
+      track: this._currentTrack 
+    });
 
     if (this._settings.gapDuration > 0) {
       this._startGap();
     } else {
+      // No gap - immediately restart
       this._hasReachedEnd = false;
       this._seekAndPlay(this._settings.startTime).catch(console.error);
     }
   }
 
   _startGap() {
-    audioService.pause();
+    // Audio already paused in _handleSegmentEnd
     this._isInGap = true;
     const gapMs = this._settings.gapDuration * TIMING.MS_PER_SECOND;
+    
+    EventBus.emit(EVENTS.MEMORY_GAP_STARTED, {
+      gapDuration: this._settings.gapDuration,
+      loopCount: this._loopCount
+    });
+    
     this._gapTimerId = timerManager.startDelay(gapMs, () => this._endGap());
   }
 
@@ -195,13 +238,16 @@ class MemoryMode {
   pause() {
     if (!this._isLooping) return;
     audioService.pause();
-    if (this._gapTimerId) timerManager.stopTimer(this._gapTimerId);
-    this._gapTimerId = null;
+    if (this._gapTimerId) {
+      timerManager.stopTimer(this._gapTimerId);
+      this._gapTimerId = null;
+    }
   }
 
   resume() {
     if (!this._isLooping) return;
     if (this._isInGap) {
+      // Restart full gap duration (simplified approach)
       const gapMs = this._settings.gapDuration * TIMING.MS_PER_SECOND;
       this._gapTimerId = timerManager.startDelay(gapMs, () => this._endGap());
     } else {
@@ -213,8 +259,10 @@ class MemoryMode {
     this._isLooping = false;
     this._isInGap = false;
     this._hasReachedEnd = false;
-    if (this._gapTimerId) timerManager.stopTimer(this._gapTimerId);
-    this._gapTimerId = null;
+    if (this._gapTimerId) {
+      timerManager.stopTimer(this._gapTimerId);
+      this._gapTimerId = null;
+    }
     this._removeTimeUpdateHandler();
     state.update({ 'memoryMode.isLooping': false });
   }
@@ -231,7 +279,10 @@ class MemoryMode {
     const savedSettings = storageService.load('memorySettings') || {};
     this._settings.startTime = savedSettings.startTime ?? DEFAULT_SETTINGS.MEMORY_START_TIME;
     this._settings.endTime = savedSettings.endTime ?? DEFAULT_SETTINGS.MEMORY_END_TIME;
-    state.update({ 'memoryMode.startTime': this._settings.startTime, 'memoryMode.endTime': this._settings.endTime });
+    state.update({ 
+      'memoryMode.startTime': this._settings.startTime, 
+      'memoryMode.endTime': this._settings.endTime 
+    });
 
     this._loopCount = 0;
     state.set('memoryMode.loopCount', 0);
@@ -251,7 +302,10 @@ class MemoryMode {
 
     this._settings.startTime = start;
     this._settings.endTime = end;
-    state.update({ 'memoryMode.startTime': start, 'memoryMode.endTime': end });
+    state.update({ 
+      'memoryMode.startTime': start, 
+      'memoryMode.endTime': end 
+    });
     this._saveSettings();
 
     EventBus.emit(EVENTS.MEMORY_SEGMENT_UPDATED, { start, end });
@@ -261,16 +315,44 @@ class MemoryMode {
       this.startLoop().catch(console.error);
     }
 
-    console.log(`Segment updated: ${this._formatTime(start)} - ${this._formatTime(end)}`);
+    console.log(`📐 Segment updated: ${this._formatTime(start)} - ${this._formatTime(end)}`);
   }
 
-  updateGap(seconds) { this._settings.gapDuration = seconds; state.set('memoryMode.gapDuration', seconds); this._saveSettings(); }
-  updateSpeed(speed) { this._settings.speed = speed; audioService.setPlaybackRate(speed); state.set('memoryMode.speed', speed); this._saveSettings(); }
-  _saveSettings() { storageService.save('memorySettings', this._settings); }
-  _formatTime(seconds) { const m = Math.floor(seconds/60), s = Math.floor(seconds%60); return `${m}:${s.toString().padStart(2,'0')}`; }
+  updateGap(seconds) { 
+    this._settings.gapDuration = seconds; 
+    state.set('memoryMode.gapDuration', seconds); 
+    this._saveSettings(); 
+  }
+  
+  updateSpeed(speed) { 
+    this._settings.speed = speed; 
+    audioService.setPlaybackRate(speed); 
+    state.set('memoryMode.speed', speed); 
+    this._saveSettings(); 
+  }
+  
+  _saveSettings() { 
+    storageService.save('memorySettings', this._settings); 
+  }
+  
+  _formatTime(seconds) { 
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60); 
+    return `${m}:${s.toString().padStart(2, '0')}`; 
+  }
 
   getSettings() { return { ...this._settings }; }
-  getState() { return { currentTrack: this._currentTrack, isLooping: this._isLooping, isInGap: this._isInGap, loopCount: this._loopCount, trackDuration: this._trackDuration }; }
+  
+  getState() { 
+    return { 
+      currentTrack: this._currentTrack, 
+      isLooping: this._isLooping, 
+      isInGap: this._isInGap, 
+      loopCount: this._loopCount, 
+      trackDuration: this._trackDuration 
+    }; 
+  }
+  
   isActive() { return this._isActive; }
   isLooping() { return this._isLooping; }
 
