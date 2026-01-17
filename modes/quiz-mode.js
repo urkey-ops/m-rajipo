@@ -1,4 +1,4 @@
-// quiz-mode.js - Quiz mode logic with autoPlayFull support (FIXED)
+// quiz-mode.js - Quiz mode logic with FIXED 3-second pause
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -22,21 +22,26 @@ class QuizMode {
     this._currentPlaylist = [];
     this._currentIndex = 0;
     this._isPaused = false;
-    this._isPlayingFull = false; // ✅ NEW: Track if playing full shloka
+    this._isPlayingFull = false;
     this._countdownTimerId = null;
     this._pauseTimerId = null;
+    
+    // ✅ NEW: Track when quiz playback started
+    this._quizPlaybackStartTime = null;
+    this._timeUpdateHandler = null;
     
     this._setupEventListeners();
   }
   
   _setupEventListeners() {
     EventBus.on(EVENTS.PLAYBACK_STARTED, () => {
-      if (this._isActive && !this._isPaused) {
-        this._startPauseTimer();
+      if (this._isActive && !this._isPaused && !this._isPlayingFull) {
+        // ✅ This is quiz playback (not full shloka)
+        this._quizPlaybackStartTime = Date.now();
+        this._startMonitoringPlayback();
       }
     });
 
-    // ✅ FIXED: Handle track ended properly
     EventBus.on(EVENTS.TRACK_ENDED, () => {
       if (!this._isActive) return;
       
@@ -57,10 +62,67 @@ class QuizMode {
           });
         }
       } else {
-        // Normal quiz track ended (shouldn't happen in quiz mode)
+        // Normal quiz track ended (shouldn't happen)
         console.log('Quiz mode: Track ended during quiz play, waiting for user action');
       }
     });
+  }
+  
+  // ✅ NEW: Monitor playback time and pause at quizDelay
+  _startMonitoringPlayback() {
+    this._removeTimeUpdateHandler();
+    
+    const targetDelay = this._settings.quizDelay;
+    
+    this._timeUpdateHandler = () => {
+      if (!this._isActive || this._isPaused || this._isPlayingFull) {
+        this._removeTimeUpdateHandler();
+        return;
+      }
+      
+      const currentTime = audioService.getCurrentTime();
+      
+      // Check if we've reached the quiz delay time
+      if (currentTime >= targetDelay) {
+        console.log(`⏸️ Quiz: Reached ${targetDelay}s, pausing now`);
+        this._pauseForRecitation();
+        this._removeTimeUpdateHandler();
+      }
+    };
+    
+    const audio = audioService.getAudioElement();
+    if (audio) {
+      audio.addEventListener('timeupdate', this._timeUpdateHandler);
+    }
+    
+    console.log(`👁️ Monitoring playback, will pause at ${targetDelay}s`);
+  }
+  
+  // ✅ NEW: Remove time update handler
+  _removeTimeUpdateHandler() {
+    if (this._timeUpdateHandler) {
+      const audio = audioService.getAudioElement();
+      if (audio) {
+        audio.removeEventListener('timeupdate', this._timeUpdateHandler);
+      }
+      this._timeUpdateHandler = null;
+    }
+  }
+  
+  // ✅ NEW: Extracted pause logic
+  _pauseForRecitation() {
+    if (this._isPaused) return;
+    
+    audioService.pause();
+    this._isPaused = true;
+    this._quizPlaybackStartTime = null;
+    state.set('quizMode.isPaused', true);
+
+    console.log('⏸️ Quiz: Audio paused, your turn!');
+    EventBus.emit('quiz-mode:paused-for-recitation');
+
+    // Start countdown
+    this._startCountdown();
   }
   
   initialize() {
@@ -85,6 +147,7 @@ class QuizMode {
     this._isActive = true;
     state.setMode(MODES.QUIZ);
     this._clearAllTimers();
+    this._removeTimeUpdateHandler(); // ✅ Clean up any handlers
     audioService.setPlaybackRate(1.0);
 
     EventBus.emit('quiz-mode:initialized', this._settings);
@@ -96,13 +159,15 @@ class QuizMode {
 
     console.log('🧹 Cleaning up Quiz Mode');
     this._clearAllTimers();
+    this._removeTimeUpdateHandler(); // ✅ Clean up handlers
 
     if (audioService.isPlaying()) audioService.stop();
 
     this._currentPlaylist = [];
     this._currentIndex = 0;
     this._isPaused = false;
-    this._isPlayingFull = false; // ✅ Reset flag
+    this._isPlayingFull = false;
+    this._quizPlaybackStartTime = null;
     this._isActive = false;
 
     EventBus.emit('quiz-mode:cleanup');
@@ -118,7 +183,8 @@ class QuizMode {
     this._currentPlaylist = playlistService.shufflePlaylist(selectedTracks);
     this._currentIndex = 0;
     this._isPaused = false;
-    this._isPlayingFull = false; // ✅ Reset flag
+    this._isPlayingFull = false;
+    this._quizPlaybackStartTime = null;
 
     state.update({
       'quizMode.currentTrack': this._currentPlaylist[0],
@@ -133,6 +199,7 @@ class QuizMode {
     if (!this._isActive) throw new Error('Quiz mode not initialized');
 
     this._clearAllTimers();
+    this._removeTimeUpdateHandler(); // ✅ Clean up handlers
     this._currentIndex++;
 
     if (this._currentIndex >= this._currentPlaylist.length) {
@@ -145,7 +212,9 @@ class QuizMode {
     }
 
     this._isPaused = false;
-    this._isPlayingFull = false; // ✅ Reset flag
+    this._isPlayingFull = false;
+    this._quizPlaybackStartTime = null;
+    
     state.update({
       'quizMode.currentTrack': this._currentPlaylist[this._currentIndex],
       'quizMode.isPaused': false
@@ -157,14 +226,14 @@ class QuizMode {
   async _playCurrentTrack() {
     const trackNum = this._currentPlaylist[this._currentIndex];
     this._isPaused = false;
-    this._isPlayingFull = false; // ✅ This is quiz playback, not full playback
+    this._isPlayingFull = false;
 
     try {
       await audioService.loadTrack(trackNum);
       audioService.setPlaybackRate(1.0);
       await audioService.play();
 
-      console.log(`🎵 Quiz: Playing track ${trackNum} (${this._currentIndex + 1}/${this._currentPlaylist.length})`);
+      console.log(`🎵 Quiz: Playing track ${trackNum} (${this._currentIndex + 1}/${this._currentPlaylist.length}) for ${this._settings.quizDelay}s`);
       EventBus.emit('quiz-mode:track-started', {
         track: trackNum,
         index: this._currentIndex,
@@ -172,30 +241,12 @@ class QuizMode {
       });
     } catch (error) {
       console.error('Failed to play quiz track:', error);
-      EventBus.emit(EVENTS.TOAST_SHOW, { message: 'Failed to play track. Skipping...', type: 'error' });
+      EventBus.emit(EVENTS.TOAST_SHOW, { 
+        message: 'Failed to play track. Skipping...', 
+        type: 'error' 
+      });
       setTimeout(() => this.nextQuestion(), 1000);
     }
-  }
-
-  _startPauseTimer() {
-    if (this._pauseTimerId) timerManager.stopTimer(this._pauseTimerId);
-
-    const delayMs = this._settings.quizDelay * TIMING.MS_PER_SECOND;
-    console.log(`⏸️ Quiz: Will pause after ${this._settings.quizDelay}s`);
-
-    this._pauseTimerId = timerManager.startDelay(delayMs, () => {
-      if (!this._isActive || this._isPaused) return;
-
-      audioService.pause();
-      this._isPaused = true;
-      state.set('quizMode.isPaused', true);
-
-      console.log('⏸️ Quiz: Audio paused, your turn!');
-      EventBus.emit('quiz-mode:paused-for-recitation');
-
-      // Start countdown
-      this._startCountdown();
-    });
   }
 
   _startCountdown() {
@@ -208,7 +259,6 @@ class QuizMode {
           this._countdownTimerId = null;
           EventBus.emit(EVENTS.QUIZ_COUNTDOWN_COMPLETE);
 
-          // ✅ FIXED: Handle both settings properly
           // Play full shloka if enabled
           if (this._settings.autoPlayFull && this._isPaused) {
             console.log('🔊 Auto-playing full shloka...');
@@ -233,12 +283,12 @@ class QuizMode {
     );
   }
 
-  // ✅ FIXED: Mark that we're playing full shloka
   async playFullShloka() {
     if (!this._isActive || !this._isPaused) return;
 
     this._clearAllTimers();
-    this._isPlayingFull = true; // ✅ Set flag before playing
+    this._removeTimeUpdateHandler(); // ✅ Clean up monitoring
+    this._isPlayingFull = true;
     const trackNum = this._currentPlaylist[this._currentIndex];
 
     try {
@@ -249,7 +299,7 @@ class QuizMode {
       console.log(`🔊 Playing full shloka ${trackNum}`);
       EventBus.emit('quiz-mode:playing-full', { track: trackNum });
     } catch (error) {
-      this._isPlayingFull = false; // ✅ Reset flag on error
+      this._isPlayingFull = false;
       console.error('Failed to play full shloka:', error);
       EventBus.emit(EVENTS.TOAST_SHOW, {
         message: 'Failed to play full shloka',
@@ -319,7 +369,7 @@ class QuizMode {
       currentIndex: this._currentIndex,
       currentTrack: this._currentPlaylist[this._currentIndex] || null,
       isPaused: this._isPaused,
-      isPlayingFull: this._isPlayingFull, // ✅ Expose this state
+      isPlayingFull: this._isPlayingFull,
       isCountdownActive: this._countdownTimerId !== null
     };
   }
