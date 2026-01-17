@@ -1,58 +1,99 @@
-// audio-service.js - Centralized audio handling with CORS support
+// audio-service.js - Centralized audio handling with CORS proxy
 import { EVENTS } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 
 const ARCHIVE_BASE_URL = 'https://ia601703.us.archive.org/35/items/satsang_diksha';
 
+// CORS Proxy options (choose one or fallback between them)
+const CORS_PROXIES = [
+  'https://corsproxy.io/?',
+  'https://api.allorigins.win/raw?url=',
+  'https://api.codetabs.com/v1/proxy?quest='
+];
+
 class AudioService {
   constructor() {
     this.audio = new Audio();
-    this.audio.crossOrigin = 'anonymous'; // ✅ ensure CORS-safe playback
     this._currentTrack = null;
-
+    this._currentProxyIndex = 0; // Track which proxy we're using
+    
     // Track native events and forward via EventBus
     this.audio.addEventListener('ended', () => EventBus.emit(EVENTS.TRACK_ENDED));
-    this.audio.addEventListener('error', (e) => EventBus.emit(EVENTS.PLAYBACK_ERROR, e));
-    this.audio.addEventListener('timeupdate', () => EventBus.emit('audio:timeupdate', this.audio.currentTime));
+    this.audio.addEventListener('error', (e) => {
+      console.error('Audio error:', e);
+      EventBus.emit(EVENTS.PLAYBACK_ERROR, e);
+    });
+    this.audio.addEventListener('timeupdate', () => 
+      EventBus.emit('audio:timeupdate', this.audio.currentTime)
+    );
   }
 
   setAudioElement(audioElement) {
-  if (!(audioElement instanceof HTMLAudioElement)) {
-    throw new Error('Invalid audio element');
+    if (!(audioElement instanceof HTMLAudioElement)) {
+      throw new Error('Invalid audio element');
+    }
+    this.audio = audioElement;
   }
-  this.audio = audioElement;
-  this.audio.crossOrigin = 'anonymous';
-}
 
-
-  // Generate track URL with zero-padded track number
-  _getTrackUrl(trackNum) {
+  // Generate track URL with CORS proxy
+  _getTrackUrl(trackNum, proxyIndex = this._currentProxyIndex) {
     const padded = String(trackNum).padStart(3, '0'); // 1 -> 001
-    return `${ARCHIVE_BASE_URL}/sanskrit_${padded}.mp3`;
+    const originalUrl = `${ARCHIVE_BASE_URL}/sanskrit_${padded}.mp3`;
+    
+    // Use proxy to bypass CORS
+    const proxy = CORS_PROXIES[proxyIndex];
+    return `${proxy}${encodeURIComponent(originalUrl)}`;
   }
 
-  // Load track by track number
+  // Load track by track number with proxy fallback
   async loadTrack(trackNum) {
     if (!trackNum) throw new Error('Invalid track number');
-
+    
     this._currentTrack = trackNum;
-    const url = this._getTrackUrl(trackNum);
+    
+    // Try current proxy first
+    return this._loadWithProxy(trackNum, this._currentProxyIndex)
+      .catch(async (err) => {
+        console.warn(`Proxy ${this._currentProxyIndex} failed, trying fallback...`);
+        
+        // Try next proxy
+        this._currentProxyIndex = (this._currentProxyIndex + 1) % CORS_PROXIES.length;
+        return this._loadWithProxy(trackNum, this._currentProxyIndex);
+      });
+  }
 
+  // Helper to load with specific proxy
+  _loadWithProxy(trackNum, proxyIndex) {
+    const url = this._getTrackUrl(trackNum, proxyIndex);
+    console.log(`Loading track ${trackNum} via proxy ${proxyIndex}:`, url);
+    
     this.audio.src = url;
-
+    
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('Load timeout'));
+      }, 15000); // 15 second timeout
+
       const onCanPlay = () => {
-        this.audio.removeEventListener('canplay', onCanPlay);
+        cleanup();
+        console.log(`✅ Track ${trackNum} loaded successfully`);
         resolve();
       };
+
       const onError = (e) => {
-        this.audio.removeEventListener('error', onError);
+        cleanup();
         reject(e);
+      };
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        this.audio.removeEventListener('canplay', onCanPlay);
+        this.audio.removeEventListener('error', onError);
       };
 
       this.audio.addEventListener('canplay', onCanPlay);
       this.audio.addEventListener('error', onError);
-
       this.audio.load();
     });
   }
