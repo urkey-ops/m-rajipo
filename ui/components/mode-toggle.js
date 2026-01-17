@@ -1,5 +1,4 @@
-// mode-toggle.js - Mode switching component (UPDATED FOR 3 MODES)
-
+// mode-toggle.js - Mode switching component (FIXED WITH SELECTION CLEARING)
 import { $, $$, addClass, removeClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, MODES } from '../../core/constants.js';
@@ -7,6 +6,7 @@ import { state } from '../../core/state.js';
 import { regularMode } from '../../modes/regular-mode.js';
 import { quizMode } from '../../modes/quiz-mode.js';
 import { memoryMode } from '../../modes/memory-mode.js';
+import { selectionManager } from '../../managers/selection-manager.js'; // ✅ ADD THIS IMPORT
 
 class ModeToggle {
   constructor() {
@@ -15,45 +15,60 @@ class ModeToggle {
     this.memoryBtn = null;
     this.currentMode = MODES.REGULAR;
   }
-
+  
   initialize() {
     this.regularBtn = $('#regularModeBtn');
     this.quizBtn = $('#quizModeBtn');
     this.memoryBtn = $('#memoryModeBtn');
-
+    
     this._setupEventListeners();
     this._updateUI();
-
+    
     console.log('✅ Mode toggle initialized (3 modes)');
   }
-
+  
   _setupEventListeners() {
     if (this.regularBtn) {
       this.regularBtn.addEventListener('click', () => {
         this._switchMode(MODES.REGULAR);
       });
     }
-
+    
     if (this.quizBtn) {
       this.quizBtn.addEventListener('click', () => {
         this._switchMode(MODES.QUIZ);
       });
     }
-
+    
     if (this.memoryBtn) {
       this.memoryBtn.addEventListener('click', () => {
         this._switchMode(MODES.MEMORY);
       });
     }
   }
-
+  
   _switchMode(newMode) {
     if (this.currentMode === newMode) return;
-
+    
     const oldMode = this.currentMode;
-
-    console.log(`Switching mode: ${oldMode} → ${newMode}`);
-
+    console.log(`🔄 Switching mode: ${oldMode} → ${newMode}`);
+    
+    // ✅ CLEAR SELECTIONS when switching to/from Memory Mode
+    if (newMode === MODES.MEMORY || oldMode === MODES.MEMORY) {
+      const hadSelection = selectionManager.getCount() > 0;
+      selectionManager.clear();
+      
+      if (hadSelection) {
+        console.log('🧹 Cleared selections due to Memory Mode switch');
+        EventBus.emit(EVENTS.TOAST_SHOW, {
+          message: newMode === MODES.MEMORY 
+            ? 'Memory Mode: Select 1 shloka to memorize' 
+            : 'Selections cleared. Select shlokas to continue.',
+          type: 'info'
+        });
+      }
+    }
+    
     // Cleanup old mode
     switch (oldMode) {
       case MODES.REGULAR:
@@ -66,7 +81,7 @@ class ModeToggle {
         memoryMode.cleanup();
         break;
     }
-
+    
     // Initialize new mode
     switch (newMode) {
       case MODES.REGULAR:
@@ -79,26 +94,26 @@ class ModeToggle {
         memoryMode.initialize();
         break;
     }
-
+    
     this.currentMode = newMode;
     this._updateUI();
-
+    
     // Show/hide appropriate controls
     this._toggleControlVisibility(newMode);
-
+    
     // Emit mode change event
     EventBus.emit(EVENTS.MODE_CHANGED, {
       from: oldMode,
       to: newMode
     });
   }
-
+  
   _updateUI() {
     // Remove active from all
     [this.regularBtn, this.quizBtn, this.memoryBtn].forEach(btn => {
       if (btn) removeClass(btn, 'active');
     });
-
+    
     // Add active to current
     switch (this.currentMode) {
       case MODES.REGULAR:
@@ -112,17 +127,17 @@ class ModeToggle {
         break;
     }
   }
-
+  
   _toggleControlVisibility(mode) {
     const regularControls = $('#regularControls');
     const quizControls = $('#quizControls');
     const memoryControls = $('#memoryControls');
-
+    
     // Hide all
     [regularControls, quizControls, memoryControls].forEach(el => {
       if (el) addClass(el, 'hidden');
     });
-
+    
     // Show active mode controls
     switch (mode) {
       case MODES.REGULAR:
