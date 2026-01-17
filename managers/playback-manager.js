@@ -1,4 +1,4 @@
-// playback-manager.js - Orchestrates audio playback with playlists
+// playback-manager.js - FIXED VERSION with cleanup and mode awareness
 import { EVENTS, MODES } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -17,34 +17,89 @@ class PlaybackManager {
     this._repeatPlaylist = false;
     this._shuffled = false;
     this._speed = 1.0;
+    this._isActive = false; // ✅ NEW: Track if manager is active
+    
+    // ✅ NEW: Track event listener cleanup functions
+    this._eventCleanupFunctions = [];
     
     this._setupEventListeners();
   }
   
   _setupEventListeners() {
+    // ✅ FIXED: Store cleanup functions for later removal
+    
     // Listen to track ended event
-    EventBus.on(EVENTS.TRACK_ENDED, () => {
+    const trackEndedCleanup = EventBus.on(EVENTS.TRACK_ENDED, () => {
       this._handleTrackEnded();
     });
+    this._eventCleanupFunctions.push(trackEndedCleanup);
     
     // Listen to playback errors
-    EventBus.on(EVENTS.PLAYBACK_ERROR, (data) => {
+    const errorCleanup = EventBus.on(EVENTS.PLAYBACK_ERROR, (data) => {
       this._handlePlaybackError(data);
     });
+    this._eventCleanupFunctions.push(errorCleanup);
     
     // Listen to next/previous requests from media controls
-    EventBus.on('audio:next-requested', () => {
-      this.next();
+    const nextCleanup = EventBus.on('audio:next-requested', () => {
+      // ✅ Only allow in regular mode
+      if (this._isActive && state.get('currentMode') === MODES.REGULAR) {
+        this.next();
+      }
     });
+    this._eventCleanupFunctions.push(nextCleanup);
     
-    EventBus.on('audio:previous-requested', () => {
-      this.previous();
+    const prevCleanup = EventBus.on('audio:previous-requested', () => {
+      // ✅ Only allow in regular mode
+      if (this._isActive && state.get('currentMode') === MODES.REGULAR) {
+        this.previous();
+      }
     });
+    this._eventCleanupFunctions.push(prevCleanup);
     
     // Listen to skip requests from error recovery
-    EventBus.on('playback:skip', () => {
-      this.next();
+    const skipCleanup = EventBus.on('playback:skip', () => {
+      if (this._isActive && state.get('currentMode') === MODES.REGULAR) {
+        this.next();
+      }
     });
+    this._eventCleanupFunctions.push(skipCleanup);
+  }
+  
+  // ✅ NEW: Cleanup method
+  cleanup() {
+    if (!this._isActive) return;
+    
+    console.log('🧹 Cleaning up Playback Manager');
+    
+    // Stop any active playback
+    if (this._isPlaying) {
+      this.stop();
+    }
+    
+    // Reset all state
+    this._currentPlaylist = [];
+    this._currentIndex = 0;
+    this._repeatEach = 1;
+    this._repeatCounter = 0;
+    this._repeatPlaylist = false;
+    this._shuffled = false;
+    this._speed = 1.0;
+    this._isPlaying = false;
+    this._isActive = false;
+    
+    console.log('✅ Playback Manager cleaned up');
+  }
+  
+  // ✅ NEW: Initialize for active use
+  initialize() {
+    if (this._isActive) {
+      console.warn('Playback Manager already active');
+      return;
+    }
+    
+    console.log('🎵 Initializing Playback Manager');
+    this._isActive = true;
   }
   
   // Start playback with options
@@ -52,6 +107,16 @@ class PlaybackManager {
     if (!tracks || tracks.length === 0) {
       throw new Error('No tracks provided');
     }
+    
+    // ✅ NEW: Check if already playing and stop first
+    if (this._isPlaying) {
+      console.warn('Already playing, stopping previous playback');
+      this.stop();
+    }
+    
+    // ✅ NEW: Only update state if in regular mode
+    const currentMode = state.get('currentMode');
+    const isRegularMode = currentMode === MODES.REGULAR;
     
     const {
       startIndex = 0,
@@ -83,18 +148,21 @@ class PlaybackManager {
     this._repeatCounter = 0;
     this._repeatPlaylist = repeatPlaylist;
     this._speed = speed;
+    this._isActive = true; // ✅ Mark as active
     
-    // Update state
-    state.update({
-      'playlist.tracks': playlist,
-      'playlist.currentIndex': this._currentIndex,
-      'playlist.repeatEach': this._repeatEach,
-      'playlist.repeatCounter': 0,
-      'playlist.repeatPlaylist': repeatPlaylist,
-      'playlist.shuffled': this._shuffled
-    });
+    // ✅ FIXED: Only update playlist state in regular mode
+    if (isRegularMode) {
+      state.update({
+        'playlist.tracks': playlist,
+        'playlist.currentIndex': this._currentIndex,
+        'playlist.repeatEach': this._repeatEach,
+        'playlist.repeatCounter': 0,
+        'playlist.repeatPlaylist': repeatPlaylist,
+        'playlist.shuffled': this._shuffled
+      });
+    }
     
-    // Save to history
+    // Save to history (save original tracks, not shuffled)
     storageService.saveToHistory(tracks);
     
     // Load and play first track
@@ -110,11 +178,14 @@ class PlaybackManager {
     }
     
     const trackNum = this._currentPlaylist[index];
+    const currentMode = state.get('currentMode');
+    const isRegularMode = currentMode === MODES.REGULAR;
     
     try {
       await audioService.loadTrack(trackNum);
       
-      // Set speed AFTER loading track
+      // ✅ FIXED: Set speed BEFORE playing (using Promise.resolve to ensure order)
+      await Promise.resolve();
       audioService.setPlaybackRate(this._speed);
       
       await audioService.play();
@@ -122,13 +193,15 @@ class PlaybackManager {
       this._isPlaying = true;
       this._currentIndex = index;
       
-      // Update state
-      state.update({
-        'audio.currentTrack': trackNum,
-        'audio.isPlaying': true,
-        'audio.speed': this._speed,
-        'playlist.currentIndex': index
-      });
+      // ✅ FIXED: Only update state in regular mode
+      if (isRegularMode) {
+        state.update({
+          'audio.currentTrack': trackNum,
+          'audio.isPlaying': true,
+          'audio.speed': this._speed,
+          'playlist.currentIndex': index
+        });
+      }
       
       console.log(`▶️ Playing track ${trackNum} at index ${index}/${this._currentPlaylist.length - 1}, speed: ${this._speed}×`);
       
@@ -140,13 +213,21 @@ class PlaybackManager {
   
   // Handle track ended
   _handleTrackEnded() {
-    console.log('Track ended, determining next action...');
-    
-    // Check current mode
-    if (state.isQuizMode()) {
-      console.log('Quiz mode: waiting for manual advance');
+    // ✅ FIXED: Check if this manager is active and in regular mode
+    if (!this._isActive) {
+      console.log('Playback manager not active, ignoring track ended');
       return;
     }
+    
+    const currentMode = state.get('currentMode');
+    
+    // ✅ FIXED: Only handle if in regular mode
+    if (currentMode !== MODES.REGULAR) {
+      console.log(`${currentMode} mode active, playback manager ignoring track ended`);
+      return;
+    }
+    
+    console.log('Track ended, determining next action...');
     
     // Increment repeat counter
     this._repeatCounter++;
@@ -198,7 +279,27 @@ class PlaybackManager {
   
   // Handle playback error
   _handlePlaybackError(data) {
+    // ✅ Only handle if active and in regular mode
+    if (!this._isActive || state.get('currentMode') !== MODES.REGULAR) {
+      return;
+    }
+    
     console.error('Playback error:', data);
+    
+    // ✅ FIXED: Add error counter to prevent infinite loops
+    if (!this._errorCount) this._errorCount = 0;
+    this._errorCount++;
+    
+    if (this._errorCount > 3) {
+      console.error('Too many consecutive errors, stopping playback');
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: 'Multiple playback errors. Stopping.',
+        type: 'error'
+      });
+      this.stop();
+      this._errorCount = 0;
+      return;
+    }
     
     // Check if we can skip to next track
     if (this._currentPlaylist.length > 1 && this._currentIndex < this._currentPlaylist.length - 1) {
@@ -215,9 +316,16 @@ class PlaybackManager {
   
   // Play next track
   async next() {
+    if (!this._isActive) {
+      throw new Error('Playback manager not active');
+    }
+    
     if (!this._currentPlaylist || this._currentPlaylist.length === 0) {
       throw new Error('No playlist loaded');
     }
+    
+    // ✅ Reset error counter on successful manual skip
+    this._errorCount = 0;
     
     const nextResult = playlistService.getNextTrack(
       this._currentIndex,
@@ -245,9 +353,16 @@ class PlaybackManager {
   
   // Play previous track
   async previous() {
+    if (!this._isActive) {
+      throw new Error('Playback manager not active');
+    }
+    
     if (!this._currentPlaylist || this._currentPlaylist.length === 0) {
       throw new Error('No playlist loaded');
     }
+    
+    // ✅ Reset error counter
+    this._errorCount = 0;
     
     const prevResult = playlistService.getPreviousTrack(
       this._currentIndex,
@@ -264,25 +379,37 @@ class PlaybackManager {
   pause() {
     audioService.pause();
     this._isPlaying = false;
-    state.set('audio.isPlaying', false);
+    
+    const currentMode = state.get('currentMode');
+    if (currentMode === MODES.REGULAR) {
+      state.set('audio.isPlaying', false);
+    }
   }
   
   // Resume playback
   async resume() {
     await audioService.play();
     this._isPlaying = true;
-    state.set('audio.isPlaying', true);
+    
+    const currentMode = state.get('currentMode');
+    if (currentMode === MODES.REGULAR) {
+      state.set('audio.isPlaying', true);
+    }
   }
   
   // Stop playback
   stop() {
     audioService.stop();
     this._isPlaying = false;
+    this._errorCount = 0; // ✅ Reset error counter
     
-    state.update({
-      'audio.isPlaying': false,
-      'audio.currentTrack': null
-    });
+    const currentMode = state.get('currentMode');
+    if (currentMode === MODES.REGULAR) {
+      state.update({
+        'audio.isPlaying': false,
+        'audio.currentTrack': null
+      });
+    }
   }
   
   // Seek to position
@@ -292,15 +419,23 @@ class PlaybackManager {
   
   // Change speed
   changeSpeed(speed) {
-    this._speed = speed;
-    audioService.setPlaybackRate(speed);
-    state.set('audio.speed', speed);
+    // ✅ FIXED: Validate speed
+    const validSpeed = Math.max(0.5, Math.min(2.0, speed));
+    
+    this._speed = validSpeed;
+    audioService.setPlaybackRate(validSpeed);
+    
+    const currentMode = state.get('currentMode');
+    if (currentMode === MODES.REGULAR) {
+      state.set('audio.speed', validSpeed);
+    }
   }
   
   // Get current state
   getState() {
     return {
       isPlaying: this._isPlaying,
+      isActive: this._isActive,
       playlist: [...this._currentPlaylist],
       currentIndex: this._currentIndex,
       currentTrack: this._currentPlaylist[this._currentIndex] || null,
@@ -315,6 +450,11 @@ class PlaybackManager {
   // Check if playing
   isPlaying() {
     return this._isPlaying;
+  }
+  
+  // ✅ NEW: Check if active
+  isActive() {
+    return this._isActive;
   }
   
   // Get current playlist
