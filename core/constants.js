@@ -1,115 +1,190 @@
-// constants.js - All application constants
+// quiz-controls.js - Quiz-specific UI controls
+import { $, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
+import { EventBus } from '../../core/events.js';
+import { EVENTS } from '../../core/constants.js';
+import { quizMode } from '../../modes/quiz-mode.js';
 
-export const TOTAL_TRACKS = 315;
-
-export const AUDIO_BASE_URL = 'https://ia601703.us.archive.org/35/items/satsang_diksha';
-
-export const TIMING = {
-  MS_PER_SECOND: 1000,
-  MAX_RETRIES: 3,
-  RETRY_DELAY_MS: 2000,
-  TOAST_DURATION: 3000,
-  ERROR_TOAST_DURATION: 5000,
-  DEBOUNCE_DELAY: 300,
-  COUNTDOWN_INTERVAL: 250
-};
-
-export const STORAGE_KEYS = {
-  PLAYLISTS: 'personalPlaylists',
-  RECENT: 'recentSelections',
-  QUIZ_SETTINGS: 'quizSettings',
-  LAST_SELECTION: 'lastSelection',
-  MEMORY_SETTINGS: 'memorySettings'
-};
-
-export const MAX_RECENT_ITEMS = 5;
-
-export const DEFAULT_SETTINGS = {
-  SPEED: 1.0,
-  MIN_SPEED: 0.5,
-  MAX_SPEED: 2.0,
-  SPEED_STEP: 0.1,
-  REPEAT_COUNT: 1,
-  MIN_REPEAT: 1,
-  MAX_REPEAT: 10,
-  QUIZ_TIME: 20,
-  MIN_QUIZ_TIME: 5,
-  MAX_QUIZ_TIME: 60,
-  QUIZ_TIME_STEP: 5,
-  QUIZ_DELAY: 3,
-  MIN_QUIZ_DELAY: 1,
-  MAX_QUIZ_DELAY: 10,
-  AUTO_PLAY: false,
-  // Memory Mode settings
-  MEMORY_START_TIME: 0,
-  MEMORY_END_TIME: 20,
-  MEMORY_GAP: 0,
-  MIN_MEMORY_GAP: 0,
-  MAX_MEMORY_GAP: 60
-};
-
-export const AUDIO_ERRORS = {
-  ABORTED: 1,
-  NETWORK: 2,
-  DECODE: 3,
-  NOT_SUPPORTED: 4
-};
-
-export const MODES = {
-  REGULAR: 'regular',
-  QUIZ: 'quiz',
-  MEMORY: 'memory'
-};
-
-export const EVENTS = {
-  // Playback events
-  PLAYBACK_STARTED: 'playback:started',
-  PLAYBACK_PAUSED: 'playback:paused',
-  PLAYBACK_STOPPED: 'playback:stopped',
-  PLAYBACK_ERROR: 'playback:error',
-  TRACK_CHANGED: 'track:changed',
-  TRACK_ENDED: 'track:ended',
+class QuizControls {
+  constructor() {
+    this._quizCurrentText = null;
+    this._countdownText = null;
+    this._countdownBar = null;
+    this._playFullBtn = null;
+    
+    this._quizTimeSlider = null;
+    this._quizTimeDisplay = null;
+    this._quizDelaySlider = null;
+    this._quizDelayDisplay = null;
+    this._autoPlayToggle = null;
+  }
   
-  // Selection events
-  SELECTION_CHANGED: 'selection:changed',
-  SELECTION_CLEARED: 'selection:cleared',
+  initialize() {
+    this._quizCurrentText = $('#quizCurrentText');
+    this._countdownText = $('#countdownText');
+    this._countdownBar = $('#countdownBar');
+    this._playFullBtn = $('#playFullBtn');
+    
+    this._quizTimeSlider = $('#quizTimeSlider');
+    this._quizTimeDisplay = $('#quizTimeDisplay');
+    this._quizDelaySlider = $('#quizDelaySlider');
+    this._quizDelayDisplay = $('#quizDelayDisplay');
+    this._autoPlayToggle = $('#autoPlayToggle');
+    
+    this._setupEventListeners();
+    
+    console.log('✅ Quiz controls initialized');
+  }
   
-  // Mode events
-  MODE_CHANGED: 'mode:changed',
+  _setupEventListeners() {
+    // Play full button
+    if (this._playFullBtn) {
+      this._playFullBtn.addEventListener('click', () => {
+        quizMode.playFullShloka();
+      });
+    }
+    
+    // Quiz time slider
+    if (this._quizTimeSlider && this._quizTimeDisplay) {
+      this._quizTimeSlider.addEventListener('input', (e) => {
+        const time = parseInt(e.target.value);
+        quizMode.updateQuizTime(time);
+        this._quizTimeDisplay.textContent = `${time}s`;
+        e.target.setAttribute('aria-valuenow', time.toString());
+      });
+    }
+    
+    // Quiz delay slider
+    if (this._quizDelaySlider && this._quizDelayDisplay) {
+      this._quizDelaySlider.addEventListener('input', (e) => {
+        const delay = parseInt(e.target.value);
+        quizMode.updateQuizDelay(delay);
+        this._quizDelayDisplay.textContent = `${delay}s`;
+        e.target.setAttribute('aria-valuenow', delay.toString());
+      });
+    }
+    
+    // Auto-play toggle
+    if (this._autoPlayToggle) {
+      this._autoPlayToggle.addEventListener('change', () => {
+        quizMode.toggleAutoPlay();
+      });
+    }
+    
+    // Listen to quiz events
+    EventBus.on('quiz-mode:track-started', (data) => {
+      this._updateCurrentTrack(data.track, data.index, data.total);
+      this._hidePlayFullButton();
+      this._resetCountdown();
+    });
+    
+    EventBus.on('quiz-mode:paused-for-recitation', () => {
+      this._showRecitationMessage();
+      this._showPlayFullButton();
+    });
+    
+    EventBus.on(EVENTS.QUIZ_COUNTDOWN_TICK, (data) => {
+      this._updateCountdown(data.remaining, data.total);
+    });
+    
+    EventBus.on(EVENTS.QUIZ_COUNTDOWN_COMPLETE, () => {
+      this._showTimeUpMessage();
+    });
+    
+    EventBus.on('quiz-mode:playing-full', () => {
+      this._hidePlayFullButton();
+    });
+    
+    EventBus.on('quiz-mode:initialized', (settings) => {
+      this._loadSettings(settings);
+    });
+    
+    EventBus.on('quiz-mode:cleanup', () => {
+      this._reset();
+    });
+  }
   
-  // State events
-  STATE_CHANGED: 'state:changed',
-  SETTINGS_CHANGED: 'settings:changed',
+  _updateCurrentTrack(trackNum, index, total) {
+    if (this._quizCurrentText) {
+      this._quizCurrentText.textContent = `Shloka ${trackNum} (${index + 1}/${total})`;
+    }
+  }
   
-  // UI events
-  UI_READY: 'ui:ready',
-  TOAST_SHOW: 'toast:show',
-  MODAL_SHOW: 'modal:show',
+  _showRecitationMessage() {
+    if (this._quizCurrentText) {
+      this._quizCurrentText.textContent = 'Your turn to recite!';
+    }
+  }
   
-  // Quiz events
-  QUIZ_STARTED: 'quiz:started',
-  QUIZ_COUNTDOWN_TICK: 'quiz:countdown:tick',
-  QUIZ_COUNTDOWN_COMPLETE: 'quiz:countdown:complete',
+  _showTimeUpMessage() {
+    if (this._quizCurrentText) {
+      this._quizCurrentText.textContent = 'Time up! Select next or play full audio.';
+    }
+  }
   
-  // Memory events
-  MEMORY_LOOP_STARTED: 'memory:loop:started',
-  MEMORY_LOOP_COMPLETED: 'memory:loop:completed',
-  MEMORY_GAP_STARTED: 'memory:gap:started',
-  MEMORY_SEGMENT_UPDATED: 'memory:segment:updated',
+  _showPlayFullButton() {
+    if (this._playFullBtn) {
+      removeClass(this._playFullBtn, 'hidden');
+    }
+  }
   
-  // Network events
-  NETWORK_ONLINE: 'network:online',
-  NETWORK_OFFLINE: 'network:offline',
+  _hidePlayFullButton() {
+    if (this._playFullBtn) {
+      addClass(this._playFullBtn, 'hidden');
+    }
+  }
   
-  // Storage events
-  PLAYLIST_SAVED: 'playlist:saved',
-  PLAYLIST_DELETED: 'playlist:deleted',
-  HISTORY_CLEARED: 'history:cleared'
-};
+  _updateCountdown(remaining, total) {
+    if (this._countdownText) {
+      this._countdownText.textContent = `${remaining}s`;
+    }
+    
+    if (this._countdownBar) {
+      const percentage = (remaining / total) * 100;
+      this._countdownBar.style.width = `${percentage}%`;
+      this._countdownBar.setAttribute('aria-valuenow', percentage.toFixed(0));
+    }
+  }
+  
+  _resetCountdown() {
+    if (this._countdownText) {
+      this._countdownText.textContent = '';
+    }
+    
+    if (this._countdownBar) {
+      this._countdownBar.style.width = '100%';
+      this._countdownBar.setAttribute('aria-valuenow', '100');
+    }
+  }
+  
+  _loadSettings(settings) {
+    if (this._quizTimeSlider) {
+      this._quizTimeSlider.value = settings.quizTime;
+    }
+    if (this._quizTimeDisplay) {
+      this._quizTimeDisplay.textContent = `${settings.quizTime}s`;
+    }
+    
+    if (this._quizDelaySlider) {
+      this._quizDelaySlider.value = settings.quizDelay;
+    }
+    if (this._quizDelayDisplay) {
+      this._quizDelayDisplay.textContent = `${settings.quizDelay}s`;
+    }
+    
+    if (this._autoPlayToggle) {
+      this._autoPlayToggle.checked = settings.autoPlay;
+    }
+  }
+  
+  _reset() {
+    if (this._quizCurrentText) {
+      this._quizCurrentText.textContent = 'Ready to start';
+    }
+    
+    this._hidePlayFullButton();
+    this._resetCountdown();
+  }
+}
 
-export const TOAST_TYPES = {
-  INFO: 'info',
-  SUCCESS: 'success',
-  ERROR: 'error',
-  WARNING: 'warning'
-};
+// Export singleton
+export const quizControls = new QuizControls();
