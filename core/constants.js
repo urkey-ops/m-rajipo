@@ -1,9 +1,6 @@
 // constants.js - All application constants
-
 export const TOTAL_TRACKS = 315;
-
 export const AUDIO_BASE_URL = 'https://ia601703.us.archive.org/35/items/satsang_diksha';
-
 export const TIMING = {
   MS_PER_SECOND: 1000,
   MAX_RETRIES: 3,
@@ -13,7 +10,6 @@ export const TIMING = {
   DEBOUNCE_DELAY: 300,
   COUNTDOWN_INTERVAL: 250
 };
-
 export const STORAGE_KEYS = {
   PLAYLISTS: 'personalPlaylists',
   RECENT: 'recentSelections',
@@ -21,9 +17,7 @@ export const STORAGE_KEYS = {
   LAST_SELECTION: 'lastSelection',
   MEMORY_SETTINGS: 'memorySettings'
 };
-
 export const MAX_RECENT_ITEMS = 5;
-
 export const DEFAULT_SETTINGS = {
   SPEED: 1.0,
   MIN_SPEED: 0.5,
@@ -39,8 +33,8 @@ export const DEFAULT_SETTINGS = {
   QUIZ_DELAY: 3,
   MIN_QUIZ_DELAY: 1,
   MAX_QUIZ_DELAY: 10,
-  AUTO_PLAY: false,
-  AUTO_PLAY_FULL: true, // ✅ New setting: auto-play full shloka
+  AUTO_PLAY: true,           // ✅ CHANGED: Auto-advance by default
+  AUTO_PLAY_FULL: true,      // ✅ Play full shloka by default
   // Memory Mode settings
   MEMORY_START_TIME: 0,
   MEMORY_END_TIME: 20,
@@ -48,20 +42,17 @@ export const DEFAULT_SETTINGS = {
   MIN_MEMORY_GAP: 0,
   MAX_MEMORY_GAP: 60
 };
-
 export const AUDIO_ERRORS = {
   ABORTED: 1,
   NETWORK: 2,
   DECODE: 3,
   NOT_SUPPORTED: 4
 };
-
 export const MODES = {
   REGULAR: 'regular',
   QUIZ: 'quiz',
   MEMORY: 'memory'
 };
-
 export const EVENTS = {
   // Playback events
   PLAYBACK_STARTED: 'playback:started',
@@ -107,7 +98,6 @@ export const EVENTS = {
   PLAYLIST_DELETED: 'playlist:deleted',
   HISTORY_CLEARED: 'history:cleared'
 };
-
 export const TOAST_TYPES = {
   INFO: 'info',
   SUCCESS: 'success',
