@@ -1,4 +1,4 @@
-// mode-toggle.js - Mode switching component (FIXED WITH SELECTION CLEARING)
+// mode-toggle.js - Mode switching component (FIXED with proper event emission and selection clearing)
 import { $, $$, addClass, removeClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, MODES } from '../../core/constants.js';
@@ -6,7 +6,7 @@ import { state } from '../../core/state.js';
 import { regularMode } from '../../modes/regular-mode.js';
 import { quizMode } from '../../modes/quiz-mode.js';
 import { memoryMode } from '../../modes/memory-mode.js';
-import { selectionManager } from '../../managers/selection-manager.js'; // ✅ ADD THIS IMPORT
+import { selectionManager } from '../../managers/selection-manager.js';
 
 class ModeToggle {
   constructor() {
@@ -53,7 +53,7 @@ class ModeToggle {
     const oldMode = this.currentMode;
     console.log(`🔄 Switching mode: ${oldMode} → ${newMode}`);
     
-    // ✅ CLEAR SELECTIONS when switching to/from Memory Mode
+    // ✅ Clear selections when switching to/from Memory Mode
     if (newMode === MODES.MEMORY || oldMode === MODES.MEMORY) {
       const hadSelection = selectionManager.getCount() > 0;
       selectionManager.clear();
@@ -101,10 +101,11 @@ class ModeToggle {
     // Show/hide appropriate controls
     this._toggleControlVisibility(newMode);
     
-    // Emit mode change event
+    // ✅ FIXED: Emit event with BOTH properties for compatibility
     EventBus.emit(EVENTS.MODE_CHANGED, {
+      mode: newMode,      // ✅ For components expecting 'mode'
       from: oldMode,
-      to: newMode
+      to: newMode         // ✅ For components expecting 'to'
     });
   }
   
@@ -153,5 +154,4 @@ class ModeToggle {
   }
 }
 
-// Export singleton
 export const modeToggle = new ModeToggle();
