@@ -212,50 +212,55 @@ class PlaybackManager {
   }
   
   // Handle track ended
-  _handleTrackEnded() {
-    // ✅ FIXED: Check if this manager is active and in regular mode
-    if (!this._isActive) {
-      console.log('Playback manager not active, ignoring track ended');
-      return;
-    }
+_handleTrackEnded() {
+  // Check if this manager is active and in regular mode
+  if (!this._isActive) {
+    console.log('Playback manager not active, ignoring track ended');
+    return;
+  }
+  
+  const currentMode = state.get('currentMode');
+  
+  if (currentMode !== MODES.REGULAR) {
+    console.log(`${currentMode} mode active, playback manager ignoring track ended`);
+    return;
+  }
+  
+  console.log(`Track ${this._currentPlaylist[this._currentIndex]} ended. Repeat: ${this._repeatCounter + 1}/${this._repeatEach}`);
+  
+  // Increment repeat counter
+  this._repeatCounter++;
+  
+  // Check if we need to repeat current track
+  if (this._repeatCounter < this._repeatEach) {
+    console.log(`⟳ Repeating track ${this._currentPlaylist[this._currentIndex]} (${this._repeatCounter}/${this._repeatEach})`);
+    state.set('playlist.repeatCounter', this._repeatCounter);
     
-    const currentMode = state.get('currentMode');
-    
-    // ✅ FIXED: Only handle if in regular mode
-    if (currentMode !== MODES.REGULAR) {
-      console.log(`${currentMode} mode active, playback manager ignoring track ended`);
-      return;
-    }
-    
-    console.log('Track ended, determining next action...');
-    
-    // Increment repeat counter
-    this._repeatCounter++;
-    console.log(`Repeat counter: ${this._repeatCounter}/${this._repeatEach}`);
-    
-    // Check if we need to repeat current track
-    if (this._repeatCounter < this._repeatEach) {
-      console.log('Repeating current track');
-      state.set('playlist.repeatCounter', this._repeatCounter);
+    // Add small delay to ensure audio can restart
+    setTimeout(() => {
       this._playTrackAtIndex(this._currentIndex).catch(console.error);
-      return;
-    }
-    
-    // Reset counter and move to next track
-    this._repeatCounter = 0;
-    state.set('playlist.repeatCounter', 0);
-    
-    const nextResult = playlistService.getNextTrack(
-      this._currentIndex,
-      this._currentPlaylist,
-      {
-        repeatEach: this._repeatEach,
-        repeatCounter: 0,
-        repeatPlaylist: this._repeatPlaylist
-      }
-    );
-    
-    if (nextResult.isEnd) {
+    }, 100);
+    return;
+  }
+  
+  // Finished repeating current track, move to next
+  console.log(`✓ Finished track ${this._currentPlaylist[this._currentIndex]} after ${this._repeatCounter} plays`);
+  this._repeatCounter = 0;
+  state.set('playlist.repeatCounter', 0);
+  
+  // Move to next track
+  this._currentIndex++;
+  
+  // Check if end of playlist
+  if (this._currentIndex >= this._currentPlaylist.length) {
+    if (this._repeatPlaylist) {
+      console.log('🔄 Looping playlist from start');
+      this._currentIndex = 0;
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: 'Repeating playlist',
+        type: 'info'
+      });
+    } else {
       console.log('✅ Playlist complete');
       this.stop();
       EventBus.emit(EVENTS.TOAST_SHOW, {
@@ -264,93 +269,13 @@ class PlaybackManager {
       });
       return;
     }
-    
-    if (nextResult.isLooping) {
-      console.log('🔄 Looping playlist from start');
-      EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: 'Repeating playlist',
-        type: 'info'
-      });
-    }
-    
-    this._currentIndex = nextResult.index;
-    this._playTrackAtIndex(this._currentIndex).catch(console.error);
-  }
-  
-  // Handle playback error
-  _handlePlaybackError(data) {
-    // ✅ Only handle if active and in regular mode
-    if (!this._isActive || state.get('currentMode') !== MODES.REGULAR) {
-      return;
-    }
-    
-    console.error('Playback error:', data);
-    
-    // ✅ FIXED: Add error counter to prevent infinite loops
-    if (!this._errorCount) this._errorCount = 0;
-    this._errorCount++;
-    
-    if (this._errorCount > 3) {
-      console.error('Too many consecutive errors, stopping playback');
-      EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: 'Multiple playback errors. Stopping.',
-        type: 'error'
-      });
-      this.stop();
-      this._errorCount = 0;
-      return;
-    }
-    
-    // Check if we can skip to next track
-    if (this._currentPlaylist.length > 1 && this._currentIndex < this._currentPlaylist.length - 1) {
-      EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: 'Skipping problematic track...',
-        type: 'warning'
-      });
-      
-      setTimeout(() => {
-        this.next().catch(console.error);
-      }, 1000);
-    }
   }
   
   // Play next track
-  async next() {
-    if (!this._isActive) {
-      throw new Error('Playback manager not active');
-    }
-    
-    if (!this._currentPlaylist || this._currentPlaylist.length === 0) {
-      throw new Error('No playlist loaded');
-    }
-    
-    // ✅ Reset error counter on successful manual skip
-    this._errorCount = 0;
-    
-    const nextResult = playlistService.getNextTrack(
-      this._currentIndex,
-      this._currentPlaylist,
-      {
-        repeatEach: 1, // Don't repeat when manually skipping
-        repeatCounter: 0,
-        repeatPlaylist: this._repeatPlaylist
-      }
-    );
-    
-    if (nextResult.isEnd && !this._repeatPlaylist) {
-      EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: 'End of playlist',
-        type: 'info'
-      });
-      return;
-    }
-    
-    this._repeatCounter = 0;
-    this._currentIndex = nextResult.index;
-    
-    await this._playTrackAtIndex(this._currentIndex);
-  }
-  
+  console.log(`▶ Playing next track: ${this._currentPlaylist[this._currentIndex]}`);
+  this._playTrackAtIndex(this._currentIndex).catch(console.error);
+ }
+
   // Play previous track
   async previous() {
     if (!this._isActive) {
