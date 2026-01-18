@@ -2,7 +2,7 @@
 
 import { EventBus } from './core/events.js';
 import { state } from './core/state.js';
-import { EVENTS, MODES } from './core/constants.js'; // ✅ FIXED: Added MODES import
+import { EVENTS, MODES } from './core/constants.js';
 import { $ } from './utils/dom-utils.js';
 
 // Services
@@ -62,12 +62,13 @@ class Application {
     console.log('🔧 Initializing services...');
 
     const audioElement = document.getElementById('audioPlayer');
+    
+    // ✅ FIXED: Removed redundant check
     if (!audioElement) {
       throw new Error('Audio element not found');
     }
-    if (audioElement) {
-  audioService.setAudioElement(audioElement);
-}
+    
+    audioService.setAudioElement(audioElement);
 
     if (!storageService.isAvailable()) {
       console.warn('Storage not available - playlists and history disabled');
@@ -118,12 +119,10 @@ class Application {
     console.log('✅ Event handlers setup complete');
   }
 
-  // ✅ FIXED: Complete method with MODES import
   async handlePlaySelected() {
     try {
       const currentMode = state.get('currentMode');
       
-      // Ensure we're in regular mode
       if (currentMode !== MODES.REGULAR) {
         toast.warning('Switch to Regular mode to use this feature');
         return;
@@ -142,7 +141,6 @@ class Application {
         return;
       }
 
-      // Get values safely
       const repeatCountEl = $('#repeatCount');
       const shuffleEl = $('#shuffle');
       const repeatPlaylistEl = $('#repeatPlaylist');
