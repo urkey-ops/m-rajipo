@@ -1,4 +1,4 @@
-// memory-mode.js - FIXED VERSION with precise interval monitoring
+// memory-mode.js - FIXED VERSION with precise interval monitoring and proper cleanup
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -22,29 +22,28 @@ class MemoryMode {
     this._loopCount = 0;
     this._gapTimerId = null;
     this._trackDuration = 0;
-    this._monitoringTimerId = null; // ✅ NEW: Replaces _timeUpdateHandler
+    this._monitoringTimerId = null;
     this._hasReachedEnd = false;
-    
-    // ✅ Track if using default segment or user-defined
     this._isCustomSegment = false;
     
-    // ✅ Setup event listeners
+    // ✅ NEW: Track event listener cleanup functions
+    this._eventCleanupFunctions = [];
+    
     this._setupEventListeners();
   }
 
-  // ✅ Event listener setup
+  // ✅ FIXED: Store cleanup functions
   _setupEventListeners() {
-    // Handle unexpected track ending
-    EventBus.on(EVENTS.TRACK_ENDED, () => {
+    const trackEndedCleanup = EventBus.on(EVENTS.TRACK_ENDED, () => {
       if (!this._isActive || !this._isLooping) return;
       
       console.log('⚠️ Memory: Track ended unexpectedly, restarting segment');
       this._hasReachedEnd = false;
       this._seekAndPlay(this._settings.startTime).catch(console.error);
     });
+    this._eventCleanupFunctions.push(trackEndedCleanup);
     
-    // Handle audio errors
-    EventBus.on(EVENTS.PLAYBACK_ERROR, () => {
+    const playbackErrorCleanup = EventBus.on(EVENTS.PLAYBACK_ERROR, () => {
       if (!this._isActive || !this._isLooping) return;
       
       console.error('❌ Memory: Playback error, stopping loop');
@@ -54,6 +53,7 @@ class MemoryMode {
         type: 'error'
       });
     });
+    this._eventCleanupFunctions.push(playbackErrorCleanup);
   }
 
   initialize() {
@@ -62,7 +62,6 @@ class MemoryMode {
     const savedSettings = storageService.load('memorySettings');
     if (savedSettings) {
       this._settings = { ...this._settings, ...savedSettings };
-      // ✅ Load custom segment flag from storage
       this._isCustomSegment = savedSettings.isCustomSegment || false;
     }
 
@@ -87,8 +86,12 @@ class MemoryMode {
 
     console.log('🧹 Cleaning up Memory Mode');
     
+    // ✅ FIXED: Remove event listeners
+    this._eventCleanupFunctions.forEach(cleanup => cleanup());
+    this._eventCleanupFunctions = [];
+    
     this._stopLooping();
-    this._clearMonitoringTimer(); // ✅ NEW: Clear monitoring timer
+    this._clearMonitoringTimer();
     
     if (audioService.isPlaying()) audioService.stop();
 
@@ -130,7 +133,6 @@ class MemoryMode {
     const selectedTracks = selectionManager.getSelection();
     if (selectedTracks.length !== 1) throw new Error('Memory mode requires exactly 1 selected track');
 
-    // Convert selection to number for Archive.org URL generation
     this._currentTrack = Number(selectedTracks[0]);
     console.log(`🧠 Starting memory loop for track ${this._currentTrack}`);
 
@@ -139,7 +141,7 @@ class MemoryMode {
 
       this._trackDuration = audioService.getDuration();
       
-      // ✅ If no custom segment set, use FULL TRACK
+      // ✅ FIXED: Validate segment even when loading from storage
       if (!this._isCustomSegment) {
         this._settings.startTime = 0;
         this._settings.endTime = Math.floor(this._trackDuration);
@@ -155,17 +157,14 @@ class MemoryMode {
           message: `Playing full track (${this._formatTime(this._settings.endTime)})`,
           type: 'info'
         });
-      }
-      // ✅ If custom segment exists, validate it
-      else {
-        // Clamp endTime to track duration
+      } else {
+        // ✅ FIXED: Validate custom segment
         if (this._settings.endTime > this._trackDuration) {
           this._settings.endTime = Math.floor(this._trackDuration);
           state.set('memoryMode.endTime', this._settings.endTime);
           console.log(`⚠️ End time clamped to track duration: ${this._settings.endTime}s`);
         }
 
-        // Ensure start < end
         if (this._settings.startTime >= this._settings.endTime) {
           this._settings.startTime = Math.max(0, this._settings.endTime - 1);
           state.set('memoryMode.startTime', this._settings.startTime);
@@ -192,9 +191,8 @@ class MemoryMode {
         'memoryMode.loopCount': 0
       });
 
-      this._setupMonitoringTimer(); // ✅ NEW: Start interval monitoring
+      this._setupMonitoringTimer();
 
-      // Start at correct segment
       await this._seekAndPlay(this._settings.startTime);
 
       EventBus.emit(EVENTS.MEMORY_LOOP_STARTED, {
@@ -212,7 +210,6 @@ class MemoryMode {
     }
   }
 
-  // ✅ NEW: Precise interval-based monitoring (replaces timeupdate)
   _setupMonitoringTimer() {
     this._clearMonitoringTimer();
     
@@ -220,49 +217,43 @@ class MemoryMode {
     
     console.log(`👁️ Memory: Starting monitoring, will loop at ${targetEnd}s`);
     
-    // Use precise 50ms interval for ±25ms accuracy
     this._monitoringTimerId = setInterval(() => {
-      // Safety check: ensure we're still in valid state
-      if (!this._isLooping || this._isInGap) {
+      // ✅ Safety check
+      if (!this._isLooping || this._isInGap || !this._isActive) {
         return;
       }
       
       const currentTime = audioService.getCurrentTime();
       
-      // Check if we've reached the end (with 50ms tolerance)
       if (currentTime >= targetEnd - 0.05 && !this._hasReachedEnd) {
         console.log(`🔄 Memory: Reached ${currentTime.toFixed(2)}s (target: ${targetEnd}s), looping`);
         this._hasReachedEnd = true;
         this._handleSegmentEnd();
       } else if (currentTime < targetEnd - 0.2) {
-        // Reset flag if we're well before the end (handles seeking)
         this._hasReachedEnd = false;
       }
 
-      // Emit progress for UI updates
       EventBus.emit('memory:progress', {
         currentTime,
         segmentStart: this._settings.startTime,
         segmentEnd: this._settings.endTime,
         loopCount: this._loopCount
       });
-    }, 50); // Check every 50ms for ±25ms accuracy
+    }, 50);
     
     console.log(`👁️ Memory monitoring started`);
   }
 
-  // ✅ NEW: Clear monitoring timer
+  // ✅ FIXED: Properly nullify timer ID
   _clearMonitoringTimer() {
     if (this._monitoringTimerId) {
       clearInterval(this._monitoringTimerId);
-      this._monitoringTimerId = null;
+      this._monitoringTimerId = null; // ✅ CRITICAL FIX
       console.log('🛑 Memory monitoring timer cleared');
     }
   }
 
-  // ✅ FIXED: Pause first to prevent race condition
   _handleSegmentEnd() {
-    // Pause first to prevent race condition
     audioService.pause();
     
     this._loopCount++;
@@ -275,14 +266,12 @@ class MemoryMode {
     if (this._settings.gapDuration > 0) {
       this._startGap();
     } else {
-      // No gap - immediately restart
       this._hasReachedEnd = false;
       this._seekAndPlay(this._settings.startTime).catch(console.error);
     }
   }
 
   _startGap() {
-    // Audio already paused in _handleSegmentEnd
     this._isInGap = true;
     const gapMs = this._settings.gapDuration * TIMING.MS_PER_SECOND;
     
@@ -295,6 +284,9 @@ class MemoryMode {
   }
 
   _endGap() {
+    // ✅ Check if still active
+    if (!this._isActive) return;
+    
     this._isInGap = false;
     this._gapTimerId = null;
     this._hasReachedEnd = false;
@@ -310,14 +302,24 @@ class MemoryMode {
     }
   }
 
+  // ✅ FIXED: Resume preserves playback position
   resume() {
     if (!this._isLooping) return;
+    
     if (this._isInGap) {
-      // Restart full gap duration (simplified approach)
       const gapMs = this._settings.gapDuration * TIMING.MS_PER_SECOND;
       this._gapTimerId = timerManager.startDelay(gapMs, () => this._endGap());
     } else {
-      this._seekAndPlay(this._settings.startTime).catch(console.error);
+      // ✅ FIXED: Resume from current position instead of startTime
+      const currentTime = audioService.getCurrentTime();
+      
+      // Only seek to start if we're outside the segment bounds
+      if (currentTime < this._settings.startTime || currentTime >= this._settings.endTime) {
+        this._seekAndPlay(this._settings.startTime).catch(console.error);
+      } else {
+        // Resume from current position
+        audioService.play().catch(console.error);
+      }
     }
   }
 
@@ -331,7 +333,7 @@ class MemoryMode {
       this._gapTimerId = null;
     }
     
-    this._clearMonitoringTimer(); // ✅ NEW: Clear monitoring timer
+    this._clearMonitoringTimer();
     
     state.update({ 'memoryMode.isLooping': false });
   }
@@ -341,7 +343,6 @@ class MemoryMode {
     audioService.stop();
   }
 
-  // ✅ Reset to full track
   resetToFullTrack() {
     if (!this._currentTrack) {
       EventBus.emit(EVENTS.TOAST_SHOW, {
@@ -353,7 +354,7 @@ class MemoryMode {
     
     this._settings.startTime = 0;
     this._settings.endTime = Math.floor(this._trackDuration);
-    this._isCustomSegment = false; // ✅ Mark as using defaults
+    this._isCustomSegment = false;
     
     state.update({
       'memoryMode.startTime': 0,
@@ -367,7 +368,6 @@ class MemoryMode {
       type: 'success'
     });
     
-    // Restart loop with full track
     if (this._isLooping) {
       this._stopLooping();
       this.startLoop().catch(console.error);
@@ -383,8 +383,6 @@ class MemoryMode {
     const savedSettings = storageService.load('memorySettings') || {};
     this._settings.startTime = savedSettings.startTime ?? DEFAULT_SETTINGS.MEMORY_START_TIME;
     this._settings.endTime = savedSettings.endTime ?? DEFAULT_SETTINGS.MEMORY_END_TIME;
-    
-    // ✅ Load custom segment flag
     this._isCustomSegment = savedSettings.isCustomSegment || false;
     
     state.update({ 
@@ -416,7 +414,7 @@ class MemoryMode {
 
     this._settings.startTime = start;
     this._settings.endTime = end;
-    this._isCustomSegment = true; // ✅ User has set custom segment
+    this._isCustomSegment = true;
     
     state.update({ 
       'memoryMode.startTime': start, 
@@ -448,7 +446,6 @@ class MemoryMode {
   }
   
   _saveSettings() { 
-    // ✅ Save custom segment flag to storage
     const settingsToSave = {
       ...this._settings,
       isCustomSegment: this._isCustomSegment
