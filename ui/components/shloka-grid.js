@@ -12,7 +12,7 @@ class ShlokaGrid {
     this._searchTerm = '';
     this._isUpdatingFromManager = false;
     this._currentMode = MODES.REGULAR;
-    this._clearAllBtn = null; // ✅ NEW: Store clear all button reference
+    this._clearAllBtn = null;
   }
   
   initialize() {
@@ -25,7 +25,7 @@ class ShlokaGrid {
     
     this._generateGrid();
     this._setupEventListeners();
-    this._setupClearAllButton(); // ✅ NEW: Setup clear all button
+    this._setupClearAllButton();
     
     setTimeout(() => {
       this._updateSelectionActions();
@@ -63,9 +63,7 @@ class ShlokaGrid {
     console.log(`Generated ${TOTAL_TRACKS} shloka items`);
   }
   
-  // ✅ NEW: Setup clear all button handler
   _setupClearAllButton() {
-    // Try multiple possible button IDs/classes
     this._clearAllBtn = $('#clearAllBtn') || 
                         $('#clearAll') || 
                         $('.clear-all-btn') ||
@@ -83,7 +81,6 @@ class ShlokaGrid {
   }
   
   _setupEventListeners() {
-    // Handle grid clicks
     this._grid.addEventListener('click', (e) => {
       const label = e.target.closest('.shloka-item');
       if (!label) return;
@@ -104,7 +101,6 @@ class ShlokaGrid {
       this._handleCheckboxChange(checkbox);
     });
     
-    // Listen to selection manager changes
     EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
       if (!this._isUpdatingFromManager) {
         this._updateVisualStateFromManager();
@@ -117,15 +113,14 @@ class ShlokaGrid {
       }
     });
 
-    // ✅ FIXED: Listen to mode changes with correct property
+    // ✅ FIXED: Use correct property from event
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this._currentMode = data.mode; // ✅ FIXED: was data.to
+      this._currentMode = data.mode; // ✅ FIXED: Now matches emitted property
       this._updateGridForMode(data.mode);
       console.log(`📊 Grid mode changed to: ${data.mode}`);
     });
   }
   
-  // Update grid behavior for different modes
   _updateGridForMode(mode) {
     if (mode === MODES.MEMORY) {
       this._grid.setAttribute('data-mode', 'memory');
@@ -135,7 +130,6 @@ class ShlokaGrid {
     }
   }
   
-  // Handle checkbox changes with mode-aware logic
   _handleCheckboxChange(checkbox) {
     const trackNum = parseInt(checkbox.value);
     const isChecked = checkbox.checked;
@@ -144,9 +138,8 @@ class ShlokaGrid {
     
     const label = checkbox.closest('.shloka-item');
     
-    // ✅ In Memory Mode, enforce single selection
+    // In Memory Mode, enforce single selection
     if (this._currentMode === MODES.MEMORY && isChecked) {
-      // Uncheck ALL other checkboxes first
       $$('.shloka-checkbox').forEach(cb => {
         if (cb !== checkbox && cb.checked) {
           cb.checked = false;
@@ -195,17 +188,12 @@ class ShlokaGrid {
     this._updateSelectionActions();
   }
   
-  // ✅ NEW: Public method to clear all selection
   clearAllSelection() {
     console.log('🗑️ Clearing all selections');
     
-    // Clear selection manager
     selectionManager.clear();
-    
-    // Clear visual state
     this._clearAllVisualSelection();
     
-    // Show confirmation toast
     EventBus.emit(EVENTS.TOAST_SHOW, {
       message: 'All selections cleared',
       type: 'info'
@@ -222,7 +210,6 @@ class ShlokaGrid {
     }
     
     if (selectionCount) {
-      // Show different message in Memory Mode
       if (this._currentMode === MODES.MEMORY) {
         selectionCount.textContent = count === 1 ? 'Selected: 1 (Memory Mode)' : 'Select 1 shloka';
       } else {
