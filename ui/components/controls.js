@@ -52,7 +52,7 @@ class Controls {
         if (!state.isQuizMode()) {
           const speed = parseFloat(e.target.value);
           regularMode.updateSpeed(speed);
-         this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
+          this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
           e.target.setAttribute('aria-valuenow', speed.toString());
         }
       });
@@ -100,9 +100,9 @@ class Controls {
       });
     }
 
-    // Listen to mode changes
+    // ✅ FIXED: Listen to mode changes with correct property
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this._isQuizMode = data.to === MODES.QUIZ;
+      this._isQuizMode = data.mode === MODES.QUIZ; // ✅ FIXED: Use 'mode' property
       this._updateControlsForMode();
     });
   }
@@ -165,5 +165,4 @@ class Controls {
   }
 }
 
-// Export singleton
 export const controls = new Controls();
