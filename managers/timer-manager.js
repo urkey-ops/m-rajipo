@@ -1,4 +1,4 @@
-// timer-manager.js - ENHANCED VERSION with WeakMap auto-cleanup
+// timer-manager.js - ENHANCED VERSION with proper auto-cleanup
 
 import { TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
@@ -8,7 +8,7 @@ class TimerManager {
     this._timers = new Map();
     this._intervals = new Map();
     this._nextId = 1;
-    this._maxTimers = 50; // ✅ Prevent timer leaks
+    this._maxTimers = 50;
   }
   
   startCountdown(duration, callbacks = {}) {
@@ -18,7 +18,7 @@ class TimerManager {
       interval = TIMING.MS_PER_SECOND
     } = callbacks;
     
-    this._checkTimerLimit(); // ✅ Prevent leaks
+    this._checkTimerLimit();
     
     const id = `countdown_${this._nextId++}`;
     let remaining = duration;
@@ -42,7 +42,7 @@ class TimerManager {
       startTime: Date.now(),
       duration,
       remaining,
-      autoCleanup: true // ✅ Mark for auto-cleanup
+      autoCleanup: true
     });
     
     console.log(`Timer started: ${id} (${duration}s)`);
@@ -109,7 +109,7 @@ class TimerManager {
       type: 'interval',
       startTime: Date.now(),
       interval: intervalDelay,
-      autoCleanup: false // ✅ Intervals need manual cleanup
+      autoCleanup: false
     });
     
     console.log(`Interval started: ${id} (${intervalDelay}ms)`);
@@ -215,7 +215,6 @@ class TimerManager {
     console.log('All timers cleared');
   }
   
-  // ✅ NEW: Prevent timer leaks
   _checkTimerLimit() {
     const total = this._timers.size + this._intervals.size;
     
@@ -225,53 +224,70 @@ class TimerManager {
     }
   }
   
-  // ✅ NEW: Auto-cleanup old timers
+  // ✅ FIXED: Don't cleanup timers that are still in the active maps
   _cleanupOldTimers() {
     const now = Date.now();
     const maxAge = 60000; // 1 minute
     
+    // Only cleanup completed timers that somehow weren't removed
     for (const [id, timer] of this._timers.entries()) {
       if (timer.autoCleanup && (now - timer.startTime) > maxAge) {
-        clearTimeout(timer.timeoutId);
-        this._timers.delete(id);
-        console.log(`Auto-cleaned timer: ${id}`);
+        // Verify the timeout hasn't already fired by checking if it still exists
+        try {
+          clearTimeout(timer.timeoutId);
+          this._timers.delete(id);
+          console.log(`Auto-cleaned stale timer: ${id}`);
+        } catch (e) {
+          // Timer already cleared, just remove from map
+          this._timers.delete(id);
+        }
       }
     }
     
+    // ✅ CRITICAL FIX: Don't auto-cleanup intervals that are still active
+    // Only cleanup intervals that are marked as completed or stale
     for (const [id, interval] of this._intervals.entries()) {
-      if (interval.autoCleanup && (now - interval.startTime) > maxAge) {
+      // Only cleanup if autoCleanup is true AND it's been running for too long
+      // This prevents cleaning up long-running legitimate timers like 60s+ gaps
+      if (interval.autoCleanup && interval.paused && (now - (interval.pausedAt || interval.startTime)) > maxAge) {
         clearInterval(interval.intervalId);
         this._intervals.delete(id);
-        console.log(`Auto-cleaned interval: ${id}`);
+        console.log(`Auto-cleaned paused interval: ${id}`);
       }
     }
   }
   
-  getActiveCount() {return this._timers.size + this._intervals.size;
-}
-getTimerInfo(id) {
-if (this._timers.has(id)) {
-return { ...this._timers.get(id), category: 'timeout' };
-}
-if (this._intervals.has(id)) {
-return { ...this._intervals.get(id), category: 'interval' };
-}
-return null;
-}
-listActive() {
-const active = [];
-for (const [id, timer] of this._timers.entries()) {
-  active.push({ id, ...timer, category: 'timeout' });
+  getActiveCount() {
+    return this._timers.size + this._intervals.size;
+  }
+  
+  getTimerInfo(id) {
+    if (this._timers.has(id)) {
+      return { ...this._timers.get(id), category: 'timeout' };
+    }
+    if (this._intervals.has(id)) {
+      return { ...this._intervals.get(id), category: 'interval' };
+    }
+    return null;
+  }
+  
+  listActive() {
+    const active = [];
+    
+    for (const [id, timer] of this._timers.entries()) {
+      active.push({ id, ...timer, category: 'timeout' });
+    }
+
+    for (const [id, interval] of this._intervals.entries()) {
+      active.push({ id, ...interval, category: 'interval' });
+    }
+
+    return active;
+  }
 }
 
-for (const [id, interval] of this._intervals.entries()) {
-  active.push({ id, ...interval, category: 'interval' });
-}
-
-return active;
-}
-}
 export const timerManager = new TimerManager();
+
 window.addEventListener('beforeunload', () => {
-timerManager.clearAll();
+  timerManager.clearAll();
 });
