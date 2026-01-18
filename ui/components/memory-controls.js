@@ -1,4 +1,4 @@
-// memory-controls.js - FIXED VERSION with input debouncing
+// memory-controls.js - FIXED VERSION with input debouncing and proper cleanup
 import { $, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS } from '../../core/constants.js';
@@ -23,9 +23,11 @@ class MemoryControls {
     this.pauseBtn = null;
     this.resetBtn = null;
     
-    // Debounce timers
     this._segmentUpdateTimer = null;
     this._segmentUpdateDelay = 500;
+    
+    // ✅ NEW: Track event cleanup functions
+    this._eventCleanupFunctions = [];
   }
 
   initialize() {
@@ -115,29 +117,36 @@ class MemoryControls {
       });
     }
 
-    EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
+    // ✅ FIXED: Store cleanup functions
+    const selectionChangedCleanup = EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
       this.updateStartButtonState(data.count);
     });
+    this._eventCleanupFunctions.push(selectionChangedCleanup);
 
-    EventBus.on(EVENTS.SELECTION_CLEARED, () => {
+    const selectionClearedCleanup = EventBus.on(EVENTS.SELECTION_CLEARED, () => {
       this.updateStartButtonState(0);
     });
+    this._eventCleanupFunctions.push(selectionClearedCleanup);
 
-    EventBus.on(EVENTS.MEMORY_LOOP_STARTED, (data) => {
+    const loopStartedCleanup = EventBus.on(EVENTS.MEMORY_LOOP_STARTED, (data) => {
       this.onLoopStarted(data);
     });
+    this._eventCleanupFunctions.push(loopStartedCleanup);
 
-    EventBus.on(EVENTS.MEMORY_LOOP_COMPLETED, (data) => {
+    const loopCompletedCleanup = EventBus.on(EVENTS.MEMORY_LOOP_COMPLETED, (data) => {
       this.onLoopCompleted(data.loopCount);
     });
+    this._eventCleanupFunctions.push(loopCompletedCleanup);
 
-    EventBus.on('memory:progress', (data) => {
+    const progressCleanup = EventBus.on('memory:progress', (data) => {
       this.updateProgress(data);
     });
+    this._eventCleanupFunctions.push(progressCleanup);
     
-    EventBus.on(EVENTS.MEMORY_SEGMENT_UPDATED, (data) => {
+    const segmentUpdatedCleanup = EventBus.on(EVENTS.MEMORY_SEGMENT_UPDATED, (data) => {
       this.onSegmentUpdated(data);
     });
+    this._eventCleanupFunctions.push(segmentUpdatedCleanup);
   }
 
   _debouncedSegmentUpdate() {
@@ -148,6 +157,7 @@ class MemoryControls {
     }, this._segmentUpdateDelay);
   }
   
+  // ✅ FIXED: Properly cancel debounce timer
   _cancelDebounce() {
     if (this._segmentUpdateTimer) {
       clearTimeout(this._segmentUpdateTimer);
@@ -363,9 +373,16 @@ class MemoryControls {
     }
   }
   
+  // ✅ NEW: Proper cleanup method
   cleanup() {
     console.log('🧹 Cleaning up Memory Controls');
+    
+    // Cancel any pending debounce
     this._cancelDebounce();
+    
+    // Remove all event listeners
+    this._eventCleanupFunctions.forEach(cleanup => cleanup());
+    this._eventCleanupFunctions = [];
   }
 }
 
