@@ -31,15 +31,15 @@ class NowPlaying {
       this.updateTrack(data.track);
     });
     
-    // Listen to mode changes
+    // ✅ FIXED: Use correct property from event
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this._isQuizMode = data.to === MODES.QUIZ;
+      this._isQuizMode = data.mode === MODES.QUIZ; // ✅ FIXED: Use 'mode' property
       this.updateIcon();
       // Update speed display for new mode
       this.updateSpeed(this._isQuizMode ? 1.0 : this._currentSpeed);
     });
     
-    // Listen to speed changes (from playback manager)
+    // Listen to speed changes (from regular mode)
     EventBus.on('regular-mode:speed-changed', (speed) => {
       if (!this._isQuizMode) {
         this._currentSpeed = speed;
@@ -110,5 +110,4 @@ class NowPlaying {
   }
 }
 
-// Export singleton
 export const nowPlaying = new NowPlaying();
