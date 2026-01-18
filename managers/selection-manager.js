@@ -1,4 +1,4 @@
-// selection-manager.js - ENHANCED VERSION
+// selection-manager.js - ENHANCED VERSION with proper memory mode deselect validation
 
 import { EventBus } from '../core/events.js';
 import { EVENTS, MODES } from '../core/constants.js';
@@ -7,16 +7,14 @@ import { state } from '../core/state.js';
 class SelectionManager {
   constructor() {
     this._selectedTracks = new Set();
-    this._source = null; // 'manual', 'playlist', 'recent', 'group', 'range'
+    this._source = null;
     this._sourceData = null;
   }
 
-  // ✅ ENHANCED: Select with options parameter
   select(trackNum, options = {}) {
     const { silent = false, source = 'manual' } = options;
     const currentMode = state.get('currentMode');
     
-    // Memory mode: only allow single selection
     if (currentMode === MODES.MEMORY) {
       this._selectedTracks.clear();
       this._selectedTracks.add(trackNum);
@@ -30,7 +28,6 @@ class SelectionManager {
       return;
     }
 
-    // Regular/Quiz mode: normal selection
     if (this._selectedTracks.has(trackNum)) {
       this._selectedTracks.delete(trackNum);
     } else {
@@ -46,30 +43,35 @@ class SelectionManager {
     console.log(`Selected tracks: ${Array.from(this._selectedTracks).join(', ')}`);
   }
 
-  // Deselect method
+  // ✅ FIXED: Validate trackNum matches current selection in memory mode
   deselect(trackNum, options = {}) {
     const { silent = false } = options;
     const currentMode = state.get('currentMode');
     
-    // In memory mode, deselecting means clearing all
     if (currentMode === MODES.MEMORY) {
-      this._selectedTracks.clear();
+      // ✅ CRITICAL FIX: Only clear if trackNum matches current selection
+      if (this._selectedTracks.has(trackNum)) {
+        this._selectedTracks.clear();
+        console.log(`Deselected track ${trackNum} (Memory Mode)`);
+      } else {
+        // Track not selected, do nothing
+        console.log(`Deselect ignored - track ${trackNum} not selected (current: ${Array.from(this._selectedTracks).join(', ')})`);
+        return; // ✅ Don't emit change if nothing changed
+      }
     } else {
       // Regular/Quiz mode: remove specific track
       this._selectedTracks.delete(trackNum);
+      console.log(`Deselected track ${trackNum}`);
     }
     
     if (!silent) {
       this._emitChange();
     }
-    console.log(`Deselected track ${trackNum}`);
   }
 
-  // Select multiple tracks
   selectMultiple(tracks, source = 'manual', sourceData = null) {
     const currentMode = state.get('currentMode');
     
-    // Memory mode: only take first track
     if (currentMode === MODES.MEMORY) {
       this._selectedTracks.clear();
       if (tracks.length > 0) {
@@ -88,7 +90,6 @@ class SelectionManager {
       return;
     }
 
-    // Regular/Quiz mode: select all
     this._selectedTracks.clear();
     tracks.forEach(track => this._selectedTracks.add(track));
     this._source = source;
@@ -98,7 +99,6 @@ class SelectionManager {
     console.log(`Selected ${tracks.length} tracks from ${source}`);
   }
 
-  // Select playlist
   selectPlaylist(name, tracks) {
     const currentMode = state.get('currentMode');
     
@@ -112,31 +112,25 @@ class SelectionManager {
     this.selectMultiple(tracks, 'playlist', { name });
   }
 
-  // Select recent
   selectRecent(label, tracks) {
     this.selectMultiple(tracks, 'recent', { label });
   }
 
-  // Select group
   selectGroup(groupNumber, tracks) {
     this.selectMultiple(tracks, 'group', { groupNumber });
   }
 
-  // Select range
   selectRange(start, end, tracks) {
     this.selectMultiple(tracks, 'range', { start, end });
   }
 
-  // Toggle track
   toggle(trackNum) {
     const currentMode = state.get('currentMode');
     
-    // Memory mode: replace selection
     if (currentMode === MODES.MEMORY) {
       const wasSelected = this._selectedTracks.has(trackNum);
       this._selectedTracks.clear();
       
-      // If it wasn't selected, select it. If it was, leave empty (deselect)
       if (!wasSelected) {
         this._selectedTracks.add(trackNum);
       }
@@ -145,7 +139,6 @@ class SelectionManager {
       return;
     }
 
-    // Regular/Quiz mode: toggle
     if (this._selectedTracks.has(trackNum)) {
       this._selectedTracks.delete(trackNum);
     } else {
@@ -155,32 +148,27 @@ class SelectionManager {
     this._emitChange();
   }
 
-  // Clear selection
   clear() {
     this._selectedTracks.clear();
     this._source = null;
     this._sourceData = null;
     
-    this._emitChange(true); // Force clear event
+    this._emitChange(true);
     console.log('Selection cleared');
   }
 
-  // Get selection as sorted array
   getSelection() {
     return Array.from(this._selectedTracks).sort((a, b) => a - b);
   }
 
-  // Get count
   getCount() {
     return this._selectedTracks.size;
   }
 
-  // Check if track is selected
   isSelected(trackNum) {
     return this._selectedTracks.has(trackNum);
   }
 
-  // Get source info
   getSource() {
     return {
       type: this._source,
@@ -188,7 +176,6 @@ class SelectionManager {
     };
   }
 
-  // Check if has selection
   hasSelection() {
     return this._selectedTracks.size > 0;
   }
@@ -208,10 +195,8 @@ class SelectionManager {
       sourceData: this._sourceData
     });
 
-    // Update state
     state.set('selectedTracks', tracks);
   }
 }
 
-// Export singleton
 export const selectionManager = new SelectionManager();
