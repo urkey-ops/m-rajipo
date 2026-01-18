@@ -86,9 +86,10 @@ class SearchBar {
       });
     }
 
+    // ✅ FIXED: Use correct property from event
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this.currentMode = data.to;
-      this.updateForMode(data.to);
+      this.currentMode = data.mode; // ✅ FIXED: Use 'mode' property
+      this.updateForMode(data.mode);
     });
   }
 
@@ -105,6 +106,7 @@ class SearchBar {
         this.groupsTab.style.cursor = 'not-allowed';
       }
       
+      // ✅ Switch to search tab if on disabled tab
       if (this.activeTab !== 0) {
         this.switchTab(0);
       }
@@ -220,6 +222,16 @@ class SearchBar {
     }
 
     const tracks = playlistService.createRangePlaylist(start, end);
+    
+    // ✅ Memory mode should not use range - but just in case, enforce it
+    if (this.currentMode === MODES.MEMORY) {
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: 'Range selection disabled in Memory Mode',
+        type: 'warning'
+      });
+      return;
+    }
+    
     selectionManager.selectRange(start, end, tracks);
 
     EventBus.emit(EVENTS.TOAST_SHOW, {
@@ -262,13 +274,12 @@ class SearchBar {
     });
   }
 
-  // ✅ FIXED: Use group number correctly
   selectGroup(groupNumber) {
     const currentMode = state.get('currentMode');
     
     if (currentMode === MODES.MEMORY) {
       EventBus.emit(EVENTS.TOAST_SHOW, {
-        message: 'Groups disabled in memory mode',
+        message: 'Groups disabled in Memory Mode',
         type: 'warning'
       });
       return;
