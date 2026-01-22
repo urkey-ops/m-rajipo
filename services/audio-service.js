@@ -339,19 +339,22 @@ class AudioService {
     return ERROR_TYPES[code] || 'UNKNOWN';
   }
   
-  reset() {
-    console.log('🔄 Resetting audio service');
-    
-    if (!this.audio) return;
-    
-    this.audio.pause();
-    this.audio.currentTime = 0;
-    this.audio.src = '';
-    this._currentTrack = null;
-    this._isInitialized = false;
-    
-    console.log('✅ Audio service reset');
-  }
+ reset() {
+  console.log('🔄 Resetting audio service');
+
+  if (!this.audio) return;
+
+  this.audio.pause();
+  this.audio.currentTime = 0;
+  this.audio.playbackRate = 1.0; // 🔒 safety
+  this.audio.src = '';
+
+  this._currentTrack = null;
+  this._isInitialized = false;
+
+  console.log('✅ Audio service reset');
+}
+
 }
 
 export const audioService = new AudioService();
