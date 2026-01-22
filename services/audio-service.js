@@ -191,6 +191,7 @@ class AudioService {
     }
     this.audio.pause();
     this.audio.currentTime = 0;
+    this.audio.playbackRate = 1.0; // ✅ THIS FIXES YOUR ISSUE
     EventBus.emit(EVENTS.PLAYBACK_STOPPED);
   }
   
