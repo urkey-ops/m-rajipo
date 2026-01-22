@@ -1,5 +1,4 @@
-// validation.js - ENHANCED VERSION with better sanitization
-
+// validation.js - UPDATED with gap duration validation
 import { TOTAL_TRACKS, DEFAULT_SETTINGS } from '../core/constants.js';
 
 export function validateTrackNumber(num) {
@@ -112,7 +111,33 @@ export function validateQuizDelay(delay) {
   return { valid: true, value: parsed };
 }
 
-// ✅ ENHANCED: Better input sanitization
+// ✅ NEW: Validate gap duration (for both regular and memory modes)
+export function validateGapDuration(gap, mode = 'regular') {
+  const parsed = parseInt(gap);
+  if (isNaN(parsed)) {
+    return { valid: false, error: 'Gap duration must be a number' };
+  }
+  
+  // Use appropriate min/max based on mode
+  const minGap = mode === 'memory' 
+    ? DEFAULT_SETTINGS.MIN_MEMORY_GAP 
+    : DEFAULT_SETTINGS.MIN_REGULAR_GAP;
+    
+  const maxGap = mode === 'memory' 
+    ? DEFAULT_SETTINGS.MAX_MEMORY_GAP 
+    : DEFAULT_SETTINGS.MAX_REGULAR_GAP;
+  
+  if (parsed < minGap || parsed > maxGap) {
+    return { 
+      valid: false, 
+      error: `Gap must be between ${minGap}s and ${maxGap}s` 
+    };
+  }
+  
+  return { valid: true, value: parsed };
+}
+
+// Enhanced input sanitization
 export function sanitizeInput(input) {
   if (typeof input !== 'string') return '';
   
