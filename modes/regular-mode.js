@@ -1,9 +1,10 @@
-// regular-mode.js - Regular playback mode logic (FIXED)
-import { EVENTS, MODES, DEFAULT_SETTINGS } from '../core/constants.js';
+// regular-mode.js - UPDATED with gap duration support
+import { EVENTS, MODES, DEFAULT_SETTINGS, STORAGE_KEYS } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
 import { playbackManager } from '../managers/playback-manager.js';
 import { selectionManager } from '../managers/selection-manager.js';
+import { storageService } from '../services/storage-service.js';
 import { validateSpeed, validateRepeatCount } from '../utils/validation.js';
 
 class RegularMode {
@@ -13,7 +14,8 @@ class RegularMode {
       speed: DEFAULT_SETTINGS.SPEED,
       repeatCount: DEFAULT_SETTINGS.REPEAT_COUNT,
       shuffle: false,
-      repeatPlaylist: false
+      repeatPlaylist: false,
+      gapDuration: DEFAULT_SETTINGS.REGULAR_GAP // ✅ NEW: Gap between tracks
     };
   }
   
@@ -26,16 +28,30 @@ class RegularMode {
     
     console.log('🎵 Initializing Regular Mode');
     
-    // Load settings from state
-    const savedSettings = state.get('regularMode');
+    // ✅ UPDATED: Load settings from storage
+    const savedSettings = storageService.load(STORAGE_KEYS.REGULAR_SETTINGS);
     if (savedSettings) {
-      this._settings = { ...this._settings, ...savedSettings };
+      this._settings = { 
+        ...this._settings, 
+        ...savedSettings,
+        // ✅ Ensure gap exists in loaded settings
+        gapDuration: savedSettings.gapDuration ?? DEFAULT_SETTINGS.REGULAR_GAP
+      };
     }
     
     this._isActive = true;
     
     // Set mode in state
     state.setMode(MODES.REGULAR);
+    
+    // ✅ UPDATED: Update state with gap
+    state.update({
+      'regularMode.speed': this._settings.speed,
+      'regularMode.repeatCount': this._settings.repeatCount,
+      'regularMode.shuffle': this._settings.shuffle,
+      'regularMode.repeatPlaylist': this._settings.repeatPlaylist,
+      'regularMode.gapDuration': this._settings.gapDuration
+    });
     
     // Emit initialization event
     EventBus.emit('regular-mode:initialized', this._settings);
@@ -74,13 +90,14 @@ class RegularMode {
       throw new Error('No tracks selected');
     }
     
-    // Prepare playback options
+    // ✅ UPDATED: Include gapDuration in playback options
     const options = {
       startIndex: 0,
       repeatEach: this._settings.repeatCount,
       repeatPlaylist: this._settings.repeatPlaylist,
       shuffle: this._settings.shuffle,
-      speed: this._settings.speed
+      speed: this._settings.speed,
+      gapDuration: this._settings.gapDuration // ✅ NEW: Pass gap to playback manager
     };
     
     console.log('Starting regular playback:', options);
@@ -89,9 +106,13 @@ class RegularMode {
     await playbackManager.startPlayback(selectedTracks, options);
     
     // Show toast
+    const gapInfo = this._settings.gapDuration > 0 
+      ? ` (${this._settings.gapDuration}s gap)` 
+      : '';
+    
     const message = selectedTracks.length === 1
-      ? `Playing shloka ${selectedTracks[0]}`
-      : `Playing ${selectedTracks.length} shlokas${this._settings.shuffle ? ' (shuffled)' : ''}`;
+      ? `Playing shloka ${selectedTracks[0]}${gapInfo}`
+      : `Playing ${selectedTracks.length} shlokas${this._settings.shuffle ? ' (shuffled)' : ''}${gapInfo}`;
     
     EventBus.emit(EVENTS.TOAST_SHOW, {
       message,
@@ -110,6 +131,9 @@ class RegularMode {
     
     // Update state
     state.set('regularMode.speed', validation.value);
+    
+    // ✅ Save settings
+    this._saveSettings();
     
     // Update playback if playing
     if (playbackManager.isPlaying()) {
@@ -134,9 +158,38 @@ class RegularMode {
     // Update state
     state.set('regularMode.repeatCount', validation.value);
     
+    // ✅ Save settings
+    this._saveSettings();
+    
     console.log(`Repeat count updated: ${validation.value}`);
     
     EventBus.emit('regular-mode:repeat-changed', validation.value);
+  }
+  
+  // ✅ NEW: Update gap duration
+  updateGapDuration(seconds) {
+    // Validate gap duration
+    const gap = parseInt(seconds);
+    
+    if (isNaN(gap)) {
+      throw new Error('Gap duration must be a number');
+    }
+    
+    if (gap < DEFAULT_SETTINGS.MIN_REGULAR_GAP || gap > DEFAULT_SETTINGS.MAX_REGULAR_GAP) {
+      throw new Error(`Gap must be between ${DEFAULT_SETTINGS.MIN_REGULAR_GAP}s and ${DEFAULT_SETTINGS.MAX_REGULAR_GAP}s`);
+    }
+    
+    this._settings.gapDuration = gap;
+    
+    // Update state
+    state.set('regularMode.gapDuration', gap);
+    
+    // Save settings
+    this._saveSettings();
+    
+    console.log(`Gap duration updated: ${gap}s`);
+    
+    EventBus.emit('regular-mode:gap-changed', gap);
   }
   
   // Toggle shuffle
@@ -145,6 +198,9 @@ class RegularMode {
     
     // Update state
     state.set('regularMode.shuffle', this._settings.shuffle);
+    
+    // ✅ Save settings
+    this._saveSettings();
     
     console.log(`Shuffle: ${this._settings.shuffle}`);
     
@@ -159,6 +215,9 @@ class RegularMode {
     
     // Update state
     state.set('regularMode.repeatPlaylist', this._settings.repeatPlaylist);
+    
+    // ✅ Save settings
+    this._saveSettings();
     
     console.log(`Repeat playlist: ${this._settings.repeatPlaylist}`);
     
@@ -187,9 +246,22 @@ class RegularMode {
       state.set('regularMode.repeatPlaylist', settings.repeatPlaylist);
     }
     
+    // ✅ NEW: Handle gap duration updates
+    if (settings.gapDuration !== undefined) {
+      this.updateGapDuration(settings.gapDuration);
+    }
+    
+    // ✅ Save after bulk update
+    this._saveSettings();
+    
     console.log('Settings updated:', this._settings);
     
     EventBus.emit('regular-mode:settings-changed', this._settings);
+  }
+  
+  // ✅ NEW: Save settings to storage
+  _saveSettings() {
+    storageService.save(STORAGE_KEYS.REGULAR_SETTINGS, this._settings);
   }
   
   // Get current settings
@@ -222,7 +294,8 @@ class RegularMode {
       speed: DEFAULT_SETTINGS.SPEED,
       repeatCount: DEFAULT_SETTINGS.REPEAT_COUNT,
       shuffle: false,
-      repeatPlaylist: false
+      repeatPlaylist: false,
+      gapDuration: DEFAULT_SETTINGS.REGULAR_GAP // ✅ NEW: Reset gap
     };
     
     // Update state
@@ -230,8 +303,12 @@ class RegularMode {
       'regularMode.speed': DEFAULT_SETTINGS.SPEED,
       'regularMode.repeatCount': DEFAULT_SETTINGS.REPEAT_COUNT,
       'regularMode.shuffle': false,
-      'regularMode.repeatPlaylist': false
+      'regularMode.repeatPlaylist': false,
+      'regularMode.gapDuration': DEFAULT_SETTINGS.REGULAR_GAP // ✅ NEW
     });
+    
+    // ✅ Save reset settings
+    this._saveSettings();
     
     console.log('Regular mode reset to defaults');
     
