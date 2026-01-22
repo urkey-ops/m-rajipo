@@ -1,4 +1,4 @@
-// now-playing.js - Now playing display component (FIXED)
+// now-playing.js - UPDATED with gap countdown display
 import { $, addClass, removeClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, MODES } from '../../core/constants.js';
@@ -12,6 +12,11 @@ class NowPlaying {
     this._nowPlayingSpeed = null;
     this._isQuizMode = false;
     this._currentSpeed = 1.0;
+    
+    // ✅ NEW: Gap state tracking
+    this._isInGap = false;
+    this._gapNextTrack = null;
+    this._originalText = null;
   }
   
   initialize() {
@@ -31,9 +36,9 @@ class NowPlaying {
       this.updateTrack(data.track);
     });
     
-    // ✅ FIXED: Use correct property from event
+    // Listen to mode changes
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this._isQuizMode = data.mode === MODES.QUIZ; // ✅ FIXED: Use 'mode' property
+      this._isQuizMode = data.mode === MODES.QUIZ;
       this.updateIcon();
       // Update speed display for new mode
       this.updateSpeed(this._isQuizMode ? 1.0 : this._currentSpeed);
@@ -61,10 +66,81 @@ class NowPlaying {
     EventBus.on(EVENTS.PLAYBACK_STOPPED, () => {
       this.reset();
     });
+    
+    // ✅ NEW: Listen to gap events
+    EventBus.on(EVENTS.REGULAR_GAP_STARTED, (data) => {
+      this._handleGapStarted(data);
+    });
+    
+    EventBus.on(EVENTS.REGULAR_GAP_TICK, (data) => {
+      this._handleGapTick(data);
+    });
+    
+    EventBus.on(EVENTS.REGULAR_GAP_ENDED, () => {
+      this._handleGapEnded();
+    });
+  }
+  
+  // ✅ NEW: Handle gap started
+  _handleGapStarted(data) {
+    this._isInGap = true;
+    this._gapNextTrack = data.nextTrack;
+    
+    // Store original text to restore later
+    if (this._nowPlayingShloka) {
+      this._originalText = this._nowPlayingShloka.textContent;
+    }
+    
+    // Update icon to pause during gap
+    if (this._nowPlayingIcon) {
+      this._nowPlayingIcon.className = 'fa-solid fa-hourglass-half';
+    }
+    
+    // Show gap message with next track info
+    if (this._nowPlayingShloka) {
+      const nextInfo = data.nextTrack ? ` (Next: Shloka ${data.nextTrack})` : '';
+      this._nowPlayingShloka.textContent = `Gap: ${data.duration}s${nextInfo}`;
+    }
+    
+    console.log(`⏸️ Gap display: ${data.duration}s until track ${data.nextTrack}`);
+  }
+  
+  // ✅ NEW: Handle gap countdown tick
+  _handleGapTick(data) {
+    if (!this._isInGap) return;
+    
+    // Update countdown in real-time
+    if (this._nowPlayingShloka) {
+      const nextInfo = data.nextTrack ? ` (Next: Shloka ${data.nextTrack})` : '';
+      this._nowPlayingShloka.textContent = `Gap: ${data.remaining}s${nextInfo}`;
+    }
+  }
+  
+  // ✅ NEW: Handle gap ended
+  _handleGapEnded() {
+    this._isInGap = false;
+    this._gapNextTrack = null;
+    
+    // Restore play icon
+    if (this._nowPlayingIcon) {
+      if (this._isQuizMode) {
+        this._nowPlayingIcon.className = 'fa-solid fa-brain';
+      } else {
+        this._nowPlayingIcon.className = 'fa-solid fa-play';
+      }
+    }
+    
+    // Text will be updated by TRACK_CHANGED event when next track plays
+    console.log('✓ Gap ended, resuming playback');
   }
   
   // Update displayed track
   updateTrack(trackNum) {
+    // ✅ UPDATED: Don't update if in gap (countdown takes priority)
+    if (this._isInGap) {
+      return;
+    }
+    
     if (this._nowPlayingShloka) {
       if (trackNum) {
         this._nowPlayingShloka.textContent = `Shloka ${trackNum}`;
@@ -84,6 +160,11 @@ class NowPlaying {
   
   // Update icon based on mode
   updateIcon() {
+    // ✅ UPDATED: Don't change icon if in gap
+    if (this._isInGap) {
+      return;
+    }
+    
     if (this._nowPlayingIcon) {
       if (this._isQuizMode) {
         this._nowPlayingIcon.className = 'fa-solid fa-brain';
@@ -105,9 +186,54 @@ class NowPlaying {
   
   // Reset to default state
   reset() {
+    // ✅ UPDATED: Clear gap state
+    this._isInGap = false;
+    this._gapNextTrack = null;
+    this._originalText = null;
+    
     this.updateTrack(null);
     this.updateSpeed(this._isQuizMode ? 1.0 : this._currentSpeed);
+    this.updateIcon();
   }
 }
 
 export const nowPlaying = new NowPlaying();
+```
+
+---
+
+## 📋 What Changed:
+
+### ✅ ADDED (Gap Display):
+1. **`_isInGap`** - Tracks if currently in gap
+2. **`_gapNextTrack`** - Stores next track number to display
+3. **`_originalText`** - Stores original text before gap
+4. **`_handleGapStarted(data)`** - Shows gap countdown with next track
+5. **`_handleGapTick(data)`** - Updates countdown in real-time
+6. **`_handleGapEnded()`** - Restores normal display after gap
+7. **Gap event listeners** - Listens to REGULAR_GAP_STARTED/TICK/ENDED
+
+### 🔧 MODIFIED (Gap Integration):
+1. **`updateTrack()`** - Skips update if in gap (countdown takes priority)
+2. **`updateIcon()`** - Doesn't change icon if in gap (shows hourglass)
+3. **`reset()`** - Clears gap state
+4. **Icon changes** - Shows hourglass (`fa-hourglass-half`) during gap
+
+### 🎨 Visual Feedback:
+
+**Normal playback:**
+```
+🎵 Playing Shloka 15    1.0×
+```
+
+**Gap countdown:**
+```
+⏳ Gap: 10s (Next: Shloka 16)    1.0×
+⏳ Gap: 9s (Next: Shloka 16)     1.0×
+⏳ Gap: 8s (Next: Shloka 16)     1.0×
+...
+```
+
+**After gap:**
+```
+🎵 Playing Shloka 16    1.0×
