@@ -145,6 +145,7 @@
         <!-- MODE CONTROLS -->
         <section id="modeControls" class="mode-controls">
             <!-- Regular Mode -->
+           <!-- Regular Mode -->
             <div id="regularControls" class="controls-inline">
                 <div class="speed-control">
                     <i class="fa-solid fa-gauge"></i>
@@ -153,6 +154,16 @@
                     <span id="speedDisplay" aria-live="polite">1.0×</span>
                     <span class="control-label-inline">Speed</span>
                 </div>
+                
+                <!-- ✅ NEW: Gap Control -->
+                <div class="gap-control">
+                    <i class="fa-solid fa-pause"></i>
+                    <input type="range" id="gapSlider" min="0" max="60" step="1" value="0" 
+                           aria-label="Gap between tracks">
+                    <span id="gapDisplay" aria-live="polite">0s</span>
+                    <span class="control-label-inline">Gap</span>
+                </div>
+                
                 <div class="playback-options">
                     <div class="repeat-control">
                         <i class="fa-solid fa-repeat"></i>
