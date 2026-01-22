@@ -1,4 +1,4 @@
-// controls.js - Playback controls (FIXED - Mode-aware disable)
+// controls.js - UPDATED with gap slider for regular mode
 import { $, $$, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, MODES } from '../../core/constants.js';
@@ -14,6 +14,8 @@ class Controls {
     this._repeatCount = null;
     this._shuffleCheckbox = null;
     this._repeatPlaylistCheckbox = null;
+    this._gapSlider = null; // ✅ NEW: Gap slider
+    this._gapDisplay = null; // ✅ NEW: Gap display
 
     // Quiz mode controls
     this._quizTimeSlider = null;
@@ -32,6 +34,8 @@ class Controls {
     this._repeatCount = $('#repeatCount');
     this._shuffleCheckbox = $('#shuffle');
     this._repeatPlaylistCheckbox = $('#repeatPlaylist');
+    this._gapSlider = $('#gapSlider'); // ✅ NEW
+    this._gapDisplay = $('#gapDisplay'); // ✅ NEW
 
     // Quiz mode controls
     this._quizTimeSlider = $('#quizTimeSlider');
@@ -41,8 +45,43 @@ class Controls {
     this._autoPlayToggle = $('#autoPlayToggle');
 
     this._setupEventListeners();
+    this._loadRegularModeSettings(); // ✅ NEW: Load saved settings
 
     console.log('✅ Controls initialized');
+  }
+
+  // ✅ NEW: Load regular mode settings on init
+  _loadRegularModeSettings() {
+    const settings = regularMode.getSettings();
+    
+    // Load speed
+    if (this._speedSlider && this._speedDisplay) {
+      this._speedSlider.value = settings.speed;
+      this._speedDisplay.textContent = `${settings.speed.toFixed(1)}×`;
+    }
+    
+    // Load repeat count
+    if (this._repeatCount) {
+      this._repeatCount.value = settings.repeatCount;
+    }
+    
+    // Load shuffle
+    if (this._shuffleCheckbox) {
+      this._shuffleCheckbox.checked = settings.shuffle;
+    }
+    
+    // Load repeat playlist
+    if (this._repeatPlaylistCheckbox) {
+      this._repeatPlaylistCheckbox.checked = settings.repeatPlaylist;
+    }
+    
+    // ✅ NEW: Load gap duration
+    if (this._gapSlider && this._gapDisplay) {
+      this._gapSlider.value = settings.gapDuration;
+      this._gapDisplay.textContent = `${settings.gapDuration}s`;
+    }
+    
+    console.log('📥 Regular mode settings loaded:', settings);
   }
 
   _setupEventListeners() {
@@ -100,16 +139,54 @@ class Controls {
       });
     }
 
-    // ✅ FIXED: Listen to mode changes with correct property
+    // ✅ NEW: Regular mode - Gap slider
+    if (this._gapSlider && this._gapDisplay) {
+      this._gapSlider.addEventListener('input', (e) => {
+        if (!state.isQuizMode()) {
+          const gap = parseInt(e.target.value);
+          
+          try {
+            regularMode.updateGapDuration(gap);
+            this._gapDisplay.textContent = `${gap}s`;
+            e.target.setAttribute('aria-valuenow', gap.toString());
+            
+            console.log(`Gap updated: ${gap}s`);
+          } catch (error) {
+            console.error('Gap update error:', error);
+            EventBus.emit(EVENTS.TOAST_SHOW, {
+              message: error.message,
+              type: 'error'
+            });
+          }
+        }
+      });
+    }
+
+    // Listen to mode changes
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this._isQuizMode = data.mode === MODES.QUIZ; // ✅ FIXED: Use 'mode' property
+      this._isQuizMode = data.mode === MODES.QUIZ;
       this._updateControlsForMode();
+    });
+    
+    // ✅ NEW: Listen to regular mode settings changes (for sync)
+    EventBus.on('regular-mode:gap-changed', (gap) => {
+      if (this._gapSlider && this._gapDisplay) {
+        this._gapSlider.value = gap;
+        this._gapDisplay.textContent = `${gap}s`;
+      }
+    });
+    
+    EventBus.on('regular-mode:speed-changed', (speed) => {
+      if (this._speedSlider && this._speedDisplay) {
+        this._speedSlider.value = speed;
+        this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
+      }
     });
   }
 
   _updateControlsForMode() {
     if (this._isQuizMode) {
-      // Disable regular mode controls
+      // Disable regular mode controls in quiz mode
       if (this._speedSlider) {
         this._speedSlider.disabled = true;
         this._speedSlider.style.opacity = '0.5';
@@ -123,6 +200,12 @@ class Controls {
       }
       if (this._repeatPlaylistCheckbox) {
         this._repeatPlaylistCheckbox.disabled = true;
+      }
+      // ✅ NEW: Disable gap slider in quiz mode
+      if (this._gapSlider) {
+        this._gapSlider.disabled = true;
+        this._gapSlider.style.opacity = '0.5';
+        this._gapSlider.style.cursor = 'not-allowed';
       }
     } else {
       // Enable regular mode controls
@@ -140,13 +223,26 @@ class Controls {
       if (this._repeatPlaylistCheckbox) {
         this._repeatPlaylistCheckbox.disabled = false;
       }
+      // ✅ NEW: Enable gap slider
+      if (this._gapSlider) {
+        this._gapSlider.disabled = false;
+        this._gapSlider.style.opacity = '1';
+        this._gapSlider.style.cursor = 'pointer';
+      }
     }
   }
 
-  // Update speed display
+  // Update speed display (for external updates)
   updateSpeedDisplay(speed) {
     if (this._speedDisplay) {
       this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
+    }
+  }
+
+  // ✅ NEW: Update gap display (for external updates)
+  updateGapDisplay(gap) {
+    if (this._gapDisplay) {
+      this._gapDisplay.textContent = `${gap}s`;
     }
   }
 
@@ -165,4 +261,5 @@ class Controls {
   }
 }
 
+// Export singleton
 export const controls = new Controls();
