@@ -6,6 +6,8 @@ import { playbackManager } from '../managers/playback-manager.js';
 import { selectionManager } from '../managers/selection-manager.js';
 import { storageService } from '../services/storage-service.js';
 import { validateSpeed, validateRepeatCount } from '../utils/validation.js';
+import { audioService } from '../services/audio-service.js'; // ✅ ADD THIS
+
 
 class RegularMode {
   constructor() {
