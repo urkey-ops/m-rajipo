@@ -52,6 +52,10 @@ class RegularMode {
       'regularMode.repeatPlaylist': this._settings.repeatPlaylist,
       'regularMode.gapDuration': this._settings.gapDuration
     });
+
+    
+// 🔹 Sync audio playback rate with restored speed
+audioService.setPlaybackRate(this._settings.speed);
     
     // Emit initialization event
     EventBus.emit('regular-mode:initialized', this._settings);
