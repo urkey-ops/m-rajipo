@@ -120,59 +120,66 @@ class Application {
   }
 
   async handlePlaySelected() {
-    try {
-      const currentMode = state.get('currentMode');
-      
-      if (currentMode !== MODES.REGULAR) {
-        toast.warning('Switch to Regular mode to use this feature');
-        return;
-      }
-
-      const validation = regularMode.validate();
-      if (!validation.valid) {
-        toast.error(validation.error);
-        return;
-      }
-
-      const selectedTracks = selectionManager.getSelection();
-      
-      if (selectedTracks.length === 0) {
-        toast.info('Please select at least one shloka to play.');
-        return;
-      }
-
-      const repeatCountEl = $('#repeatCount');
-      const shuffleEl = $('#shuffle');
-      const repeatPlaylistEl = $('#repeatPlaylist');
-
-      const repeatCount = repeatCountEl ? parseInt(repeatCountEl.value) || 1 : 1;
-      const shuffle = shuffleEl ? shuffleEl.checked : false;
-      const repeatPlaylist = repeatPlaylistEl ? repeatPlaylistEl.checked : false;
-      const speed = regularMode.getSettings().speed || 1.0;
-
-      console.log('Starting playback with settings:', {
-        tracks: selectedTracks,
-        repeatCount,
-        shuffle,
-        repeatPlaylist,
-        speed
-      });
-
-      await playbackManager.startPlayback(selectedTracks, {
-        startIndex: 0,
-        repeatEach: repeatCount,
-        repeatPlaylist: repeatPlaylist,
-        shuffle: shuffle,
-        speed: speed
-      });
-
-      toast.success(`Playing ${selectedTracks.length} shloka${selectedTracks.length > 1 ? 's' : ''}`);
-
-    } catch (error) {
-      console.error('Failed to start playback:', error);
-      toast.error(error.message || 'Failed to start playback');
+  try {
+    const currentMode = state.get('currentMode');
+    
+    // Ensure we're in regular mode
+    if (currentMode !== MODES.REGULAR) {
+      toast.warning('Switch to Regular mode to use this feature');
+      return;
     }
+
+    const validation = regularMode.validate();
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    const selectedTracks = selectionManager.getSelection();
+    
+    if (selectedTracks.length === 0) {
+      toast.info('Please select at least one shloka to play.');
+      return;
+    }
+
+    // ✅ FIXED: Get ALL settings including gap
+    const settings = regularMode.getSettings();
+    
+    const repeatCountEl = $('#repeatCount');
+    const shuffleEl = $('#shuffle');
+    const repeatPlaylistEl = $('#repeatPlaylist');
+
+    const repeatCount = repeatCountEl ? parseInt(repeatCountEl.value) || 1 : 1;
+    const shuffle = shuffleEl ? shuffleEl.checked : false;
+    const repeatPlaylist = repeatPlaylistEl ? repeatPlaylistEl.checked : false;
+
+    console.log('Starting playback with settings:', {
+      tracks: selectedTracks,
+      repeatCount,
+      shuffle,
+      repeatPlaylist,
+      speed: settings.speed,
+      gapDuration: settings.gapDuration // ✅ NOW INCLUDED
+    });
+
+    // ✅ FIXED: Pass gapDuration to playback manager
+    await playbackManager.startPlayback(selectedTracks, {
+      startIndex: 0,
+      repeatEach: repeatCount,
+      repeatPlaylist: repeatPlaylist,
+      shuffle: shuffle,
+      speed: settings.speed,
+      gapDuration: settings.gapDuration // ✅ THIS WAS MISSING!
+    });
+
+    const gapInfo = settings.gapDuration > 0 ? ` (${settings.gapDuration}s gap)` : '';
+    toast.success(`Playing ${selectedTracks.length} shloka${selectedTracks.length > 1 ? 's' : ''}${gapInfo}`);
+
+  } catch (error) {
+    console.error('Failed to start playback:', error);
+    toast.error(error.message || 'Failed to start playback');
   }
+}
 
   async handleQuizNext() {
     try {
