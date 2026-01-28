@@ -192,7 +192,11 @@ class AudioService {
     }
     this.audio.pause();
     this.audio.currentTime = 0;
-    this.audio.playbackRate = 1.0; // ✅ RESET SPEED ON STOP
+    
+    // ✅ FIXED: Don't reset speed on stop, preserve user's speed setting
+    // Only reset speed in full reset() method
+    // this.audio.playbackRate = 1.0; // ❌ REMOVED - was causing speed to reset
+    
     EventBus.emit(EVENTS.PLAYBACK_STOPPED);
   }
 
