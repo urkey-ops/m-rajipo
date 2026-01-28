@@ -124,7 +124,12 @@ class QuizMode {
     console.log('⏸️ Quiz: Audio paused, your turn!');
     EventBus.emit('quiz-mode:paused-for-recitation');
 
-    this._startCountdown();
+    // ✅ FIXED: Wait for audio to actually pause before starting countdown
+    // This ensures the user gets the full countdown time
+    setTimeout(() => {
+      if (!this._isActive || !this._isPaused) return;
+      this._startCountdown();
+    }, 100); // Small delay ensures audio has fully paused
   }
   
   initialize() {
