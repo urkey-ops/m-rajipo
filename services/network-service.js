@@ -8,6 +8,8 @@ class NetworkService {
     this._isOnline = navigator.onLine;
     this._listeners = new Set();
     this._retryQueues = new Map();
+    this._retryAttempts = new Map(); // ✅ NEW: Track retry attempts per operation
+    this._maxRetryAttempts = 3;      // ✅ NEW: Maximum retry attempts before giving up
     
     this._setupListeners();
   }
@@ -96,6 +98,7 @@ class NetworkService {
   // Remove from retry queue
   removeFromRetryQueue(id) {
     this._retryQueues.delete(id);
+    this._retryAttempts.delete(id); // ✅ Also clean up attempt counter
   }
   
   // Process retry queue when back online
@@ -106,14 +109,36 @@ class NetworkService {
     
     const promises = [];
     for (const [id, fn] of this._retryQueues.entries()) {
+      // ✅ FIXED: Check retry attempts to prevent infinite retries
+      const attempts = this._retryAttempts.get(id) || 0;
+      
+      if (attempts >= this._maxRetryAttempts) {
+        console.warn(`Retry queue: ${id} exceeded max attempts (${this._maxRetryAttempts}), removing`);
+        this._retryQueues.delete(id);
+        this._retryAttempts.delete(id);
+        continue;
+      }
+      
       promises.push(
         fn()
           .then(() => {
             this._retryQueues.delete(id);
+            this._retryAttempts.delete(id); // ✅ Clean up attempt counter
             console.log(`Retry queue: ${id} completed`);
           })
           .catch(error => {
             console.error(`Retry queue: ${id} failed:`, error);
+            
+            // ✅ FIXED: Increment attempt counter
+            const newAttempts = attempts + 1;
+            this._retryAttempts.set(id, newAttempts);
+            
+            // ✅ FIXED: Remove from queue if max attempts reached
+            if (newAttempts >= this._maxRetryAttempts) {
+              this._retryQueues.delete(id);
+              this._retryAttempts.delete(id);
+              console.error(`Retry queue: ${id} failed permanently after ${newAttempts} attempts, removed`);
+            }
           })
       );
     }
