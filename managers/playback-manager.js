@@ -218,6 +218,9 @@ class PlaybackManager {
         });
       }
       
+      // ✅ FIX BUG #1: Emit track changed event for UI updates
+      EventBus.emit(EVENTS.TRACK_CHANGED, { track: trackNum });
+      
       console.log(`▶️ Playing track ${trackNum} at index ${index}/${this._currentPlaylist.length - 1}, speed: ${this._speed}×`);
       
     } catch (error) {
@@ -511,6 +514,12 @@ class PlaybackManager {
     audioService.pause();
     this._isPlaying = false;
     
+    // ✅ FIX BUG #2: Pause gap timer if in gap
+    if (this._isInGap && this._gapTimerId) {
+      timerManager.pauseCountdown(this._gapTimerId);
+      console.log('⏸️ Gap timer paused');
+    }
+    
     const currentMode = state.get('currentMode');
     if (currentMode === MODES.REGULAR) {
       state.set('audio.isPlaying', false);
@@ -521,6 +530,25 @@ class PlaybackManager {
   async resume() {
     await audioService.play();
     this._isPlaying = true;
+    
+    // ✅ FIX BUG #2: Resume gap timer if in gap
+    if (this._isInGap && this._gapTimerId) {
+      const onTick = (remaining, total) => {
+        EventBus.emit(EVENTS.REGULAR_GAP_TICK, { 
+          remaining, 
+          total,
+          nextTrack: this._currentPlaylist[this._currentIndex]
+        });
+      };
+      
+      const onComplete = () => {
+        console.log('✓ Gap complete, playing next track');
+        this._endGap();
+      };
+      
+      timerManager.resumeCountdown(this._gapTimerId, onTick, onComplete);
+      console.log('▶️ Gap timer resumed');
+    }
     
     const currentMode = state.get('currentMode');
     if (currentMode === MODES.REGULAR) {
