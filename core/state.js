@@ -1,4 +1,4 @@
-// state.js - Global application state
+// state.js - Global application state - FIXED VERSION
 
 import { EventBus } from './events.js';
 import { EVENTS, MODES, DEFAULT_SETTINGS } from './constants.js';
@@ -19,7 +19,7 @@ class State {
         quizTime: DEFAULT_SETTINGS.QUIZ_TIME,
         quizDelay: DEFAULT_SETTINGS.QUIZ_DELAY,
         autoPlay: DEFAULT_SETTINGS.AUTO_PLAY,
-        autoPlayFull: DEFAULT_SETTINGS.AUTO_PLAY_FULL, // ✅ New
+        autoPlayFull: DEFAULT_SETTINGS.AUTO_PLAY_FULL,
         currentTrack: null,
         isPaused: false
       },
@@ -33,6 +33,15 @@ class State {
         speed: 1.0,
         isLooping: false,
         loopCount: 0
+      },
+      
+      // ✅ FIXED: Regular mode state (was missing!)
+      regularMode: {
+        speed: DEFAULT_SETTINGS.SPEED,
+        repeatCount: DEFAULT_SETTINGS.REPEAT_COUNT,
+        shuffle: false,
+        repeatPlaylist: false,
+        gapDuration: DEFAULT_SETTINGS.REGULAR_GAP
       }
     };
   }
