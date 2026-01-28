@@ -28,6 +28,13 @@ class TimerManager {
     const intervalId = setInterval(() => {
       remaining--;
       
+      // ✅ FIXED: Update the stored timer object with current remaining time
+      // This is critical for pause/resume functionality to work correctly
+      const timerObj = this._intervals.get(id);
+      if (timerObj) {
+        timerObj.remaining = remaining;
+      }
+      
       if (onTick) onTick(remaining, duration);
       
       if (remaining <= 0) {
