@@ -1761,3 +1761,126 @@ label:focus-visible {
     color: black;
   }
 }
+
+/* ==================== ADDITIONAL CSS FOR UNIFIED LAYOUT ==================== */
+/* Add these styles to the existing index.css */
+
+/* Controls Header (NEW - for Regular Mode consistency) */
+.controls-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-md);
+  font-weight: var(--font-semibold);
+  color: var(--mode-active);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--divider);
+}
+
+.controls-header i {
+  font-size: var(--icon-size-lg);
+}
+
+/* Unified Control Label Styling (ALL MODES) */
+.control-label {
+  min-width: var(--label-width);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.control-label i {
+  color: var(--mode-active);
+  font-size: var(--icon-size);
+  flex-shrink: 0;
+}
+
+/* Unified Control Value Styling (ALL MODES) */
+.control-value {
+  min-width: var(--value-width);
+  text-align: right;
+  font-weight: var(--font-bold);
+  color: var(--mode-active);
+  font-size: var(--text-lg);
+  flex-shrink: 0;
+}
+
+/* Remove old inline label styles (deprecated) */
+.control-label-inline {
+  display: none;
+}
+
+/* Updated Repeat Control to match layout */
+.repeat-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.repeat-control .control-label {
+  min-width: auto;
+  font-size: var(--text-sm);
+}
+
+.repeat-control input {
+  width: 60px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-3);
+  text-align: center;
+  font-size: var(--text-md);
+  font-weight: var(--font-semibold);
+  min-height: var(--input-height);
+}
+
+/* Quiz Settings - ensure consistency with new control-label class */
+.quiz-setting .control-label {
+  /* Inherits from unified .control-label */
+}
+
+.quiz-setting .control-value {
+  /* Inherits from unified .control-value */
+}
+
+/* Memory Labels - ensure consistency */
+.memory-label {
+  min-width: var(--label-width);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.memory-label i {
+  color: var(--mode-active);
+  font-size: var(--icon-size);
+}
+
+/* Ensure all control rows have consistent structure */
+.speed-control,
+.gap-control,
+.memory-speed,
+.memory-gap,
+.quiz-setting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.speed-control input[type="range"],
+.gap-control input[type="range"],
+.memory-speed input[type="range"],
+.memory-gap input[type="range"],
+.quiz-setting input[type="range"] {
+  flex: 1;
+  min-width: 120px;
+}
