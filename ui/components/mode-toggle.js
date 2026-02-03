@@ -24,6 +24,9 @@ class ModeToggle {
     this._setupEventListeners();
     this._updateUI();
     
+    // ✅ NEW - Set initial mode on body for CSS
+    document.body.setAttribute('data-mode', this.currentMode);
+    
     console.log('✅ Mode toggle initialized (3 modes)');
   }
   
@@ -97,6 +100,9 @@ class ModeToggle {
     
     this.currentMode = newMode;
     this._updateUI();
+    
+    // ✅ NEW - Update body data-mode attribute for CSS
+    document.body.setAttribute('data-mode', newMode);
     
     // Show/hide appropriate controls
     this._toggleControlVisibility(newMode);
