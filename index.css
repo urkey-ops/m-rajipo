@@ -1,5 +1,5 @@
-/* MISSION RAJIPO - UNIFIED & MODE-AWARE CSS */
-/* Complete overhaul: Consistent colors + Mode-aware theming + All fixes */
+/* MISSION RAJIPO - REFINED & SYMMETRICAL CSS */
+/* Perfect symmetry + Visual consistency + Zero breaking changes */
 
 /* ==================== CSS VARIABLES - UNIFIED SYSTEM ==================== */
 :root {
@@ -35,7 +35,7 @@
   --border: rgba(255, 255, 255, 0.15);
   --border-focus: rgba(255, 255, 255, 0.3);
 
-  /* ===== TYPOGRAPHY SCALE ===== */
+  /* ===== TYPOGRAPHY SCALE (Consistent) ===== */
   --text-xs: 11px;
   --text-sm: 13px;
   --text-md: 15px;
@@ -55,11 +55,12 @@
   --leading-normal: 1.5;
   --leading-relaxed: 1.6;
 
-  /* ===== SPACING SCALE (8px base) ===== */
+  /* ===== SPACING SCALE (8px base - Perfect symmetry) ===== */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
 
@@ -69,6 +70,15 @@
   --radius-lg: 14px;
   --radius-full: 999px;
   --radius-circle: 50%;
+
+  /* ===== INTERACTIVE SIZES (Touch-friendly & Consistent) ===== */
+  --touch-min: 44px;
+  --input-height: 44px;
+  --button-height: 44px;
+  --icon-size: 16px;
+  --icon-size-lg: 20px;
+  --label-width: 120px;
+  --value-width: 48px;
 
   /* ===== LAYOUT CONSTANTS ===== */
   --header-height: 76px;
@@ -89,6 +99,12 @@
   --z-modal: 300;
   --z-popover: 400;
   --z-toast: 500;
+
+  /* ===== TRANSITIONS (Consistent timing) ===== */
+  --transition-fast: 0.15s;
+  --transition-base: 0.2s;
+  --transition-slow: 0.3s;
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ===== MODE-SPECIFIC VARIABLE OVERRIDES ===== */
@@ -117,7 +133,7 @@ body {
   background-color: var(--bg-base);
   color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   font-weight: var(--font-regular);
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
@@ -165,6 +181,7 @@ body[data-mode="memory"] .app-main::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-4);
   min-height: 48px;
   max-height: calc(76px + env(safe-area-inset-top));
 }
@@ -177,6 +194,7 @@ body[data-mode="memory"] .app-main::before {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 1;
 }
 
 .mode-selector {
@@ -191,8 +209,8 @@ body[data-mode="memory"] .app-main::before {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 4px;
-  gap: 4px;
+  padding: var(--space-1);
+  gap: var(--space-1);
 }
 
 .mode-segment {
@@ -200,19 +218,19 @@ body[data-mode="memory"] .app-main::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-2);
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  padding: 8px 12px;
+  padding: var(--space-2) var(--space-3);
   font-size: var(--text-md);
   font-weight: var(--font-semibold);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-slow) var(--ease-smooth);
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
+  min-height: var(--touch-min);
 }
 
 .mode-segment:active {
@@ -220,7 +238,7 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .mode-segment i {
-  font-size: 14px;
+  font-size: var(--icon-size);
   flex-shrink: 0;
 }
 
@@ -247,7 +265,7 @@ body[data-mode="memory"] .app-main::before {
   background: var(--bg-surface);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all var(--transition-slow) ease;
 }
 
 .search-tabs {
@@ -262,8 +280,8 @@ body[data-mode="memory"] .app-main::before {
   color: var(--text-secondary);
   padding: var(--space-3) var(--space-2);
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: var(--text-lg);
+  transition: all var(--transition-base);
+  font-size: var(--text-md);
   border-bottom: 2px solid transparent;
   display: flex;
   flex-direction: column;
@@ -271,12 +289,12 @@ body[data-mode="memory"] .app-main::before {
   gap: var(--space-1);
   position: relative;
   -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
+  min-height: var(--touch-min);
 }
 
 .search-tab i {
-  font-size: 16px;
-  transition: transform 0.3s ease;
+  font-size: var(--icon-size);
+  transition: transform var(--transition-slow) ease;
 }
 
 .search-tab .tab-label {
@@ -300,7 +318,7 @@ body[data-mode="memory"] .app-main::before {
   opacity: 1;
   transform: scaleY(1);
   transform-origin: top center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-slow) var(--ease-smooth);
 }
 
 .search-panel {
@@ -320,9 +338,9 @@ body[data-mode="memory"] .app-main::before {
   border-radius: var(--radius-md);
   color: var(--text-primary);
   padding: var(--space-3) var(--space-4);
-  font-size: var(--text-lg);
-  transition: all 0.2s;
-  min-height: 44px;
+  font-size: var(--text-md);
+  transition: all var(--transition-base);
+  min-height: var(--input-height);
 }
 
 #searchInput:focus {
@@ -338,7 +356,7 @@ body[data-mode="memory"] .app-main::before {
   border: 1px solid var(--color-destructive);
   border-radius: var(--radius-md);
   color: var(--color-destructive);
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   text-align: center;
 }
 
@@ -356,9 +374,9 @@ body[data-mode="memory"] .app-main::before {
   border-radius: var(--radius-md);
   color: var(--text-primary);
   padding: var(--space-3);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   text-align: center;
-  min-height: 44px;
+  min-height: var(--input-height);
 }
 
 .range-inputs input:focus {
@@ -369,7 +387,8 @@ body[data-mode="memory"] .app-main::before {
 
 .range-separator {
   color: var(--text-secondary);
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
 }
 
 .range-apply-btn {
@@ -377,16 +396,16 @@ body[data-mode="memory"] .app-main::before {
   border: none;
   border-radius: var(--radius-md);
   color: white;
-  padding: 0 var(--space-3);
-  height: 44px;
+  padding: 0 var(--space-4);
+  height: var(--button-height);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   flex-shrink: 0;
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   -webkit-tap-highlight-color: transparent;
 }
@@ -419,7 +438,7 @@ body[data-mode="memory"] .app-main::before {
 
 /* Groups Label */
 .groups-label {
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   color: var(--text-secondary);
   margin-bottom: var(--space-3);
@@ -438,13 +457,13 @@ body[data-mode="memory"] .app-main::before {
   border-radius: var(--radius-md);
   color: var(--text-primary);
   padding: var(--space-3);
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   position: relative;
   -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
+  min-height: var(--touch-min);
 }
 
 .group-btn:active {
@@ -455,12 +474,14 @@ body[data-mode="memory"] .app-main::before {
   background: var(--mode-active);
   border-color: var(--mode-active);
   color: white;
+  border-width: 2px;
+  padding: calc(var(--space-3) - 1px);
 }
 
 .group-btn .checkmark {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: var(--space-1);
+  right: var(--space-1);
   font-size: var(--text-xs);
   opacity: 0;
 }
@@ -486,22 +507,22 @@ body[data-mode="memory"] .app-main::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 12px 8px;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
   background: transparent;
   border: none;
   color: var(--text-secondary);
   border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: var(--text-lg);
+  transition: all var(--transition-base);
+  font-size: var(--text-md);
   -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
+  min-height: var(--touch-min);
 }
 
 .playlist-tab i {
-  font-size: 16px;
-  transition: transform 0.3s ease;
+  font-size: var(--icon-size);
+  transition: transform var(--transition-slow) ease;
 }
 
 .playlist-tab .tab-label {
@@ -524,7 +545,7 @@ body[data-mode="memory"] .app-main::before {
   background: var(--mode-active);
   color: white;
   border-radius: var(--radius-full);
-  padding: 0 6px;
+  padding: 0 var(--space-2);
   min-width: 20px;
   text-align: center;
   line-height: var(--leading-relaxed);
@@ -536,7 +557,7 @@ body[data-mode="memory"] .app-main::before {
   opacity: 1;
   transform: scaleY(1);
   transform-origin: top center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-slow) var(--ease-smooth);
 }
 
 .playlist-panel {
@@ -583,42 +604,57 @@ body[data-mode="memory"] .app-main::before {
   display: block;
 }
 
-/* ==================== MODE CONTROLS - INLINE ==================== */
+/* ==================== UNIFIED MODE CONTROLS ==================== */
+/* All mode containers have identical structure */
 .mode-controls {
   background: var(--bg-surface);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
 }
 
-.controls-inline {
+.controls-inline,
+.quiz-controls,
+.memory-controls {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
-/* Speed Control */
-.speed-control {
+/* ===== UNIFIED CONTROL ROW STYLES (Speed, Gap, Memory Speed/Gap) ===== */
+.speed-control,
+.gap-control,
+.memory-speed,
+.memory-gap {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
 }
 
-.speed-control i {
+.speed-control i,
+.gap-control i,
+.memory-speed i,
+.memory-gap i {
   color: var(--mode-active);
-  font-size: var(--text-lg);
+  font-size: var(--icon-size-lg);
+  min-width: var(--icon-size-lg);
+  flex-shrink: 0;
 }
 
-.speed-control input[type="range"] {
+.speed-control input[type="range"],
+.gap-control input[type="range"],
+.memory-speed input[type="range"],
+.memory-gap input[type="range"] {
   flex: 1;
   min-width: 120px;
 }
 
-.speed-control span {
+.speed-control span:not(.control-label-inline),
+.gap-control span:not(.control-label-inline) {
   font-weight: var(--font-bold);
   font-size: var(--text-lg);
   color: var(--mode-active);
-  min-width: 48px;
+  min-width: var(--value-width);
   text-align: right;
 }
 
@@ -626,14 +662,42 @@ body[data-mode="memory"] .app-main::before {
   font-size: var(--text-xs);
   color: var(--text-tertiary);
   font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Playback Options */
+/* Memory Labels and Values */
+.memory-label {
+  min-width: var(--label-width);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.memory-label i {
+  color: var(--mode-active);
+  font-size: var(--icon-size);
+}
+
+.memory-value {
+  min-width: var(--value-width);
+  text-align: right;
+  font-weight: var(--font-bold);
+  color: var(--mode-active);
+  font-size: var(--text-lg);
+}
+
+/* ===== PLAYBACK OPTIONS ===== */
 .playback-options {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   flex-wrap: wrap;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--divider);
 }
 
 .repeat-control {
@@ -645,6 +709,7 @@ body[data-mode="memory"] .app-main::before {
 
 .repeat-control i {
   color: var(--text-secondary);
+  font-size: var(--icon-size);
 }
 
 .repeat-control input {
@@ -655,8 +720,8 @@ body[data-mode="memory"] .app-main::before {
   color: var(--text-primary);
   padding: var(--space-3);
   text-align: center;
-  font-size: var(--text-lg);
-  min-height: 44px;
+  font-size: var(--text-md);
+  min-height: var(--input-height);
 }
 
 .repeat-control input:disabled {
@@ -673,8 +738,8 @@ body[data-mode="memory"] .app-main::before {
   -webkit-tap-highlight-color: transparent;
   padding: var(--space-2);
   margin: calc(var(--space-2) * -1);
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
   justify-content: center;
 }
 
@@ -684,8 +749,8 @@ body[data-mode="memory"] .app-main::before {
 
 .option-toggle i {
   color: var(--text-secondary);
-  font-size: var(--text-lg);
-  transition: color 0.2s;
+  font-size: var(--icon-size-lg);
+  transition: color var(--transition-base);
 }
 
 .option-toggle input:checked ~ i {
@@ -701,20 +766,17 @@ body[data-mode="memory"] .app-main::before {
   font-size: var(--text-xs);
   color: var(--text-tertiary);
   font-weight: var(--font-medium);
-  text-transform: capitalize;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* ==================== QUIZ CONTROLS ==================== */
-.quiz-controls {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 .quiz-status {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--divider);
 }
 
 .quiz-current {
@@ -722,11 +784,12 @@ body[data-mode="memory"] .app-main::before {
   align-items: center;
   gap: var(--space-2);
   font-weight: var(--font-semibold);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
 }
 
 .quiz-current i {
   color: var(--mode-active);
+  font-size: var(--icon-size-lg);
 }
 
 .quiz-timer {
@@ -754,15 +817,15 @@ body[data-mode="memory"] .app-main::before {
 .countdown-text {
   font-weight: var(--font-bold);
   color: var(--mode-active);
-  min-width: 48px;
+  min-width: var(--value-width);
   text-align: right;
+  font-size: var(--text-lg);
 }
 
 .quiz-settings {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  font-size: var(--text-sm);
 }
 
 .quiz-setting {
@@ -773,25 +836,29 @@ body[data-mode="memory"] .app-main::before {
 
 .quiz-setting span:first-child {
   color: var(--text-secondary);
-  min-width: 140px;
+  min-width: var(--label-width);
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
 }
 
 .quiz-setting span:first-child i {
   color: var(--mode-active);
+  font-size: var(--icon-size);
 }
 
 .quiz-setting input[type="range"] {
   flex: 1;
+  min-width: 120px;
 }
 
 .quiz-setting span:last-child {
   color: var(--mode-active);
   font-weight: var(--font-bold);
-  min-width: 40px;
+  font-size: var(--text-lg);
+  min-width: var(--value-width);
   text-align: right;
 }
 
@@ -803,7 +870,7 @@ body[data-mode="memory"] .app-main::before {
   -webkit-tap-highlight-color: transparent;
   padding: var(--space-2);
   margin: calc(var(--space-2) * -1);
-  min-height: 44px;
+  min-height: var(--touch-min);
 }
 
 .quiz-auto input {
@@ -811,6 +878,12 @@ body[data-mode="memory"] .app-main::before {
   height: 24px;
   cursor: pointer;
   accent-color: var(--mode-active);
+  flex-shrink: 0;
+}
+
+.quiz-auto span {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
 }
 
 .btn-quiz-full {
@@ -818,17 +891,17 @@ body[data-mode="memory"] .app-main::before {
   border: none;
   border-radius: var(--radius-md);
   color: white;
-  padding: var(--space-3);
-  font-size: var(--text-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
+  min-height: var(--button-height);
 }
 
 .btn-quiz-full:active {
@@ -836,20 +909,11 @@ body[data-mode="memory"] .app-main::before {
 }
 
 /* ==================== MEMORY MODE CONTROLS ==================== */
-.memory-controls {
-  background: var(--bg-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
 .memory-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   font-weight: var(--font-semibold);
   color: var(--mode-active);
   padding-bottom: var(--space-3);
@@ -857,35 +921,7 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .memory-header i {
-  font-size: 20px;
-}
-
-.memory-speed,
-.memory-gap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.memory-label {
-  min-width: 100px;
-  font-size: var(--text-md);
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.memory-label i {
-  color: var(--mode-active);
-}
-
-.memory-value {
-  min-width: 48px;
-  text-align: right;
-  font-weight: var(--font-bold);
-  color: var(--mode-active);
-  font-size: var(--text-lg);
+  font-size: var(--icon-size-lg);
 }
 
 .memory-segment {
@@ -896,7 +932,7 @@ body[data-mode="memory"] .app-main::before {
 
 .time-inputs {
   display: flex;
-  gap: var(--space-4);
+  gap: var(--space-3);
   justify-content: space-between;
 }
 
@@ -904,7 +940,7 @@ body[data-mode="memory"] .app-main::before {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .time-input-group label {
@@ -916,12 +952,12 @@ body[data-mode="memory"] .app-main::before {
 .time-picker {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   background: var(--bg-base);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-3);
-  min-height: 44px;
+  min-height: var(--input-height);
 }
 
 .time-picker input {
@@ -929,7 +965,7 @@ body[data-mode="memory"] .app-main::before {
   background: transparent;
   border: none;
   color: var(--text-primary);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   font-weight: var(--font-semibold);
   text-align: center;
   outline: none;
@@ -938,6 +974,7 @@ body[data-mode="memory"] .app-main::before {
 .time-picker span {
   color: var(--text-secondary);
   font-weight: var(--font-bold);
+  font-size: var(--text-md);
 }
 
 .memory-progress {
@@ -968,7 +1005,7 @@ body[data-mode="memory"] .app-main::before {
   height: 100%;
   background: linear-gradient(90deg, var(--mode-active), var(--mode-regular));
   width: 0%;
-  transition: width 0.3s ease;
+  transition: width var(--transition-slow) ease;
   border-radius: var(--radius-full);
 }
 
@@ -981,6 +1018,7 @@ body[data-mode="memory"] .app-main::before {
 .loop-info strong {
   color: var(--mode-active);
   font-size: var(--text-lg);
+  font-weight: var(--font-bold);
 }
 
 .memory-actions {
@@ -994,17 +1032,17 @@ body[data-mode="memory"] .app-main::before {
   border: none;
   border-radius: var(--radius-md);
   color: white;
-  padding: var(--space-3);
-  font-size: var(--text-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
-  transition: all 0.2s;
+  gap: var(--space-2);
+  transition: all var(--transition-base);
   -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
+  min-height: var(--button-height);
 }
 
 .btn-memory-primary:active {
@@ -1024,10 +1062,10 @@ body[data-mode="memory"] .app-main::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
-  transition: all 0.2s;
+  gap: var(--space-2);
+  transition: all var(--transition-base);
   -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
+  min-height: var(--button-height);
 }
 
 .btn-memory-secondary:active {
@@ -1055,15 +1093,17 @@ body[data-mode="memory"] .app-main::before {
 
 .section-title i {
   color: var(--mode-active);
+  font-size: var(--icon-size-lg);
 }
 
 .badge {
   margin-left: auto;
   background: var(--bg-base);
-  padding: 2px var(--space-2);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   color: var(--text-secondary);
+  font-weight: var(--font-semibold);
 }
 
 /* Selection Actions Row */
@@ -1076,7 +1116,7 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .selection-count {
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   color: var(--mode-active);
   animation: none;
@@ -1108,7 +1148,7 @@ body[data-mode="memory"] .app-main::before {
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   -webkit-tap-highlight-color: transparent;
   min-height: 36px;
 }
@@ -1130,14 +1170,14 @@ body[data-mode="memory"] .app-main::before {
 
 .shloka-item {
   background: var(--bg-base);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-4) var(--space-2);
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   font-weight: var(--font-semibold);
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   min-height: 60px;
   display: flex;
   align-items: center;
@@ -1155,15 +1195,17 @@ body[data-mode="memory"] .app-main::before {
 .shloka-item.selected {
   background: var(--mode-active);
   border-color: var(--mode-active);
+  border-width: 2px;
   color: white;
+  padding: calc(var(--space-4) - 1px) calc(var(--space-2) - 1px);
 }
 
 .shloka-item.selected::after {
   content: "✓";
   position: absolute;
-  top: 4px;
-  right: 6px;
-  font-size: 14px;
+  top: var(--space-1);
+  right: var(--space-2);
+  font-size: var(--text-sm);
   font-weight: var(--font-bold);
 }
 
@@ -1181,7 +1223,7 @@ body[data-mode="memory"] .app-main::before {
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   -webkit-tap-highlight-color: transparent;
   min-height: 52px;
 }
@@ -1192,6 +1234,8 @@ body[data-mode="memory"] .app-main::before {
 
 .sheet-item.selected {
   border-color: var(--mode-active);
+  border-width: 2px;
+  padding: calc(var(--space-3) - 1px);
   background: var(--mode-active-bg);
 }
 
@@ -1200,6 +1244,7 @@ body[data-mode="memory"] .app-main::before {
   align-items: center;
   gap: var(--space-2);
   flex: 1;
+  min-width: 0;
 }
 
 .sheet-item-checkbox {
@@ -1207,14 +1252,18 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .sheet-item-text {
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sheet-item-actions {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .sheet-item-btn {
@@ -1222,12 +1271,13 @@ body[data-mode="memory"] .app-main::before {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
-  padding: 10px 12px;
+  padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   -webkit-tap-highlight-color: transparent;
   min-height: 36px;
+  font-weight: var(--font-semibold);
 }
 
 .sheet-item-btn:active {
@@ -1250,8 +1300,9 @@ body[data-mode="memory"] .app-main::before {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 
 .btn-icon:active {
@@ -1278,7 +1329,7 @@ body[data-mode="memory"] .app-main::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--space-2);
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
@@ -1286,7 +1337,7 @@ body[data-mode="memory"] .app-main::before {
 #nowPlayingText {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1303,28 +1354,29 @@ body[data-mode="memory"] .app-main::before {
   font-weight: var(--font-bold);
   color: var(--mode-active);
   flex-shrink: 0;
+  font-size: var(--text-sm);
 }
 
 #audioPlayer {
   width: 100%;
-  height: 44px;
+  height: var(--touch-min);
 }
 
 /* ==================== FLOATING ACTION BUTTON ==================== */
 .fab {
   position: fixed;
-  bottom: calc(var(--footer-height) + 16px + env(safe-area-inset-bottom));
-  right: 16px;
+  bottom: calc(var(--footer-height) + var(--space-4) + env(safe-area-inset-bottom));
+  right: var(--space-4);
   width: 56px;
   height: 56px;
   background: var(--mode-active);
   border: none;
   border-radius: var(--radius-circle);
   color: white;
-  font-size: 20px;
+  font-size: var(--icon-size-lg);
   cursor: pointer;
   box-shadow: var(--shadow-mode);
-  transition: all 0.2s;
+  transition: all var(--transition-base);
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
@@ -1348,7 +1400,7 @@ body[data-mode="memory"] .app-main::before {
   background: var(--color-destructive);
   color: white;
   border-radius: var(--radius-full);
-  padding: 2px 6px;
+  padding: 2px var(--space-2);
   font-size: var(--text-xs);
   font-weight: var(--font-bold);
   min-width: 20px;
@@ -1378,7 +1430,7 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
   border-radius: var(--radius-circle);
   box-shadow: var(--shadow-md);
-  transition: transform 0.2s;
+  transition: transform var(--transition-base);
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -1389,7 +1441,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: var(--radius-circle);
   border: none;
   box-shadow: var(--shadow-md);
-  transition: transform 0.2s;
+  transition: transform var(--transition-base);
 }
 
 input[type="range"]:active::-webkit-slider-thumb {
@@ -1426,7 +1478,7 @@ input[type="number"]::-webkit-outer-spin-button {
 /* ==================== TOAST ==================== */
 .toast-container {
   position: fixed;
-  bottom: calc(var(--footer-height) + 16px + env(safe-area-inset-bottom));
+  bottom: calc(var(--footer-height) + var(--space-4) + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-toast);
@@ -1444,12 +1496,13 @@ input[type="number"]::-webkit-outer-spin-button {
   color: white;
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   box-shadow: var(--shadow-lg);
   animation: fadeInOut 3s ease forwards;
   pointer-events: auto;
   max-width: 90vw;
   text-align: center;
+  font-weight: var(--font-medium);
 }
 
 .toast.info {
@@ -1526,11 +1579,12 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-tap-highlight-color: transparent;
   padding: var(--space-2);
   margin: calc(var(--space-2) * -1);
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: color var(--transition-base);
 }
 
 .modal-close:active {
@@ -1554,8 +1608,9 @@ input[type="number"]::-webkit-outer-spin-button {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity var(--transition-slow) ease, transform var(--transition-slow) ease;
   min-height: 40px;
+  font-weight: var(--font-medium);
 }
 
 .network-status.hidden {
@@ -1599,6 +1654,7 @@ input[type="number"]::-webkit-outer-spin-button {
   .app-main {
     max-width: 1024px;
     padding: var(--space-6);
+    gap: var(--space-6);
   }
 
   .shloka-grid {
@@ -1615,9 +1671,9 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 
   .mode-segment {
-    padding: 10px 10px;
+    padding: var(--space-2) var(--space-2);
     font-size: var(--text-sm);
-    gap: 4px;
+    gap: var(--space-1);
   }
 
   @media (max-width: 380px) {
@@ -1625,12 +1681,14 @@ input[type="number"]::-webkit-outer-spin-button {
       display: none;
     }
     .mode-segment {
-      padding: 12px 8px;
+      padding: var(--space-3) var(--space-2);
     }
   }
 
-  .controls-inline {
-    gap: var(--space-2);
+  .controls-inline,
+  .quiz-controls,
+  .memory-controls {
+    gap: var(--space-3);
   }
 
   .playback-options {
@@ -1641,13 +1699,14 @@ input[type="number"]::-webkit-outer-spin-button {
     gap: var(--space-2);
   }
 
-  .quiz-setting span:first-child {
-    min-width: 120px;
+  .quiz-setting span:first-child,
+  .memory-label {
+    min-width: 100px;
     font-size: var(--text-xs);
   }
 
   .shloka-grid {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
     max-height: 45vh;
     min-height: min(350px, 35vh);
   }
@@ -1657,7 +1716,7 @@ input[type="number"]::-webkit-outer-spin-button {
       width: 52px;
       height: 52px;
       font-size: 18px;
-      right: 12px;
+      right: var(--space-3);
     }
   }
 
