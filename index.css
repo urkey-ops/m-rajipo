@@ -620,6 +620,22 @@ body[data-mode="memory"] .app-main::before {
   gap: var(--space-4);
 }
 
+/* Controls Header (for Regular Mode consistency) */
+.controls-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-md);
+  font-weight: var(--font-semibold);
+  color: var(--mode-active);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--divider);
+}
+
+.controls-header i {
+  font-size: var(--icon-size-lg);
+}
+
 /* ===== UNIFIED CONTROL ROW STYLES (Speed, Gap, Memory Speed/Gap) ===== */
 .speed-control,
 .gap-control,
@@ -649,21 +665,32 @@ body[data-mode="memory"] .app-main::before {
   min-width: 120px;
 }
 
-.speed-control span:not(.control-label-inline),
-.gap-control span:not(.control-label-inline) {
-  font-weight: var(--font-bold);
-  font-size: var(--text-lg);
-  color: var(--mode-active);
-  min-width: var(--value-width);
-  text-align: right;
+/* Unified Control Label (works for ALL modes - Regular, Quiz, Memory) */
+.control-label {
+  min-width: var(--label-width);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
 }
 
-.control-label-inline {
-  font-size: var(--text-xs);
-  color: var(--text-tertiary);
-  font-weight: var(--font-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.control-label i {
+  color: var(--mode-active);
+  font-size: var(--icon-size);
+  flex-shrink: 0;
+}
+
+/* Unified Control Value (works for ALL modes - Regular, Quiz, Memory) */
+.control-value {
+  min-width: var(--value-width);
+  text-align: right;
+  font-weight: var(--font-bold);
+  color: var(--mode-active);
+  font-size: var(--text-lg);
+  flex-shrink: 0;
 }
 
 /* Memory Labels and Values */
@@ -696,7 +723,7 @@ body[data-mode="memory"] .app-main::before {
   align-items: center;
   gap: var(--space-4);
   flex-wrap: wrap;
-  padding-top: var(--space-2);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--divider);
 }
 
@@ -704,11 +731,15 @@ body[data-mode="memory"] .app-main::before {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex-direction: column;
+}
+
+.repeat-control .control-label {
+  min-width: auto;
+  font-size: var(--text-sm);
 }
 
 .repeat-control i {
-  color: var(--text-secondary);
+  color: var(--mode-active);
   font-size: var(--icon-size);
 }
 
@@ -718,9 +749,10 @@ body[data-mode="memory"] .app-main::before {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  padding: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   text-align: center;
   font-size: var(--text-md);
+  font-weight: var(--font-semibold);
   min-height: var(--input-height);
 }
 
@@ -834,19 +866,9 @@ body[data-mode="memory"] .app-main::before {
   gap: var(--space-3);
 }
 
-.quiz-setting span:first-child {
-  color: var(--text-secondary);
+.quiz-setting .control-label {
+  /* Inherits from unified .control-label above */
   min-width: var(--label-width);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-}
-
-.quiz-setting span:first-child i {
-  color: var(--mode-active);
-  font-size: var(--icon-size);
 }
 
 .quiz-setting input[type="range"] {
@@ -854,12 +876,8 @@ body[data-mode="memory"] .app-main::before {
   min-width: 120px;
 }
 
-.quiz-setting span:last-child {
-  color: var(--mode-active);
-  font-weight: var(--font-bold);
-  font-size: var(--text-lg);
-  min-width: var(--value-width);
-  text-align: right;
+.quiz-setting .control-value {
+  /* Inherits from unified .control-value above */
 }
 
 .quiz-auto {
@@ -1699,10 +1717,15 @@ input[type="number"]::-webkit-outer-spin-button {
     gap: var(--space-2);
   }
 
-  .quiz-setting span:first-child,
+  .quiz-setting .control-label,
+  .control-label,
   .memory-label {
     min-width: 100px;
     font-size: var(--text-xs);
+  }
+
+  .repeat-control .control-label {
+    min-width: auto;
   }
 
   .shloka-grid {
@@ -1760,127 +1783,4 @@ label:focus-visible {
     background: white;
     color: black;
   }
-}
-
-/* ==================== ADDITIONAL CSS FOR UNIFIED LAYOUT ==================== */
-/* Add these styles to the existing index.css */
-
-/* Controls Header (NEW - for Regular Mode consistency) */
-.controls-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-md);
-  font-weight: var(--font-semibold);
-  color: var(--mode-active);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--divider);
-}
-
-.controls-header i {
-  font-size: var(--icon-size-lg);
-}
-
-/* Unified Control Label Styling (ALL MODES) */
-.control-label {
-  min-width: var(--label-width);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  font-weight: var(--font-semibold);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-shrink: 0;
-}
-
-.control-label i {
-  color: var(--mode-active);
-  font-size: var(--icon-size);
-  flex-shrink: 0;
-}
-
-/* Unified Control Value Styling (ALL MODES) */
-.control-value {
-  min-width: var(--value-width);
-  text-align: right;
-  font-weight: var(--font-bold);
-  color: var(--mode-active);
-  font-size: var(--text-lg);
-  flex-shrink: 0;
-}
-
-/* Remove old inline label styles (deprecated) */
-.control-label-inline {
-  display: none;
-}
-
-/* Updated Repeat Control to match layout */
-.repeat-control {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.repeat-control .control-label {
-  min-width: auto;
-  font-size: var(--text-sm);
-}
-
-.repeat-control input {
-  width: 60px;
-  background: var(--bg-base);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  padding: var(--space-2) var(--space-3);
-  text-align: center;
-  font-size: var(--text-md);
-  font-weight: var(--font-semibold);
-  min-height: var(--input-height);
-}
-
-/* Quiz Settings - ensure consistency with new control-label class */
-.quiz-setting .control-label {
-  /* Inherits from unified .control-label */
-}
-
-.quiz-setting .control-value {
-  /* Inherits from unified .control-value */
-}
-
-/* Memory Labels - ensure consistency */
-.memory-label {
-  min-width: var(--label-width);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  font-weight: var(--font-semibold);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-shrink: 0;
-}
-
-.memory-label i {
-  color: var(--mode-active);
-  font-size: var(--icon-size);
-}
-
-/* Ensure all control rows have consistent structure */
-.speed-control,
-.gap-control,
-.memory-speed,
-.memory-gap,
-.quiz-setting {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.speed-control input[type="range"],
-.gap-control input[type="range"],
-.memory-speed input[type="range"],
-.memory-gap input[type="range"],
-.quiz-setting input[type="range"] {
-  flex: 1;
-  min-width: 120px;
 }
