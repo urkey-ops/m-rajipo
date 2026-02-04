@@ -280,7 +280,8 @@ body[data-mode="memory"] .app-main::before {
 }
 
 /* ===== SHARED TAB STYLES ===== */
-.tab-button {
+.search-tab,
+.playlist-tab {
   flex: 1;
   background: transparent;
   border: none;
@@ -299,27 +300,32 @@ body[data-mode="memory"] .app-main::before {
   min-height: var(--touch-min);
 }
 
-.tab-button i {
+.search-tab i,
+.playlist-tab i {
   font-size: var(--icon-size);
   transition: transform var(--transition-slow) ease;
 }
 
-.tab-button .tab-label {
+.search-tab .tab-label,
+.playlist-tab .tab-label {
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
   white-space: nowrap;
 }
 
-.tab-button:active {
+.search-tab:active,
+.playlist-tab:active {
   transform: scale(0.96);
 }
 
-.tab-button.active {
+.search-tab.active,
+.playlist-tab.active {
   color: var(--mode-active);
   border-bottom-color: var(--mode-active);
 }
 
-.tab-button:focus-visible {
+.search-tab:focus-visible,
+.playlist-tab:focus-visible {
   outline: 2px solid var(--mode-active);
   outline-offset: 2px;
 }
@@ -328,10 +334,6 @@ body[data-mode="memory"] .app-main::before {
 .search-tabs {
   display: flex;
   border-bottom: 1px solid var(--divider);
-}
-
-.search-tab {
-  /* Inherits from .tab-button */
 }
 
 .search-content {
@@ -527,10 +529,6 @@ body[data-mode="memory"] .app-main::before {
 .playlists-tabs {
   display: flex;
   border-bottom: 1px solid var(--divider);
-}
-
-.playlist-tab {
-  /* Inherits from .tab-button */
 }
 
 .tab-count {
@@ -1676,8 +1674,6 @@ input[type="number"]::-webkit-outer-spin-button {
 button:focus-visible,
 input:focus-visible,
 label:focus-visible,
-.search-tab:focus-visible,
-.playlist-tab:focus-visible,
 .mode-segment:focus-visible,
 .shloka-item:focus-visible,
 .group-btn:focus-visible {
