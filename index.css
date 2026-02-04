@@ -1,7 +1,7 @@
-/* MISSION RAJIPO - REFINED & SYMMETRICAL CSS */
-/* Perfect symmetry + Visual consistency + Zero breaking changes */
+/* MISSION RAJIPO - ULTIMATE POLISHED CSS */
+/* Perfect symmetry + All inconsistencies fixed + Production-ready */
 
-/* ==================== CSS VARIABLES - UNIFIED SYSTEM ==================== */
+/* ==================== CSS VARIABLES - COMPLETE SYSTEM ==================== */
 :root {
   /* ===== BACKGROUND SYSTEM (3 levels) ===== */
   --bg-base: #000000;
@@ -56,7 +56,9 @@
   --leading-relaxed: 1.6;
 
   /* ===== SPACING SCALE (8px base - Perfect symmetry) ===== */
+  --space-0-5: 2px;
   --space-1: 4px;
+  --space-1-5: 6px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
@@ -75,10 +77,13 @@
   --touch-min: 44px;
   --input-height: 44px;
   --button-height: 44px;
+  --button-height-sm: 36px;
   --icon-size: 16px;
   --icon-size-lg: 20px;
+  --icon-size-xl: 48px;
   --label-width: 120px;
   --value-width: 48px;
+  --banner-height: 40px;
 
   /* ===== LAYOUT CONSTANTS ===== */
   --header-height: 76px;
@@ -104,7 +109,13 @@
   --transition-fast: 0.15s;
   --transition-base: 0.2s;
   --transition-slow: 0.3s;
+  --transition-progress: 0.5s;
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== OPACITY VALUES (Standardized) ===== */
+  --opacity-disabled: 0.5;
+  --opacity-overlay: 0.95;
+  --opacity-hover: 0.8;
 }
 
 /* ===== MODE-SPECIFIC VARIABLE OVERRIDES ===== */
@@ -146,7 +157,7 @@ body {
 }
 
 body.network-offline {
-  padding-top: calc(env(safe-area-inset-top) + var(--header-height) + 40px);
+  padding-top: calc(env(safe-area-inset-top) + var(--header-height) + var(--banner-height));
 }
 
 /* ===== SUBTLE MODE BACKGROUND TINT ===== */
@@ -171,7 +182,7 @@ body[data-mode="memory"] .app-main::before {
   left: 0;
   right: 0;
   z-index: var(--z-fixed);
-  background: rgba(0, 0, 0, 0.95);
+  background: rgba(0, 0, 0, var(--opacity-overlay));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--divider);
@@ -268,12 +279,8 @@ body[data-mode="memory"] .app-main::before {
   transition: all var(--transition-slow) ease;
 }
 
-.search-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--divider);
-}
-
-.search-tab {
+/* ===== SHARED TAB STYLES ===== */
+.tab-button {
   flex: 1;
   background: transparent;
   border: none;
@@ -292,24 +299,39 @@ body[data-mode="memory"] .app-main::before {
   min-height: var(--touch-min);
 }
 
-.search-tab i {
+.tab-button i {
   font-size: var(--icon-size);
   transition: transform var(--transition-slow) ease;
 }
 
-.search-tab .tab-label {
+.tab-button .tab-label {
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
   white-space: nowrap;
 }
 
-.search-tab:active {
+.tab-button:active {
   transform: scale(0.96);
 }
 
-.search-tab.active {
+.tab-button.active {
   color: var(--mode-active);
   border-bottom-color: var(--mode-active);
+}
+
+.tab-button:focus-visible {
+  outline: 2px solid var(--mode-active);
+  outline-offset: 2px;
+}
+
+/* Apply to search and playlist tabs */
+.search-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--divider);
+}
+
+.search-tab {
+  /* Inherits from .tab-button */
 }
 
 .search-content {
@@ -415,7 +437,7 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .range-apply-btn:disabled {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 
@@ -470,6 +492,11 @@ body[data-mode="memory"] .app-main::before {
   transform: scale(0.96);
 }
 
+.group-btn:focus-visible {
+  outline: 2px solid var(--mode-active);
+  outline-offset: 2px;
+}
+
 .group-btn.selected {
   background: var(--mode-active);
   border-color: var(--mode-active);
@@ -503,41 +530,7 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .playlist-tab {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-3) var(--space-2);
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  font-size: var(--text-md);
-  -webkit-tap-highlight-color: transparent;
-  min-height: var(--touch-min);
-}
-
-.playlist-tab i {
-  font-size: var(--icon-size);
-  transition: transform var(--transition-slow) ease;
-}
-
-.playlist-tab .tab-label {
-  font-size: var(--text-xs);
-  font-weight: var(--font-semibold);
-  white-space: nowrap;
-}
-
-.playlist-tab:active {
-  transform: scale(0.96);
-}
-
-.playlist-tab.active {
-  color: var(--mode-active);
-  border-bottom-color: var(--mode-active);
+  /* Inherits from .tab-button */
 }
 
 .tab-count {
@@ -545,7 +538,7 @@ body[data-mode="memory"] .app-main::before {
   background: var(--mode-active);
   color: white;
   border-radius: var(--radius-full);
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-1-5);
   min-width: 20px;
   text-align: center;
   line-height: var(--leading-relaxed);
@@ -598,9 +591,9 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .panel-empty i {
-  font-size: 48px;
+  font-size: var(--icon-size-xl);
   margin-bottom: var(--space-3);
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   display: block;
 }
 
@@ -702,6 +695,7 @@ body[data-mode="memory"] .app-main::before {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .memory-label i {
@@ -715,6 +709,7 @@ body[data-mode="memory"] .app-main::before {
   font-weight: var(--font-bold);
   color: var(--mode-active);
   font-size: var(--text-lg);
+  flex-shrink: 0;
 }
 
 /* ===== PLAYBACK OPTIONS ===== */
@@ -757,7 +752,7 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .repeat-control input:disabled {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 
@@ -790,14 +785,14 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .option-toggle input:disabled ~ i {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 
-.control-label {
+.option-toggle .control-label {
+  min-width: auto;
   font-size: var(--text-xs);
   color: var(--text-tertiary);
-  font-weight: var(--font-medium);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -842,7 +837,7 @@ body[data-mode="memory"] .app-main::before {
   height: 100%;
   background: linear-gradient(90deg, var(--mode-active), var(--mode-regular));
   width: 100%;
-  transition: width 0.5s ease;
+  transition: width var(--transition-progress) ease;
   border-radius: var(--radius-full);
 }
 
@@ -991,7 +986,7 @@ body[data-mode="memory"] .app-main::before {
 
 .time-picker span {
   color: var(--text-secondary);
-  font-weight: var(--font-bold);
+  font-weight: var(--font-semibold);
   font-size: var(--text-md);
 }
 
@@ -1117,7 +1112,7 @@ body[data-mode="memory"] .app-main::before {
 .badge {
   margin-left: auto;
   background: var(--bg-base);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-0-5) var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   color: var(--text-secondary);
@@ -1141,7 +1136,7 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .selection-count.pulse {
-  animation: pulse 0.3s ease;
+  animation: pulse var(--transition-slow) ease;
 }
 
 @keyframes pulse {
@@ -1168,7 +1163,7 @@ body[data-mode="memory"] .app-main::before {
   cursor: pointer;
   transition: all var(--transition-base);
   -webkit-tap-highlight-color: transparent;
-  min-height: 36px;
+  min-height: var(--button-height-sm);
 }
 
 .btn-clear-all:active {
@@ -1195,7 +1190,7 @@ body[data-mode="memory"] .app-main::before {
   cursor: pointer;
   transition: all var(--transition-base);
   font-weight: var(--font-semibold);
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
   min-height: 60px;
   display: flex;
   align-items: center;
@@ -1208,6 +1203,11 @@ body[data-mode="memory"] .app-main::before {
 
 .shloka-item:active {
   transform: scale(0.94);
+}
+
+.shloka-item:focus-visible {
+  outline: 2px solid var(--mode-active);
+  outline-offset: 2px;
 }
 
 .shloka-item.selected {
@@ -1294,7 +1294,7 @@ body[data-mode="memory"] .app-main::before {
   cursor: pointer;
   transition: all var(--transition-base);
   -webkit-tap-highlight-color: transparent;
-  min-height: 36px;
+  min-height: var(--button-height-sm);
   font-weight: var(--font-semibold);
 }
 
@@ -1333,7 +1333,7 @@ body[data-mode="memory"] .app-main::before {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.95);
+  background: rgba(0, 0, 0, var(--opacity-overlay));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--divider);
@@ -1364,7 +1364,7 @@ body[data-mode="memory"] .app-main::before {
 }
 
 #nowPlayingIcon {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   flex-shrink: 0;
 }
 
@@ -1407,7 +1407,7 @@ body[data-mode="memory"] .app-main::before {
 }
 
 .fab.dimmed {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   pointer-events: auto;
 }
 
@@ -1418,7 +1418,7 @@ body[data-mode="memory"] .app-main::before {
   background: var(--color-destructive);
   color: white;
   border-radius: var(--radius-full);
-  padding: 2px var(--space-2);
+  padding: var(--space-0-5) var(--space-1-5);
   font-size: var(--text-xs);
   font-weight: var(--font-bold);
   min-width: 20px;
@@ -1471,7 +1471,7 @@ input[type="range"]:active::-moz-range-thumb {
 }
 
 input[type="range"]:disabled {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 
@@ -1508,7 +1508,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .toast {
-  background: rgba(28, 28, 30, 0.95);
+  background: rgba(28, 28, 30, var(--opacity-overlay));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   color: white;
@@ -1524,19 +1524,19 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .toast.info {
-  background: rgba(10, 132, 255, 0.95);
+  background: rgba(10, 132, 255, var(--opacity-overlay));
 }
 
 .toast.success {
-  background: rgba(50, 215, 75, 0.95);
+  background: rgba(50, 215, 75, var(--opacity-overlay));
 }
 
 .toast.error {
-  background: rgba(255, 69, 58, 0.95);
+  background: rgba(255, 69, 58, var(--opacity-overlay));
 }
 
 .toast.warning {
-  background: rgba(255, 159, 10, 0.95);
+  background: rgba(255, 159, 10, var(--opacity-overlay));
 }
 
 @keyframes fadeInOut {
@@ -1589,7 +1589,7 @@ input[type="number"]::-webkit-outer-spin-button {
 .modal-close {
   position: absolute;
   top: var(--space-3);
-  right: var(--space-4);
+  right: var(--space-3);
   font-size: var(--text-2xl);
   color: var(--text-secondary);
   cursor: pointer;
@@ -1627,7 +1627,7 @@ input[type="number"]::-webkit-outer-spin-button {
   justify-content: center;
   gap: var(--space-2);
   transition: opacity var(--transition-slow) ease, transform var(--transition-slow) ease;
-  min-height: 40px;
+  min-height: var(--banner-height);
   font-weight: var(--font-medium);
 }
 
@@ -1643,7 +1643,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .disabled {
-  opacity: 0.5 !important;
+  opacity: var(--opacity-disabled) !important;
   cursor: not-allowed !important;
   pointer-events: none !important;
 }
@@ -1661,10 +1661,28 @@ input[type="number"]::-webkit-outer-spin-button {
 ::-webkit-scrollbar-thumb {
   background: var(--divider);
   border-radius: var(--radius-full);
+  transition: background var(--transition-base);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border);
 }
 
 ::-webkit-scrollbar-thumb:active {
   background: var(--text-secondary);
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+button:focus-visible,
+input:focus-visible,
+label:focus-visible,
+.search-tab:focus-visible,
+.playlist-tab:focus-visible,
+.mode-segment:focus-visible,
+.shloka-item:focus-visible,
+.group-btn:focus-visible {
+  outline: 2px solid var(--mode-active);
+  outline-offset: 2px;
 }
 
 /* ==================== RESPONSIVE - TABLET ==================== */
@@ -1747,14 +1765,6 @@ input[type="number"]::-webkit-outer-spin-button {
     max-width: 90vw;
     padding: var(--space-4);
   }
-}
-
-/* ==================== ACCESSIBILITY ==================== */
-button:focus-visible,
-input:focus-visible,
-label:focus-visible {
-  outline: 2px solid var(--mode-active);
-  outline-offset: 2px;
 }
 
 /* ==================== REDUCED MOTION ==================== */
