@@ -1,4 +1,4 @@
-// memory-controls.js - FIXED VERSION with input debouncing and proper cleanup
+// memory-controls.js - CLEANED UP VERSION
 import { $, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS } from '../../core/constants.js';
@@ -22,11 +22,10 @@ class MemoryControls {
     this.startBtn = null;
     this.pauseBtn = null;
     this.resetBtn = null;
-    
+
     this._segmentUpdateTimer = null;
     this._segmentUpdateDelay = 500;
-    
-    // ✅ NEW: Track event cleanup functions
+
     this._eventCleanupFunctions = [];
   }
 
@@ -67,18 +66,18 @@ class MemoryControls {
     const timeInputs = [this.startMinInput, this.startSecInput, this.endMinInput, this.endSecInput];
     timeInputs.forEach(input => {
       if (!input) return;
-      
+
       input.addEventListener('input', () => {
         this.validateAndFormatTimeInput(input);
         this._debouncedSegmentUpdate();
       });
-      
+
       input.addEventListener('blur', () => {
         this.validateAndFormatTimeInput(input);
         this._cancelDebounce();
         this.updateSegmentFromInputs();
       });
-      
+
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           this.validateAndFormatTimeInput(input);
@@ -117,7 +116,6 @@ class MemoryControls {
       });
     }
 
-    // ✅ FIXED: Store cleanup functions
     const selectionChangedCleanup = EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
       this.updateStartButtonState(data.count);
     });
@@ -138,11 +136,12 @@ class MemoryControls {
     });
     this._eventCleanupFunctions.push(loopCompletedCleanup);
 
-    const progressCleanup = EventBus.on('memory:progress', (data) => {
+    // ✅ Uses EVENTS constant
+    const progressCleanup = EventBus.on(EVENTS.MEMORY_PROGRESS, (data) => {
       this.updateProgress(data);
     });
     this._eventCleanupFunctions.push(progressCleanup);
-    
+
     const segmentUpdatedCleanup = EventBus.on(EVENTS.MEMORY_SEGMENT_UPDATED, (data) => {
       this.onSegmentUpdated(data);
     });
@@ -156,8 +155,7 @@ class MemoryControls {
       this._segmentUpdateTimer = null;
     }, this._segmentUpdateDelay);
   }
-  
-  // ✅ FIXED: Properly cancel debounce timer
+
   _cancelDebounce() {
     if (this._segmentUpdateTimer) {
       clearTimeout(this._segmentUpdateTimer);
@@ -170,7 +168,7 @@ class MemoryControls {
       console.warn('Time input elements not initialized');
       return;
     }
-    
+
     const startMin = parseInt(this.startMinInput.value) || 0;
     const startSec = parseInt(this.startSecInput.value) || 0;
     const endMin = parseInt(this.endMinInput.value) || 0;
@@ -178,7 +176,7 @@ class MemoryControls {
 
     const startTime = startMin * 60 + startSec;
     const endTime = endMin * 60 + endSec;
-    
+
     if (startTime >= endTime) {
       console.warn('Invalid segment: start must be less than end');
       EventBus.emit(EVENTS.TOAST_SHOW, {
@@ -202,19 +200,19 @@ class MemoryControls {
 
   validateAndFormatTimeInput(input) {
     if (!input) return;
-    
+
     let value = parseInt(input.value);
-    
+
     if (isNaN(value) || value < 0) {
       value = 0;
     }
-    
+
     if (input.id.includes('Sec')) {
       value = Math.max(0, Math.min(59, value));
     } else {
       value = Math.max(0, Math.min(99, value));
     }
-    
+
     input.value = value;
   }
 
@@ -223,18 +221,18 @@ class MemoryControls {
     const startSec = data.start % 60;
     const endMin = Math.floor(data.end / 60);
     const endSec = data.end % 60;
-    
+
     if (this.startMinInput) this.startMinInput.value = startMin;
     if (this.startSecInput) this.startSecInput.value = startSec;
     if (this.endMinInput) this.endMinInput.value = endMin;
     if (this.endSecInput) this.endSecInput.value = endSec;
-    
+
     console.log(`✅ UI updated to reflect segment: ${data.start}s → ${data.end}s`);
   }
 
   loadSettings() {
     const settings = memoryMode.getSettings();
-    
+
     if (this.speedSlider && this.speedDisplay) {
       this.speedSlider.value = settings.speed;
       this.speedDisplay.textContent = `${settings.speed.toFixed(1)}×`;
@@ -283,16 +281,9 @@ class MemoryControls {
       removeClass(this.pauseBtn, 'hidden');
       this.pauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
     }
-    
+
     if (data) {
       console.log(`Loop started: ${data.startTime}s → ${data.endTime}s (Full track: ${data.isFullTrack})`);
-      
-      if (data.isFullTrack) {
-        EventBus.emit(EVENTS.TOAST_SHOW, {
-          message: 'Playing full track',
-          type: 'info'
-        });
-      }
     }
   }
 
@@ -304,10 +295,10 @@ class MemoryControls {
 
   updateProgress(data) {
     const { currentTime, segmentStart, segmentEnd } = data;
-    
+
     const segmentDuration = segmentEnd - segmentStart;
-    const progress = segmentDuration > 0 
-      ? ((currentTime - segmentStart) / segmentDuration) * 100 
+    const progress = segmentDuration > 0
+      ? ((currentTime - segmentStart) / segmentDuration) * 100
       : 0;
 
     if (this.progressBar) {
@@ -321,7 +312,7 @@ class MemoryControls {
 
   togglePause() {
     const memState = memoryMode.getState();
-    
+
     if (!memState.isLooping) {
       console.warn('Cannot pause - not looping');
       return;
@@ -332,7 +323,7 @@ class MemoryControls {
       console.error('Audio element not found');
       return;
     }
-    
+
     if (audioElement.paused) {
       memoryMode.resume();
       if (this.pauseBtn) {
@@ -355,32 +346,19 @@ class MemoryControls {
   reset() {
     this._cancelDebounce();
     this.loadSettings();
-    
-    if (this.progressBar) {
-      this.progressBar.style.width = '0%';
-    }
-    if (this.progressText) {
-      this.progressText.textContent = '0:00 / 0:20';
-    }
-    if (this.loopCountDisplay) {
-      this.loopCountDisplay.textContent = '0';
-    }
-    if (this.startBtn) {
-      removeClass(this.startBtn, 'hidden');
-    }
-    if (this.pauseBtn) {
-      addClass(this.pauseBtn, 'hidden');
-    }
+
+    if (this.progressBar) this.progressBar.style.width = '0%';
+    if (this.progressText) this.progressText.textContent = '0:00 / 0:20';
+    if (this.loopCountDisplay) this.loopCountDisplay.textContent = '0';
+    if (this.startBtn) removeClass(this.startBtn, 'hidden');
+    if (this.pauseBtn) addClass(this.pauseBtn, 'hidden');
   }
-  
-  // ✅ NEW: Proper cleanup method
+
   cleanup() {
     console.log('🧹 Cleaning up Memory Controls');
-    
-    // Cancel any pending debounce
+
     this._cancelDebounce();
-    
-    // Remove all event listeners
+
     this._eventCleanupFunctions.forEach(cleanup => cleanup());
     this._eventCleanupFunctions = [];
   }
