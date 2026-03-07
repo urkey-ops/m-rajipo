@@ -1,5 +1,4 @@
-// search-bar.js - COMPLETE FIXED VERSION
-
+// search-bar.js - CLEANED UP VERSION
 import { $, $$, addClass, removeClass, toggleClass, debounce } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, MODES, TIMING } from '../../core/constants.js';
@@ -40,10 +39,10 @@ class SearchBar {
     this.applyRangeBtn = $('#applyRangeBtn');
     this.rangePreview = $('#rangePreview');
     this.groupsGrid = $('#groupsGrid');
-    
-    this.setupEventListeners();
+
     this.renderGroups();
-    
+    this.setupEventListeners();
+
     console.log('✅ Search bar initialized');
   }
 
@@ -86,10 +85,24 @@ class SearchBar {
       });
     }
 
-    // ✅ FIXED: Use correct property from event
     EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this.currentMode = data.mode; // ✅ FIXED: Use 'mode' property
+      this.currentMode = data.mode;
       this.updateForMode(data.mode);
+    });
+
+    // ✅ FIXED: These subscriptions belong here, NOT inside renderGroups().
+    // Moving them here prevents duplicate listeners if renderGroups() is ever called again.
+    EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
+      this.updateGroupSelections(data.source, data.sourceData);
+
+      // ✅ Phase 9 mitigation: clear group highlights on deselect-to-zero
+      if (data.count === 0) {
+        this.clearGroupSelections();
+      }
+    });
+
+    EventBus.on(EVENTS.SELECTION_CLEARED, () => {
+      this.clearGroupSelections();
     });
   }
 
@@ -105,8 +118,7 @@ class SearchBar {
         this.groupsTab.style.opacity = '0.5';
         this.groupsTab.style.cursor = 'not-allowed';
       }
-      
-      // ✅ Switch to search tab if on disabled tab
+
       if (this.activeTab !== 0) {
         this.switchTab(0);
       }
@@ -127,7 +139,7 @@ class SearchBar {
   switchTab(index) {
     if (index === 1 && this.rangeTab?.disabled) return;
     if (index === 2 && this.groupsTab?.disabled) return;
-    
+
     this.activeTab = index;
 
     [this.searchTab, this.rangeTab, this.groupsTab].forEach((tab, i) => {
@@ -150,7 +162,8 @@ class SearchBar {
 
     if (!trimmed) {
       addClass(this.searchFeedback, 'hidden');
-      EventBus.emit('search:cleared');
+      // ✅ Uses EVENTS constant
+      EventBus.emit(EVENTS.SEARCH_CLEARED);
       return;
     }
 
@@ -221,9 +234,6 @@ class SearchBar {
       return;
     }
 
-    const tracks = playlistService.createRangePlaylist(start, end);
-    
-    // ✅ Memory mode should not use range - but just in case, enforce it
     if (this.currentMode === MODES.MEMORY) {
       EventBus.emit(EVENTS.TOAST_SHOW, {
         message: 'Range selection disabled in Memory Mode',
@@ -231,7 +241,8 @@ class SearchBar {
       });
       return;
     }
-    
+
+    const tracks = playlistService.createRangePlaylist(start, end);
     selectionManager.selectRange(start, end, tracks);
 
     EventBus.emit(EVENTS.TOAST_SHOW, {
@@ -240,6 +251,7 @@ class SearchBar {
     });
   }
 
+  // ✅ FIXED: renderGroups() is DOM-only — no EventBus subscriptions inside it
   renderGroups() {
     if (!this.groupsGrid) return;
 
@@ -264,19 +276,11 @@ class SearchBar {
 
       this.groupsGrid.appendChild(btn);
     });
-
-    EventBus.on(EVENTS.SELECTION_CHANGED, (data) => {
-      this.updateGroupSelections(data.source, data.sourceData);
-    });
-
-    EventBus.on(EVENTS.SELECTION_CLEARED, () => {
-      this.clearGroupSelections();
-    });
   }
 
   selectGroup(groupNumber) {
     const currentMode = state.get('currentMode');
-    
+
     if (currentMode === MODES.MEMORY) {
       EventBus.emit(EVENTS.TOAST_SHOW, {
         message: 'Groups disabled in Memory Mode',
