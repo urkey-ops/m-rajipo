@@ -1,5 +1,4 @@
-// selection-manager.js - ENHANCED VERSION with proper memory mode deselect validation
-
+// selection-manager.js - CLEANED UP VERSION
 import { EventBus } from '../core/events.js';
 import { EVENTS, MODES } from '../core/constants.js';
 import { state } from '../core/state.js';
@@ -14,16 +13,14 @@ class SelectionManager {
   select(trackNum, options = {}) {
     const { silent = false, source = 'manual' } = options;
     const currentMode = state.get('currentMode');
-    
+
     if (currentMode === MODES.MEMORY) {
       this._selectedTracks.clear();
       this._selectedTracks.add(trackNum);
       this._source = source;
       this._sourceData = null;
-      
-      if (!silent) {
-        this._emitChange();
-      }
+
+      if (!silent) this._emitChange(false);
       console.log(`Selected track ${trackNum} (Memory Mode - single only)`);
       return;
     }
@@ -33,45 +30,37 @@ class SelectionManager {
     } else {
       this._selectedTracks.add(trackNum);
     }
-    
+
     this._source = source;
     this._sourceData = null;
-    
-    if (!silent) {
-      this._emitChange();
-    }
+
+    if (!silent) this._emitChange(false);
     console.log(`Selected tracks: ${Array.from(this._selectedTracks).join(', ')}`);
   }
 
-  // ✅ FIXED: Validate trackNum matches current selection in memory mode
   deselect(trackNum, options = {}) {
     const { silent = false } = options;
     const currentMode = state.get('currentMode');
-    
+
     if (currentMode === MODES.MEMORY) {
-      // ✅ CRITICAL FIX: Only clear if trackNum matches current selection
       if (this._selectedTracks.has(trackNum)) {
         this._selectedTracks.clear();
         console.log(`Deselected track ${trackNum} (Memory Mode)`);
       } else {
-        // Track not selected, do nothing
-        console.log(`Deselect ignored - track ${trackNum} not selected (current: ${Array.from(this._selectedTracks).join(', ')})`);
-        return; // ✅ Don't emit change if nothing changed
+        console.log(`Deselect ignored - track ${trackNum} not selected`);
+        return;
       }
     } else {
-      // Regular/Quiz mode: remove specific track
       this._selectedTracks.delete(trackNum);
       console.log(`Deselected track ${trackNum}`);
     }
-    
-    if (!silent) {
-      this._emitChange();
-    }
+
+    if (!silent) this._emitChange(false);
   }
 
   selectMultiple(tracks, source = 'manual', sourceData = null) {
     const currentMode = state.get('currentMode');
-    
+
     if (currentMode === MODES.MEMORY) {
       this._selectedTracks.clear();
       if (tracks.length > 0) {
@@ -79,8 +68,8 @@ class SelectionManager {
       }
       this._source = source;
       this._sourceData = sourceData;
-      this._emitChange();
-      
+      this._emitChange(false);
+
       if (tracks.length > 1) {
         EventBus.emit(EVENTS.TOAST_SHOW, {
           message: 'Memory mode: Only 1 shloka selected',
@@ -94,21 +83,21 @@ class SelectionManager {
     tracks.forEach(track => this._selectedTracks.add(track));
     this._source = source;
     this._sourceData = sourceData;
-    
-    this._emitChange();
+
+    this._emitChange(false);
     console.log(`Selected ${tracks.length} tracks from ${source}`);
   }
 
   selectPlaylist(name, tracks) {
     const currentMode = state.get('currentMode');
-    
+
     if (currentMode === MODES.MEMORY && tracks.length > 1) {
       EventBus.emit(EVENTS.TOAST_SHOW, {
         message: 'Memory mode: Only first shloka from playlist selected',
         type: 'info'
       });
     }
-    
+
     this.selectMultiple(tracks, 'playlist', { name });
   }
 
@@ -126,16 +115,16 @@ class SelectionManager {
 
   toggle(trackNum) {
     const currentMode = state.get('currentMode');
-    
+
     if (currentMode === MODES.MEMORY) {
       const wasSelected = this._selectedTracks.has(trackNum);
       this._selectedTracks.clear();
-      
+
       if (!wasSelected) {
         this._selectedTracks.add(trackNum);
       }
-      
-      this._emitChange();
+
+      this._emitChange(false);
       return;
     }
 
@@ -144,15 +133,16 @@ class SelectionManager {
     } else {
       this._selectedTracks.add(trackNum);
     }
-    
-    this._emitChange();
+
+    this._emitChange(false);
   }
 
   clear() {
     this._selectedTracks.clear();
     this._source = null;
     this._sourceData = null;
-    
+
+    // ✅ isCleared = true: only explicit clear() triggers SELECTION_CLEARED
     this._emitChange(true);
     console.log('Selection cleared');
   }
@@ -180,11 +170,14 @@ class SelectionManager {
     return this._selectedTracks.size > 0;
   }
 
+  // ✅ FIXED: SELECTION_CLEARED is only emitted when isCleared === true (explicit clear).
+  // Previously it also fired on deselect-to-zero, which was misleading.
+  // search-bar.js clears group highlights by listening to SELECTION_CHANGED with count === 0.
   _emitChange(isCleared = false) {
     const tracks = this.getSelection();
     const count = tracks.length;
 
-    if (isCleared || count === 0) {
+    if (isCleared) {
       EventBus.emit(EVENTS.SELECTION_CLEARED);
     }
 
