@@ -1,21 +1,15 @@
-// events.js - Event bus for decoupled communication
+// events.js - Event bus for decoupled communication (UNCHANGED)
 class EventBusClass {
   constructor() {
     this._events = new Map();
   }
-  
-  // Subscribe to event
   on(event, handler) {
     if (!this._events.has(event)) {
       this._events.set(event, new Set());
     }
     this._events.get(event).add(handler);
-    
-    // Return unsubscribe function
     return () => this.off(event, handler);
   }
-  
-  // Subscribe once
   once(event, handler) {
     const wrappedHandler = (...args) => {
       handler(...args);
@@ -23,8 +17,6 @@ class EventBusClass {
     };
     return this.on(event, wrappedHandler);
   }
-  
-  // Unsubscribe from event
   off(event, handler) {
     const handlers = this._events.get(event);
     if (handlers) {
@@ -34,8 +26,6 @@ class EventBusClass {
       }
     }
   }
-  
-  // Emit event
   emit(event, data) {
     const handlers = this._events.get(event);
     if (handlers) {
@@ -48,8 +38,6 @@ class EventBusClass {
       });
     }
   }
-  
-  // Clear all handlers for event
   clear(event) {
     if (event) {
       this._events.delete(event);
@@ -57,18 +45,12 @@ class EventBusClass {
       this._events.clear();
     }
   }
-  
-  // Get event count
   getEventCount(event) {
     const handlers = this._events.get(event);
     return handlers ? handlers.size : 0;
   }
-  
-  // Debug: list all events
   listEvents() {
     return Array.from(this._events.keys());
   }
 }
-
-// Export singleton
 export const EventBus = new EventBusClass();
