@@ -1,5 +1,4 @@
-// playlists-bar.js - Playlists and recent selections component
-
+// playlists-bar.js - CLEANED UP VERSION
 import { $, $$, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS } from '../../core/constants.js';
@@ -29,28 +28,17 @@ class PlaylistsBar {
   }
 
   initialize() {
-    // Tabs
     this.playlistsTab = $('#playlistsTab');
     this.recentTab = $('#recentTab');
-
-    // Panels
     this.playlistsPanel = $('#playlistsPanel');
     this.recentPanel = $('#recentPanel');
-
-    // Content
     this.playlistsContent = $('#playlistsContent');
-
-    // Playlists elements
     this.playlistList = $('#playlistList');
     this.playlistEmpty = $('#playlistEmpty');
     this.playlistCount = $('#playlistCount');
-
-    // Recent elements
     this.recentList = $('#recentList');
     this.recentEmpty = $('#recentEmpty');
     this.recentCount = $('#recentCount');
-
-    // Buttons
     this.savePlaylistBtn = $('#savePlaylistBtn');
     this.clearHistoryBtn = $('#clearHistoryBtn');
 
@@ -58,50 +46,37 @@ class PlaylistsBar {
     this.renderPlaylists();
     this.renderRecent();
 
-    // Check initial selection state for save button
     this._updateSaveButtonVisibility();
 
     console.log('✅ Playlists bar initialized');
   }
 
   _setupEventListeners() {
-    // Tab switching with collapse
     [this.playlistsTab, this.recentTab].forEach((tab, index) => {
       if (!tab) return;
       tab.addEventListener('click', () => {
         if (this.activeTab === index) {
-          // Toggle collapse
           this.isCollapsed = !this.isCollapsed;
           this._updateCollapse();
         } else {
-          // Switch tab and expand
           this.isCollapsed = false;
           this._switchTab(index);
         }
       });
     });
 
-    // Save playlist button
     if (this.savePlaylistBtn) {
       this.savePlaylistBtn.addEventListener('click', () => {
-        console.log('Save playlist button clicked');
         this._showSavePlaylistModal();
       });
-    } else {
-      console.warn('Save playlist button not found! Check if element has id="savePlaylistBtn"');
     }
 
-    // Clear history button
     if (this.clearHistoryBtn) {
       this.clearHistoryBtn.addEventListener('click', () => {
-        console.log('Clear history button clicked');
         this._confirmClearHistory();
       });
-    } else {
-      console.warn('Clear history button not found! Check if element has id="clearHistoryBtn"');
     }
 
-    // Listen to selection changes to show/hide save button
     EventBus.on(EVENTS.SELECTION_CHANGED, () => {
       this._updateSaveButtonVisibility();
     });
@@ -110,7 +85,6 @@ class PlaylistsBar {
       this._updateSaveButtonVisibility();
     });
 
-    // Listen to playlist events
     EventBus.on(EVENTS.PLAYLIST_SAVED, () => {
       this.renderPlaylists();
     });
@@ -123,9 +97,11 @@ class PlaylistsBar {
       this.renderRecent();
     });
 
-    // Listen to playback start to update recent
-    EventBus.on(EVENTS.PLAYBACK_STARTED, () => {
-      setTimeout(() => this.renderRecent(), 100);
+    // ✅ FIXED: Listen to HISTORY_UPDATED instead of PLAYBACK_STARTED + setTimeout.
+    // saveToHistory() in storage-service.js emits HISTORY_UPDATED immediately after saving,
+    // so this is reliable and race-condition-free.
+    EventBus.on(EVENTS.HISTORY_UPDATED, () => {
+      this.renderRecent();
     });
   }
 
@@ -133,30 +109,25 @@ class PlaylistsBar {
     if (!this.savePlaylistBtn) return;
     const count = selectionManager.getCount();
     toggleClass(this.savePlaylistBtn, 'hidden', count === 0);
-    console.log(`Save button visibility updated (count=${count}, hidden=${count === 0})`);
   }
 
   _switchTab(index) {
     this.activeTab = index;
 
-    // Update tab active states
     [this.playlistsTab, this.recentTab].forEach((tab, i) => {
       toggleClass(tab, 'active', i === index);
     });
 
-    // Update panel active states
     [this.playlistsPanel, this.recentPanel].forEach((panel, i) => {
       toggleClass(panel, 'active', i === index);
     });
 
-    // Render content when switching
     if (index === 0) {
       this.renderPlaylists();
     } else {
       this.renderRecent();
     }
 
-    // Expand content
     this._updateCollapse();
   }
 
@@ -179,23 +150,15 @@ class PlaylistsBar {
 
     const playlists = storageService.getPlaylists();
     const names = Object.keys(playlists);
-    console.log(`Rendering playlists: ${names.length}`);
 
-    // Update count
     if (this.playlistCount) {
       this.playlistCount.textContent = names.length.toString();
     }
 
-    // Clear list
     this.playlistList.innerHTML = '';
 
-    // Show/hide empty message
     if (this.playlistEmpty) {
-      if (names.length === 0) {
-        this.playlistEmpty.style.display = 'block';
-      } else {
-        this.playlistEmpty.style.display = 'none';
-      }
+      this.playlistEmpty.style.display = names.length === 0 ? 'block' : 'none';
     }
 
     if (names.length === 0) return;
@@ -219,7 +182,6 @@ class PlaylistsBar {
     const sheetItem = document.createElement('div');
     sheetItem.className = 'sheet-item';
 
-    // Left side (checkbox + label)
     const leftDiv = document.createElement('div');
     leftDiv.className = 'sheet-item-left';
 
@@ -237,29 +199,24 @@ class PlaylistsBar {
     leftDiv.appendChild(checkbox);
     leftDiv.appendChild(label);
 
-    // Actions
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'sheet-item-actions';
 
-    // Load button
     const loadBtn = document.createElement('button');
     loadBtn.className = 'sheet-item-btn';
     loadBtn.title = 'Load playlist';
     loadBtn.innerHTML = '<i class="fa-solid fa-upload"></i>';
     loadBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      console.log('Load playlist clicked:', name);
       this._loadPlaylist(name, tracks);
     });
 
-    // Delete button
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'sheet-item-btn delete';
     deleteBtn.title = 'Delete playlist';
     deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
     deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      console.log('Delete playlist clicked:', name);
       this._confirmDeletePlaylist(name);
     });
 
@@ -269,7 +226,6 @@ class PlaylistsBar {
     sheetItem.appendChild(leftDiv);
     sheetItem.appendChild(actionsDiv);
 
-    // Click handler for entire item
     sheetItem.addEventListener('click', (e) => {
       if (e.target === checkbox || e.target.closest('.sheet-item-btn')) return;
       checkbox.checked = !checkbox.checked;
@@ -287,7 +243,6 @@ class PlaylistsBar {
     toggleClass(checkbox.closest('.sheet-item'), 'selected', checkbox.checked);
 
     if (checkbox.checked) {
-      // Deselect other sheet items
       $$('.sheet-item input:checked').forEach(cb => {
         if (cb !== checkbox) {
           cb.checked = false;
@@ -295,7 +250,6 @@ class PlaylistsBar {
         }
       });
 
-      // Select tracks via selection manager
       selectionManager.selectPlaylist(name, tracks);
     } else {
       selectionManager.clear();
@@ -303,7 +257,6 @@ class PlaylistsBar {
   }
 
   _loadPlaylist(name, tracks) {
-    // Deselect all sheet items first
     $$('.sheet-item input:checked').forEach(cb => {
       cb.checked = false;
       removeClass(cb.closest('.sheet-item'), 'selected');
@@ -318,16 +271,12 @@ class PlaylistsBar {
   }
 
   _confirmDeletePlaylist(name) {
-    console.log('Confirming delete for:', name);
-
     modal.showConfirm(
       `Are you sure you want to delete the playlist "${name}"? This action cannot be undone.`,
       () => {
-        console.log('Delete confirmed for:', name);
         try {
           storageService.deletePlaylist(name);
 
-          // Clear selection if this playlist was selected
           const source = selectionManager.getSource();
           if (source.type === 'playlist' && source.data?.name === name) {
             selectionManager.clear();
@@ -361,23 +310,15 @@ class PlaylistsBar {
     if (!this.recentList) return;
 
     const history = storageService.getHistory();
-    console.log(`Rendering recent: ${history.length}`);
 
-    // Update count
     if (this.recentCount) {
       this.recentCount.textContent = history.length.toString();
     }
 
-    // Clear list
     this.recentList.innerHTML = '';
 
-    // Show/hide empty message
     if (this.recentEmpty) {
-      if (history.length === 0) {
-        this.recentEmpty.style.display = 'block';
-      } else {
-        this.recentEmpty.style.display = 'none';
-      }
+      this.recentEmpty.style.display = history.length === 0 ? 'block' : 'none';
     }
 
     if (history.length === 0) return;
@@ -401,7 +342,6 @@ class PlaylistsBar {
     const sheetItem = document.createElement('div');
     sheetItem.className = 'sheet-item';
 
-    // Left side
     const leftDiv = document.createElement('div');
     leftDiv.className = 'sheet-item-left';
 
@@ -422,7 +362,6 @@ class PlaylistsBar {
 
     sheetItem.appendChild(leftDiv);
 
-    // Click handler
     sheetItem.addEventListener('click', (e) => {
       if (e.target === checkbox) return;
       checkbox.checked = !checkbox.checked;
@@ -440,7 +379,6 @@ class PlaylistsBar {
     toggleClass(checkbox.closest('.sheet-item'), 'selected', checkbox.checked);
 
     if (checkbox.checked) {
-      // Deselect other sheet items
       $$('.sheet-item input:checked').forEach(cb => {
         if (cb !== checkbox) {
           cb.checked = false;
@@ -448,7 +386,6 @@ class PlaylistsBar {
         }
       });
 
-      // Select tracks via selection manager
       selectionManager.selectRecent('recent', tracks);
     } else {
       selectionManager.clear();
@@ -456,10 +393,7 @@ class PlaylistsBar {
   }
 
   _showSavePlaylistModal() {
-    console.log('Opening save playlist modal');
-
     const selectedTracks = selectionManager.getSelection();
-    console.log('Selected tracks:', selectedTracks);
 
     if (selectedTracks.length === 0) {
       modal.show('Please select at least one shloka to save as a playlist.');
@@ -469,11 +403,8 @@ class PlaylistsBar {
     modal.showInput(
       'Save Playlist',
       (name) => {
-        console.log('Saving playlist with name:', name);
         try {
           const savedName = storageService.savePlaylist(name, selectedTracks);
-          console.log('Playlist saved successfully:', savedName);
-
           EventBus.emit(EVENTS.PLAYLIST_SAVED, { name: savedName, tracks: selectedTracks });
           EventBus.emit(EVENTS.TOAST_SHOW, {
             message: `Playlist "${savedName}" saved!`,
@@ -496,12 +427,9 @@ class PlaylistsBar {
   }
 
   _confirmClearHistory() {
-    console.log('Confirming clear history');
-
     modal.showConfirm(
       'Are you sure you want to clear your recently played history? This action cannot be undone.',
       () => {
-        console.log('Clear history confirmed');
         try {
           storageService.clearHistory();
           EventBus.emit(EVENTS.HISTORY_CLEARED);
@@ -509,8 +437,6 @@ class PlaylistsBar {
             message: 'Recently played history cleared',
             type: 'success'
           });
-
-          // Re-render to show empty state
           this.renderRecent();
         } catch (error) {
           console.error('Clear history error:', error);
@@ -532,5 +458,4 @@ class PlaylistsBar {
   }
 }
 
-// Export singleton
 export const playlistsBar = new PlaylistsBar();
