@@ -1,9 +1,7 @@
-// main.js - COMPLETE FIXED VERSION
-
+// main.js - CLEANED UP VERSION
 import { EventBus } from './core/events.js';
 import { state } from './core/state.js';
 import { EVENTS, MODES } from './core/constants.js';
-import { $ } from './utils/dom-utils.js';
 
 // Services
 import { audioService } from './services/audio-service.js';
@@ -62,13 +60,16 @@ class Application {
     console.log('🔧 Initializing services...');
 
     const audioElement = document.getElementById('audioPlayer');
-    
-    // ✅ FIXED: Removed redundant check
+
     if (!audioElement) {
       throw new Error('Audio element not found');
     }
-    
+
     audioService.setAudioElement(audioElement);
+
+    // ✅ FIXED: Explicitly initialize playbackManager to match the pattern
+    // every other manager follows. Previously _isActive was only set inside startPlayback().
+    playbackManager.initialize();
 
     if (!storageService.isAvailable()) {
       console.warn('Storage not available - playlists and history disabled');
@@ -120,66 +121,58 @@ class Application {
   }
 
   async handlePlaySelected() {
-  try {
-    const currentMode = state.get('currentMode');
-    
-    // Ensure we're in regular mode
-    if (currentMode !== MODES.REGULAR) {
-      toast.warning('Switch to Regular mode to use this feature');
-      return;
+    try {
+      const currentMode = state.get('currentMode');
+
+      if (currentMode !== MODES.REGULAR) {
+        toast.warning('Switch to Regular mode to use this feature');
+        return;
+      }
+
+      const validation = regularMode.validate();
+      if (!validation.valid) {
+        toast.error(validation.error);
+        return;
+      }
+
+      const selectedTracks = selectionManager.getSelection();
+
+      if (selectedTracks.length === 0) {
+        toast.info('Please select at least one shloka to play.');
+        return;
+      }
+
+      // ✅ FIXED: Use regularMode.getSettings() as the single source of truth.
+      // Removed direct DOM reads (#repeatCount, #shuffle, #repeatPlaylist)
+      // which created a dual source of truth with regularMode.getSettings().
+      const settings = regularMode.getSettings();
+
+      console.log('Starting playback with settings:', {
+        tracks: selectedTracks,
+        repeatCount: settings.repeatCount,
+        shuffle: settings.shuffle,
+        repeatPlaylist: settings.repeatPlaylist,
+        speed: settings.speed,
+        gapDuration: settings.gapDuration
+      });
+
+      await playbackManager.startPlayback(selectedTracks, {
+        startIndex: 0,
+        repeatEach: settings.repeatCount,
+        repeatPlaylist: settings.repeatPlaylist,
+        shuffle: settings.shuffle,
+        speed: settings.speed,
+        gapDuration: settings.gapDuration
+      });
+
+      const gapInfo = settings.gapDuration > 0 ? ` (${settings.gapDuration}s gap)` : '';
+      toast.success(`Playing ${selectedTracks.length} shloka${selectedTracks.length > 1 ? 's' : ''}${gapInfo}`);
+
+    } catch (error) {
+      console.error('Failed to start playback:', error);
+      toast.error(error.message || 'Failed to start playback');
     }
-
-    const validation = regularMode.validate();
-    if (!validation.valid) {
-      toast.error(validation.error);
-      return;
-    }
-
-    const selectedTracks = selectionManager.getSelection();
-    
-    if (selectedTracks.length === 0) {
-      toast.info('Please select at least one shloka to play.');
-      return;
-    }
-
-    // ✅ FIXED: Get ALL settings including gap
-    const settings = regularMode.getSettings();
-    
-    const repeatCountEl = $('#repeatCount');
-    const shuffleEl = $('#shuffle');
-    const repeatPlaylistEl = $('#repeatPlaylist');
-
-    const repeatCount = repeatCountEl ? parseInt(repeatCountEl.value) || 1 : 1;
-    const shuffle = shuffleEl ? shuffleEl.checked : false;
-    const repeatPlaylist = repeatPlaylistEl ? repeatPlaylistEl.checked : false;
-
-    console.log('Starting playback with settings:', {
-      tracks: selectedTracks,
-      repeatCount,
-      shuffle,
-      repeatPlaylist,
-      speed: settings.speed,
-      gapDuration: settings.gapDuration // ✅ NOW INCLUDED
-    });
-
-    // ✅ FIXED: Pass gapDuration to playback manager
-    await playbackManager.startPlayback(selectedTracks, {
-      startIndex: 0,
-      repeatEach: repeatCount,
-      repeatPlaylist: repeatPlaylist,
-      shuffle: shuffle,
-      speed: settings.speed,
-      gapDuration: settings.gapDuration // ✅ THIS WAS MISSING!
-    });
-
-    const gapInfo = settings.gapDuration > 0 ? ` (${settings.gapDuration}s gap)` : '';
-    toast.success(`Playing ${selectedTracks.length} shloka${selectedTracks.length > 1 ? 's' : ''}${gapInfo}`);
-
-  } catch (error) {
-    console.error('Failed to start playback:', error);
-    toast.error(error.message || 'Failed to start playback');
   }
-}
 
   async handleQuizNext() {
     try {
@@ -319,6 +312,6 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
-window.app = app;
-window.state = state;
-window.eventBus = EventBus;
+// ✅ REMOVED: window.app, window.state, window.eventBus global exposure
+// These were a debug convenience but a production encapsulation concern.
+// Use the browser console's module system or add them back locally if needed for debugging.
