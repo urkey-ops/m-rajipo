@@ -1,99 +1,107 @@
-// audio-service.js - FULL UPDATED VERSION WITH FIRST PLAYBACK SPEED FIX
-import { EVENTS } from '../core/constants.js';
+// audio-service.js - CLEANED UP VERSION
+import { EVENTS, AUDIO_BASE_URL } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
-
-const ARCHIVE_BASE_URL = 'https://cors.archive.org/download/satsang_diksha';
 
 class AudioService {
   constructor() {
-    this.audio = new Audio();
-    this.audio.crossOrigin = 'anonymous';
+    this.audio = null;
     this._currentTrack = null;
     this._isInitialized = false;
-    this._currentSpeed = 1.0; // ✅ TRACKS CURRENT SPEED
+    this._currentSpeed = 1.0;
 
-    this._setupEventListeners();
-  }
-
-  _setupEventListeners() {
-    // ✅ Emit PLAYBACK_STARTED on 'play' event
-    this.audio.addEventListener('play', () => {
+    // Named handler references so we can remove them cleanly
+    this._onPlay = () => {
       console.log('🎵 Audio play initiated');
       EventBus.emit(EVENTS.PLAYBACK_STARTED);
-    });
-
-    this.audio.addEventListener('playing', () => {
-      console.log('🎵 Audio actually playing now (buffering complete)');
-    });
-
-    this.audio.addEventListener('ended', () => {
+    };
+    this._onPlaying = () => {
+      console.log('🎵 Audio actually playing now');
+    };
+    this._onEnded = () => {
       console.log('🏁 Track ended');
       EventBus.emit(EVENTS.TRACK_ENDED);
-    });
-
-    this.audio.addEventListener('error', (e) => {
+    };
+    this._onError = (e) => {
       console.error('❌ Audio error:', e);
       EventBus.emit(EVENTS.PLAYBACK_ERROR, {
         error: e,
-        code: this.audio.error?.code,
-        message: this.audio.error?.message || 'Unknown audio error'
+        code: this.audio?.error?.code,
+        message: this.audio?.error?.message || 'Unknown audio error'
       });
-    });
-
-    this.audio.addEventListener('timeupdate', () => {
-      EventBus.emit('audio:timeupdate', this.audio.currentTime);
-    });
-
-    this.audio.addEventListener('loadstart', () => {
-      console.log('🔄 Audio loading started...');
-    });
-
-    this.audio.addEventListener('canplay', () => {
+    };
+    this._onTimeUpdate = () => {
+      EventBus.emit('audio:timeupdate', this.audio?.currentTime ?? 0);
+    };
+    this._onLoadStart = () => console.log('🔄 Audio loading started...');
+    this._onCanPlay = () => {
       console.log('✅ Audio ready to play');
       this._isInitialized = true;
-    });
-
-    this.audio.addEventListener('pause', () => {
+    };
+    this._onPause = () => {
       console.log('⏸️ Audio paused');
       EventBus.emit(EVENTS.PLAYBACK_PAUSED);
-    });
-
-    this.audio.addEventListener('seeking', () => {
-      console.log('⏩ Audio seeking...');
-    });
-
-    this.audio.addEventListener('seeked', () => {
-      console.log('✅ Audio seeked');
-    });
-
-    this.audio.addEventListener('stalled', () => {
-      console.warn('⚠️ Audio playback stalled');
-    });
-
-    this.audio.addEventListener('waiting', () => {
-      console.log('⏳ Audio buffering...');
-    });
+    };
+    this._onSeeking = () => console.log('⏩ Audio seeking...');
+    this._onSeeked = () => console.log('✅ Audio seeked');
+    this._onStalled = () => console.warn('⚠️ Audio playback stalled');
+    this._onWaiting = () => console.log('⏳ Audio buffering...');
   }
 
+  _attachListeners() {
+    if (!this.audio) return;
+    this.audio.addEventListener('play', this._onPlay);
+    this.audio.addEventListener('playing', this._onPlaying);
+    this.audio.addEventListener('ended', this._onEnded);
+    this.audio.addEventListener('error', this._onError);
+    this.audio.addEventListener('timeupdate', this._onTimeUpdate);
+    this.audio.addEventListener('loadstart', this._onLoadStart);
+    this.audio.addEventListener('canplay', this._onCanPlay);
+    this.audio.addEventListener('pause', this._onPause);
+    this.audio.addEventListener('seeking', this._onSeeking);
+    this.audio.addEventListener('seeked', this._onSeeked);
+    this.audio.addEventListener('stalled', this._onStalled);
+    this.audio.addEventListener('waiting', this._onWaiting);
+  }
+
+  _detachListeners() {
+    if (!this.audio) return;
+    this.audio.removeEventListener('play', this._onPlay);
+    this.audio.removeEventListener('playing', this._onPlaying);
+    this.audio.removeEventListener('ended', this._onEnded);
+    this.audio.removeEventListener('error', this._onError);
+    this.audio.removeEventListener('timeupdate', this._onTimeUpdate);
+    this.audio.removeEventListener('loadstart', this._onLoadStart);
+    this.audio.removeEventListener('canplay', this._onCanPlay);
+    this.audio.removeEventListener('pause', this._onPause);
+    this.audio.removeEventListener('seeking', this._onSeeking);
+    this.audio.removeEventListener('seeked', this._onSeeked);
+    this.audio.removeEventListener('stalled', this._onStalled);
+    this.audio.removeEventListener('waiting', this._onWaiting);
+  }
+
+  // ✅ FIXED: removes old listeners before attaching new ones — no duplicates
   setAudioElement(audioElement) {
     if (!(audioElement instanceof HTMLAudioElement)) {
       throw new Error('Invalid audio element');
     }
 
+    // Remove listeners from old element if switching
     if (this.audio && this.audio !== audioElement) {
-      console.log('Switching audio element, removing old listeners');
+      this._detachListeners();
+      console.log('Switched audio element, old listeners removed');
     }
 
     this.audio = audioElement;
     this.audio.crossOrigin = 'anonymous';
     this._isInitialized = false;
 
-    this._setupEventListeners();
+    this._attachListeners();
   }
 
+  // ✅ FIXED: uses AUDIO_BASE_URL from constants (single source of truth)
   _getTrackUrl(trackNum) {
     const padded = String(trackNum).padStart(3, '0');
-    return `${ARCHIVE_BASE_URL}/sanskrit_${padded}.mp3`;
+    return `${AUDIO_BASE_URL}/sanskrit_${padded}.mp3`;
   }
 
   async loadTrack(trackNum) {
@@ -159,7 +167,7 @@ class AudioService {
       return Promise.reject(new Error('No audio source loaded'));
     }
 
-    // ✅ APPLY CURRENT SPEED BEFORE PLAYING
+    // Apply current speed before playing
     this.audio.playbackRate = this._currentSpeed || 1.0;
 
     return this.audio.play().catch((err) => {
@@ -192,11 +200,7 @@ class AudioService {
     }
     this.audio.pause();
     this.audio.currentTime = 0;
-    
-    // ✅ FIXED: Don't reset speed on stop, preserve user's speed setting
-    // Only reset speed in full reset() method
-    // this.audio.playbackRate = 1.0; // ❌ REMOVED - was causing speed to reset
-    
+    // Do NOT reset speed here — preserve user's speed setting across tracks
     EventBus.emit(EVENTS.PLAYBACK_STOPPED);
   }
 
@@ -231,7 +235,7 @@ class AudioService {
     }
 
     const clampedRate = Math.max(0.25, Math.min(4.0, rate));
-    this._currentSpeed = clampedRate; // ✅ STORE CURRENT SPEED
+    this._currentSpeed = clampedRate;
     this.audio.playbackRate = clampedRate;
 
     if (clampedRate !== rate) {
@@ -353,7 +357,7 @@ class AudioService {
 
     this.audio.pause();
     this.audio.currentTime = 0;
-    this.audio.playbackRate = 1.0; // 🔒 safety
+    this.audio.playbackRate = 1.0;
     this.audio.src = '';
 
     this._currentTrack = null;
