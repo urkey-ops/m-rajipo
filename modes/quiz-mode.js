@@ -1,4 +1,4 @@
-// quiz-mode.js - Quiz mode logic with FIXED precise timing and cleanup
+// quiz-mode.js - CLEANED UP VERSION
 import { EVENTS, MODES, DEFAULT_SETTINGS, TIMING } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -18,22 +18,20 @@ class QuizMode {
       autoPlay: DEFAULT_SETTINGS.AUTO_PLAY,
       autoPlayFull: DEFAULT_SETTINGS.AUTO_PLAY_FULL
     };
-    
+
     this._currentPlaylist = [];
     this._currentIndex = 0;
     this._isPaused = false;
     this._isPlayingFull = false;
     this._countdownTimerId = null;
     this._pauseTimerId = null;
-    
-    // ✅ NEW: Track event listener cleanup functions
+
     this._eventCleanupFunctions = [];
-    
+
     this._setupEventListeners();
   }
-  
+
   _setupEventListeners() {
-    // ✅ FIXED: Store cleanup functions for removal
     const playbackStartedCleanup = EventBus.on(EVENTS.PLAYBACK_STARTED, () => {
       if (this._isActive && !this._isPaused && !this._isPlayingFull) {
         this._startMonitoringPlayback();
@@ -43,15 +41,14 @@ class QuizMode {
 
     const trackEndedCleanup = EventBus.on(EVENTS.TRACK_ENDED, () => {
       if (!this._isActive) return;
-      
+
       if (this._isPlayingFull) {
         this._isPlayingFull = false;
         console.log('✅ Full shloka finished');
-        
+
         if (this._settings.autoPlay) {
           console.log('▶️ Auto-advancing to next question...');
           setTimeout(() => {
-            // ✅ FIXED: Check if still active before proceeding
             if (!this._isActive) return;
             this.nextQuestion();
           }, 500);
@@ -68,76 +65,73 @@ class QuizMode {
     });
     this._eventCleanupFunctions.push(trackEndedCleanup);
   }
-  
-  // ✅ FIXED: Clear monitoring timer properly
+
   _startMonitoringPlayback() {
     this._clearMonitoringTimer();
-    
+
     const targetDelay = this._settings.quizDelay;
     const startTime = Date.now();
-    const startAudioTime = audioService.getCurrentTime();
-    
-    console.log(`👁️ Starting monitoring: will pause at ${targetDelay}s (current: ${startAudioTime.toFixed(2)}s)`);
-    
+
+    console.log(`👁️ Starting monitoring: will pause at ${targetDelay}s`);
+
     this._pauseTimerId = setInterval(() => {
       if (!this._isActive || this._isPaused || this._isPlayingFull) {
         this._clearMonitoringTimer();
         return;
       }
-      
+
       const currentTime = audioService.getCurrentTime();
       const elapsed = (Date.now() - startTime) / 1000;
-      
+
       if (currentTime >= targetDelay - 0.05) {
         console.log(`⏸️ Quiz: Reached ${currentTime.toFixed(2)}s (target: ${targetDelay}s), pausing now`);
         this._pauseForRecitation();
         this._clearMonitoringTimer();
         return;
       }
-      
+
       if (elapsed > targetDelay + 2) {
         console.warn(`⚠️ Quiz monitoring timeout at ${elapsed.toFixed(2)}s, forcing pause`);
         this._pauseForRecitation();
         this._clearMonitoringTimer();
       }
     }, 50);
-    
+
     console.log(`👁️ Monitoring started, will pause at ${targetDelay}s`);
   }
-  
-  // ✅ FIXED: Properly nullify timer ID
+
   _clearMonitoringTimer() {
     if (this._pauseTimerId) {
       clearInterval(this._pauseTimerId);
-      this._pauseTimerId = null; // ✅ CRITICAL FIX
+      this._pauseTimerId = null;
       console.log('🛑 Quiz monitoring timer cleared');
     }
   }
-  
+
   _pauseForRecitation() {
     if (this._isPaused) return;
-    
+
     audioService.pause();
     this._isPaused = true;
     state.set('quizMode.isPaused', true);
 
     console.log('⏸️ Quiz: Audio paused, your turn!');
-    EventBus.emit('quiz-mode:paused-for-recitation');
+    // ✅ Uses EVENTS constant
+    EventBus.emit(EVENTS.QUIZ_MODE_PAUSED);
 
-    // ✅ FIXED: Wait for audio to actually pause before starting countdown
-    // This ensures the user gets the full countdown time
     setTimeout(() => {
       if (!this._isActive || !this._isPaused) return;
       this._startCountdown();
-    }, 100); // Small delay ensures audio has fully paused
+    }, 100);
   }
-  
+
   initialize() {
     if (this._isActive) return;
 
     console.log('🧠 Initializing Quiz Mode');
 
-    const savedSettings = storageService.loadSettings();
+    // ✅ Uses renamed method
+    const savedSettings = storageService.loadQuizSettings();
     if (savedSettings) {
       this._settings = { ...this._settings, ...savedSettings };
     }
@@ -155,7 +149,8 @@ class QuizMode {
     this._clearMonitoringTimer();
     audioService.setPlaybackRate(1.0);
 
-    EventBus.emit('quiz-mode:initialized', this._settings);
+    // ✅ Uses EVENTS constant
+    EventBus.emit(EVENTS.QUIZ_MODE_INITIALIZED, this._settings);
     console.log('✅ Quiz mode initialized', this._settings);
   }
 
@@ -163,11 +158,10 @@ class QuizMode {
     if (!this._isActive) return;
 
     console.log('🧹 Cleaning up Quiz Mode');
-    
-    // ✅ FIXED: Remove event listeners
+
     this._eventCleanupFunctions.forEach(cleanup => cleanup());
     this._eventCleanupFunctions = [];
-    
+
     this._clearAllTimers();
     this._clearMonitoringTimer();
 
@@ -179,7 +173,8 @@ class QuizMode {
     this._isPlayingFull = false;
     this._isActive = false;
 
-    EventBus.emit('quiz-mode:cleanup');
+    // ✅ Uses EVENTS constant
+    EventBus.emit(EVENTS.QUIZ_MODE_CLEANUP);
     console.log('✅ Quiz mode cleaned up');
   }
 
@@ -221,7 +216,7 @@ class QuizMode {
 
     this._isPaused = false;
     this._isPlayingFull = false;
-    
+
     state.update({
       'quizMode.currentTrack': this._currentPlaylist[this._currentIndex],
       'quizMode.isPaused': false
@@ -241,19 +236,21 @@ class QuizMode {
       await audioService.play();
 
       console.log(`🎵 Quiz: Playing track ${trackNum} (${this._currentIndex + 1}/${this._currentPlaylist.length}) for ${this._settings.quizDelay}s`);
-      EventBus.emit('quiz-mode:track-started', {
+
+      // ✅ Uses EVENTS constant
+      EventBus.emit(EVENTS.QUIZ_MODE_TRACK_STARTED, {
         track: trackNum,
         index: this._currentIndex,
         total: this._currentPlaylist.length
       });
     } catch (error) {
       console.error('Failed to play quiz track:', error);
-      EventBus.emit(EVENTS.TOAST_SHOW, { 
-        message: 'Failed to play track. Skipping...', 
-        type: 'error' 
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: 'Failed to play track. Skipping...',
+        type: 'error'
       });
       setTimeout(() => {
-        if (!this._isActive) return; // ✅ Safety check
+        if (!this._isActive) return;
         this.nextQuestion();
       }, 1000);
     }
@@ -265,9 +262,8 @@ class QuizMode {
       {
         onTick: (remaining, total) => EventBus.emit(EVENTS.QUIZ_COUNTDOWN_TICK, { remaining, total }),
         onComplete: async () => {
-          // ✅ Check if still active
           if (!this._isActive) return;
-          
+
           console.log('⏰ Quiz countdown complete');
           this._countdownTimerId = null;
           EventBus.emit(EVENTS.QUIZ_COUNTDOWN_COMPLETE);
@@ -276,9 +272,9 @@ class QuizMode {
             console.log('🔊 Auto-playing full shloka...');
             await this.playFullShloka();
           } else if (this._settings.autoPlay) {
-            console.log('▶️ Auto-playing next track (no full shloka)...');
+            console.log('▶️ Auto-playing next track...');
             setTimeout(() => {
-              if (!this._isActive) return; // ✅ Safety check
+              if (!this._isActive) return;
               this.nextQuestion();
             }, 500);
           } else {
@@ -307,7 +303,8 @@ class QuizMode {
       await audioService.play();
 
       console.log(`🔊 Playing full shloka ${trackNum}`);
-      EventBus.emit('quiz-mode:playing-full', { track: trackNum });
+      // ✅ Uses EVENTS constant
+      EventBus.emit(EVENTS.QUIZ_MODE_PLAYING_FULL, { track: trackNum });
     } catch (error) {
       this._isPlayingFull = false;
       console.error('Failed to play full shloka:', error);
@@ -319,9 +316,9 @@ class QuizMode {
   }
 
   _clearAllTimers() {
-    if (this._countdownTimerId) { 
-      timerManager.stopTimer(this._countdownTimerId); 
-      this._countdownTimerId = null; 
+    if (this._countdownTimerId) {
+      timerManager.stopTimer(this._countdownTimerId);
+      this._countdownTimerId = null;
     }
   }
 
@@ -332,7 +329,8 @@ class QuizMode {
     this._settings.quizTime = validation.value;
     state.set('quizMode.quizTime', validation.value);
     this._saveSettings();
-    EventBus.emit('quiz-mode:time-changed', validation.value);
+    // ✅ Uses EVENTS constant
+    EventBus.emit(EVENTS.QUIZ_MODE_TIME_CHANGED, validation.value);
   }
 
   updateQuizDelay(delay) {
@@ -342,14 +340,16 @@ class QuizMode {
     this._settings.quizDelay = validation.value;
     state.set('quizMode.quizDelay', validation.value);
     this._saveSettings();
-    EventBus.emit('quiz-mode:delay-changed', validation.value);
+    // ✅ Uses EVENTS constant
+    EventBus.emit(EVENTS.QUIZ_MODE_DELAY_CHANGED, validation.value);
   }
 
   toggleAutoPlay() {
     this._settings.autoPlay = !this._settings.autoPlay;
     state.set('quizMode.autoPlay', this._settings.autoPlay);
     this._saveSettings();
-    EventBus.emit('quiz-mode:autoplay-changed', this._settings.autoPlay);
+    // ✅ Uses EVENTS constant
+    EventBus.emit(EVENTS.QUIZ_MODE_AUTOPLAY_CHANGED, this._settings.autoPlay);
     return this._settings.autoPlay;
   }
 
@@ -357,17 +357,17 @@ class QuizMode {
     this._settings.autoPlayFull = !this._settings.autoPlayFull;
     state.set('quizMode.autoPlayFull', this._settings.autoPlayFull);
     this._saveSettings();
-    EventBus.emit('quiz-mode:autoplayfull-changed', this._settings.autoPlayFull);
+    // ✅ Uses EVENTS constant
+    EventBus.emit(EVENTS.QUIZ_MODE_AUTOPLAYFULL_CHANGED, this._settings.autoPlayFull);
     return this._settings.autoPlayFull;
   }
 
+  // ✅ Uses renamed storage method
   _saveSettings() {
-    storageService.saveSettings(this._settings);
+    storageService.saveQuizSettings(this._settings);
   }
 
-  getSettings() {
-    return { ...this._settings };
-  }
+  getSettings() { return { ...this._settings }; }
 
   getState() {
     return {
