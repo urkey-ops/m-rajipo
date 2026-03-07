@@ -1,8 +1,6 @@
-// storage-service.js - ENHANCED VERSION with quiz autoPlayFull support
-
-import { STORAGE_KEYS, MAX_RECENT_ITEMS } from '../core/constants.js';
+// storage-service.js - CLEANED UP VERSION
+import { STORAGE_KEYS, MAX_RECENT_ITEMS, EVENTS } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
-import { EVENTS } from '../core/constants.js';
 import { validatePlaylistName, validatePlaylist } from '../utils/validation.js';
 
 class StorageService {
@@ -81,18 +79,16 @@ class StorageService {
     }
   }
 
-  // ------------------------
-  // Quiz Settings Handling
-  // ------------------------
-  saveSettings(settings) {
+  // ✅ RENAMED: saveSettings → saveQuizSettings (quiz-specific, not generic)
+  saveQuizSettings(settings) {
     const result = this.save(STORAGE_KEYS.QUIZ_SETTINGS, settings);
     return result.success;
   }
 
-  loadSettings() {
+  // ✅ RENAMED: loadSettings → loadQuizSettings (quiz-specific, not generic)
+  loadQuizSettings() {
     const saved = this.load(STORAGE_KEYS.QUIZ_SETTINGS, null);
     if (saved) {
-      // Ensure autoPlayFull exists in loaded settings
       if (typeof saved.autoPlayFull === 'undefined') {
         saved.autoPlayFull = false;
       }
@@ -100,9 +96,6 @@ class StorageService {
     return saved;
   }
 
-  // ------------------------
-  // Other methods remain unchanged
-  // ------------------------
   savePlaylist(name, tracks) {
     const nameValidation = validatePlaylistName(name);
     if (!nameValidation.valid) throw new Error(nameValidation.error);
@@ -148,6 +141,7 @@ class StorageService {
     return Object.keys(this.getPlaylists()).length;
   }
 
+  // ✅ UPDATED: emits HISTORY_UPDATED so playlists-bar can react without setTimeout
   saveToHistory(tracks) {
     if (!tracks || tracks.length === 0) return false;
 
@@ -158,6 +152,11 @@ class StorageService {
     const updated = [trackString, ...filtered.slice(0, MAX_RECENT_ITEMS - 1)];
 
     const result = this.save(STORAGE_KEYS.RECENT, updated);
+
+    if (result.success) {
+      EventBus.emit(EVENTS.HISTORY_UPDATED);
+    }
+
     return result.success;
   }
 
