@@ -1,8 +1,6 @@
-// state.js - FIXED: B1, B2, B3, B4
 import { EventBus } from './events.js';
 import { EVENTS, MODES, DEFAULT_SETTINGS } from './constants.js';
 
-// B2: valid mode values for guard in setMode()
 const VALID_MODES = new Set(Object.values(MODES));
 
 class State {
@@ -58,18 +56,20 @@ class State {
     if (key.includes('.')) {
       const keys = key.split('.');
       let obj = this._state;
+
       for (let i = 0; i < keys.length - 1; i++) {
-        // B1: only create a plain object if the slot is missing or not an object
-        // never clobber arrays, numbers, booleans, strings
-        if (obj[keys[i]] === null || typeof obj[keys[i]] !== 'object') {
-          obj[keys[i]] = {};
+        const part = keys[i];
+        if (obj[part] === null || typeof obj[part] !== 'object') {
+          obj[part] = {};
         }
-        obj = obj[keys[i]];
+        obj = obj[part];
       }
+
       obj[keys[keys.length - 1]] = value;
     } else {
       this._state[key] = value;
     }
+
     this._emitChange(key, value);
   }
 
@@ -80,37 +80,43 @@ class State {
   }
 
   setMode(mode) {
-    // B2: reject unknown mode values early
     if (!VALID_MODES.has(mode)) {
       console.warn(`[State] setMode called with unknown mode: "${mode}". Ignoring.`);
       return;
     }
-    // B4: skip redundant event if mode hasn't actually changed
+
     if (this._state.currentMode === mode) return;
 
     this._state.currentMode = mode;
     this._state.isQuizMode = mode === MODES.QUIZ;
     this._state.isMemoryMode = mode === MODES.MEMORY;
+
     EventBus.emit(EVENTS.MODE_CHANGED, { mode });
   }
 
-  // NOTE: these are properties, not methods — keep as getters to avoid
-  // name collision with the boolean flags stored in _state
-  get isQuizMode() { return this._state.isQuizMode; }
-  get isMemoryMode() { return this._state.isMemoryMode; }
+  isQuizMode() {
+    return this._state.isQuizMode;
+  }
+
+  isMemoryMode() {
+    return this._state.isMemoryMode;
+  }
 
   getAll() {
-    // B3: safe deep clone; guard against circular references
     try {
-      return structuredClone(this._state);
-    } catch {
-      // fallback for environments without structuredClone
-      try {
-        return JSON.parse(JSON.stringify(this._state));
-      } catch (e) {
-        console.error('[State] getAll() deep clone failed (possible circular ref):', e);
-        return { ...this._state }; // last-resort shallow copy
+      if (typeof structuredClone === 'function') {
+        return structuredClone(this._state);
       }
+      return JSON.parse(JSON.stringify(this._state));
+    } catch (e) {
+      console.error('[State] getAll() deep clone failed:', e);
+      return {
+        ...this._state,
+        quizMode: { ...this._state.quizMode },
+        memoryMode: { ...this._state.memoryMode },
+        regularMode: { ...this._state.regularMode },
+        selectedTracks: [...this._state.selectedTracks]
+      };
     }
   }
 
