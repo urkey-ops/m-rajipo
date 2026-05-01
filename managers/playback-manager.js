@@ -1,4 +1,4 @@
-// playback-manager.js - CLEANED UP VERSION
+// playback-manager.js - UPDATED VERSION (with 503 retry, no skip cascade)
 import { EVENTS, MODES } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 import { state } from '../core/state.js';
@@ -63,7 +63,7 @@ class PlaybackManager {
     this._eventCleanupFunctions.push(skipCleanup);
   }
 
-   cleanup() {
+  cleanup() {
     if (!this._isActive) return;
 
     console.log('🧹 Cleaning up Playback Manager');
@@ -186,7 +186,6 @@ class PlaybackManager {
     try {
       await audioService.loadTrack(trackNum);
 
-      await Promise.resolve();
       audioService.setPlaybackRate(this._speed);
 
       await audioService.play();
@@ -369,6 +368,9 @@ class PlaybackManager {
 
     console.error('Playback error:', data);
 
+    // NEW: detect retryable 503 / network error
+    const isRetryable = data.retryable === true;
+
     if (!this._errorCount) this._errorCount = 0;
     this._errorCount++;
 
@@ -383,6 +385,25 @@ class PlaybackManager {
       return;
     }
 
+    if (isRetryable) {
+      // 503 / network → retry same track with backoff
+      console.log('🔄 Temporary 503 / network error, retrying same track...');
+
+      const wait = Math.min(1000 * this._errorCount, 5000); // 1s, 2s, 3s, 5s cap
+
+      setTimeout(async () => {
+        try {
+          await this._playTrackAtIndex(this._currentIndex);
+        } catch (err) {
+          console.error('Retry failed:', err);
+          this._handlePlaybackError(err);
+        }
+      }, wait);
+
+      return;
+    }
+
+    // Hard error → skip if there is a next track
     if (this._currentPlaylist.length > 1 && this._currentIndex < this._currentPlaylist.length - 1) {
       EventBus.emit(EVENTS.TOAST_SHOW, {
         message: 'Skipping problematic track...',
