@@ -63,10 +63,20 @@ class PlaybackManager {
     this._eventCleanupFunctions.push(skipCleanup);
   }
 
-  cleanup() {
+   cleanup() {
     if (!this._isActive) return;
 
     console.log('🧹 Cleaning up Playback Manager');
+
+    // Execute and clear all stored event cleanup functions
+    if (Array.isArray(this._eventCleanupFunctions)) {
+      this._eventCleanupFunctions.forEach(cleanupFn => {
+        if (typeof cleanupFn === 'function') {
+          cleanupFn();
+        }
+      });
+      this._eventCleanupFunctions = [];
+    }
 
     if (this._isPlaying) {
       this.stop();
