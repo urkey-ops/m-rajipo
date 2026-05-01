@@ -1,4 +1,3 @@
-// controls.js - CLEANED UP VERSION
 import { $, $$, addClass, removeClass, toggleClass } from '../../utils/dom-utils.js';
 import { EventBus } from '../../core/events.js';
 import { EVENTS, MODES } from '../../core/constants.js';
@@ -74,10 +73,15 @@ class Controls {
     console.log('📥 Regular mode settings loaded:', settings);
   }
 
+  _isRestrictedMode() {
+    const currentMode = state.get('currentMode');
+    return currentMode === MODES.QUIZ || currentMode === MODES.MEMORY;
+  }
+
   _setupEventListeners() {
     if (this._speedSlider && this._speedDisplay) {
       this._speedSlider.addEventListener('input', (e) => {
-        if (!state.isQuizMode()) {
+        if (!this._isRestrictedMode()) {
           const speed = parseFloat(e.target.value);
           regularMode.updateSpeed(speed);
           this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
@@ -88,6 +92,8 @@ class Controls {
 
     if (this._repeatCount) {
       this._repeatCount.addEventListener('change', () => {
+        if (this._isRestrictedMode()) return;
+        
         const value = parseInt(this._repeatCount.value, 10);
         if (value < 1) this._repeatCount.value = 1;
         if (value > 10) this._repeatCount.value = 10;
@@ -111,7 +117,7 @@ class Controls {
 
     if (this._shuffleCheckbox) {
       this._shuffleCheckbox.addEventListener('change', () => {
-        if (!state.isQuizMode()) {
+        if (!this._isRestrictedMode()) {
           regularMode.toggleShuffle();
         }
       });
@@ -119,7 +125,7 @@ class Controls {
 
     if (this._repeatPlaylistCheckbox) {
       this._repeatPlaylistCheckbox.addEventListener('change', () => {
-        if (!state.isQuizMode()) {
+        if (!this._isRestrictedMode()) {
           regularMode.toggleRepeatPlaylist();
         }
       });
@@ -127,7 +133,7 @@ class Controls {
 
     if (this._gapSlider && this._gapDisplay) {
       this._gapSlider.addEventListener('input', (e) => {
-        if (!state.isQuizMode()) {
+        if (!this._isRestrictedMode()) {
           const gap = parseInt(e.target.value);
 
           try {
@@ -145,12 +151,10 @@ class Controls {
       });
     }
 
-    EventBus.on(EVENTS.MODE_CHANGED, (data) => {
-      this._isQuizMode = data.mode === MODES.QUIZ;
+    EventBus.on(EVENTS.MODE_CHANGED, () => {
       this._updateControlsForMode();
     });
 
-    // ✅ Uses EVENTS constants
     EventBus.on(EVENTS.REGULAR_MODE_GAP_CHANGED, (gap) => {
       if (this._gapSlider && this._gapDisplay) {
         this._gapSlider.value = gap;
@@ -167,7 +171,7 @@ class Controls {
   }
 
   _updateControlsForMode() {
-    const disable = this._isQuizMode;
+    const disable = this._isRestrictedMode();
 
     const regularControls = [
       this._speedSlider,
