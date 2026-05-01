@@ -73,7 +73,7 @@ class Application {
 
     if (!storageService.isAvailable()) {
       console.warn('Storage not available - playlists and history disabled');
-      toast.info('Storage unavailable - playlists and history won\\'t be saved.');
+      toast.info("Storage unavailable - playlists and history won't be saved.");
     }
 
     console.log('Network status:', networkService.isOnline() ? 'Online' : 'Offline');
