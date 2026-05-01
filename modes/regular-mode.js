@@ -74,9 +74,22 @@ class RegularMode {
     console.log('✅ Regular mode cleaned up');
   }
 
-  async startPlayback() {
+   async startPlayback() {
     if (!this._isActive) {
       throw new Error('Regular mode not initialized');
+    }
+
+    // ✅ Verified readiness checks
+    if (!audioService.isInitialized()) {
+      throw new Error('Audio service is not ready');
+    }
+
+    if (audioService.getReadyState() < 3) {
+      throw new Error('Audio not ready to play (readyState < 3)');
+    }
+
+    if (!networkService._isOnline) {
+      throw new Error('Network is offline');
     }
 
     const selectedTracks = selectionManager.getSelection();
