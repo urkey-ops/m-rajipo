@@ -34,8 +34,16 @@ class NowPlaying {
       this.updateTrack(data.track);
     });
 
-    EventBus.on(EVENTS.MODE_CHANGED, (data) => {
+      EventBus.on(EVENTS.MODE_CHANGED, (data) => {
       this._isQuizMode = data.mode === MODES.QUIZ;
+      
+      // ✅ NEW: Flush gap state on mode change (B28)
+      if (this._isInGap) {
+        this._isInGap = false;
+        this._gapNextTrack = null;
+        console.log('🧹 Gap state flushed due to mode change');
+      }
+      
       this.updateIcon();
       this.updateSpeed(this._isQuizMode ? 1.0 : this._currentSpeed);
     });
@@ -102,15 +110,12 @@ class NowPlaying {
     }
   }
 
-  _handleGapEnded() {
+   _handleGapEnded() {
     this._isInGap = false;
     this._gapNextTrack = null;
 
-    if (this._nowPlayingIcon) {
-      this._nowPlayingIcon.className = this._isQuizMode
-        ? 'fa-solid fa-brain'
-        : 'fa-solid fa-play';
-    }
+    // ✅ FIXED: Restore correct speed icon after gap
+    this.updateIcon();
 
     console.log('✓ Gap ended, resuming playback');
   }
@@ -130,13 +135,22 @@ class NowPlaying {
     this._currentSpeed = speed;
   }
 
-  updateIcon() {
-    if (this._isInGap) return;
+   updateIcon() {
+    if (this._isInGap) {
+      if (this._nowPlayingIcon) {
+        this._nowPlayingIcon.className = 'fa-solid fa-hourglass-half';
+      }
+      return;
+    }
 
     if (this._nowPlayingIcon) {
-      this._nowPlayingIcon.className = this._isQuizMode
-        ? 'fa-solid fa-brain'
-        : 'fa-solid fa-play';
+      if (this._isQuizMode) {
+        this._nowPlayingIcon.className = 'fa-solid fa-brain';
+      } else if (this._currentSpeed > 1.0) {
+        this._nowPlayingIcon.className = 'fa-solid fa-forward'; // Speed icon
+      } else {
+        this._nowPlayingIcon.className = 'fa-solid fa-play';
+      }
     }
   }
 
