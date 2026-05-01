@@ -50,87 +50,85 @@ class NetworkService {
     };
   }
 
-  async _processRetryQueue() {
-    if (this._retryQueues.size === 0) return;
+ async _processRetryQueue() {
+  if (this._retryQueues.size === 0) return;
 
-    console.log(`Processing ${this._retryQueues.size} queued operations...`);
+  console.log(`Processing ${this._retryQueues.size} queued operations...`);
 
-    const promises = [];
-    for (const [id, fn] of this._retryQueues.entries()) {
-      const attempts = this._retryAttempts.get(id) || 0;
+  const promises = [];
+  for (const [id, fn] of this._retryQueues.entries()) {
+    const attempts = this._retryAttempts.get(id) || 0;
 
-      if (attempts >= this._maxRetryAttempts) {
-        console.warn(`Retry queue: ${id} exceeded max attempts (${this._maxRetryAttempts}), removing`);
-        this._retryQueues.delete(id);
-        this._retryAttempts.delete(id);
+    if (attempts >= this._maxRetryAttempts) {
+      console.warn(`Retry queue: ${id} exceeded max attempts (${this._maxRetryAttempts}), removing`);
+      this._retryQueues.delete(id);
+      this._retryAttempts.delete(id);
 
-        EventBus.emit(EVENTS.TOAST_SHOW, {
-          message: `Operation "${id}" failed after ${this._maxRetryAttempts} attempts.`,
-          type: 'error'
-        });
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: `Operation "${id}" failed after ${this._maxRetryAttempts} attempts.`,
+        type: 'error'
+      });
 
-        continue;
-      }
+      continue;
+    }
 
-      promises.push(
-        Promise.resolve()
-          .then(() => fn())
-          .then(() => {
+    promises.push(
+      Promise.resolve()
+        .then(() => fn())
+        .then(() => {
+          this._retryQueues.delete(id);
+          this._retryAttempts.delete(id);
+          console.log(`Retry queue: ${id} completed`);
+        })
+        .catch(error => {
+          console.error(`Retry queue: ${id} failed:`, error);
+
+          const newAttempts = attempts + 1;
+          this._retryAttempts.set(id, newAttempts);
+
+          if (newAttempts >= this._maxRetryAttempts) {
             this._retryQueues.delete(id);
             this._retryAttempts.delete(id);
-            console.log(`Retry queue: ${id} completed`);
-          })
-          .catch(error => {
-            console.error(`Retry queue: ${id} failed:`, error);
 
-            const newAttempts = attempts + 1;
-            this._retryAttempts.set(id, newAttempts);
+            EventBus.emit(EVENTS.TOAST_SHOW, {
+              message: `Operation "${id}" failed permanently after ${newAttempts} attempts.`,
+              type: 'error'
+            });
 
-            if (newAttempts >= this._maxRetryAttempts) {
-              this._retryQueues.delete(id);
-              this._retryAttempts.delete(id);
-
-              EventBus.emit(EVENTS.TOAST_SHOW, {
-                message: `Operation "${id}" failed permanently after ${newAttempts} attempts.`,
-                type: 'error'
-              });
-
-              if (errorHandler?.handle) {
-                errorHandler.handle(error);
-              }
-
-              console.error(`Retry queue: ${id} failed permanently after ${newAttempts} attempts, removed`);
+            if (errorHandler?.handle) {
+              errorHandler.handle(error);
             }
-          })
-      );
-    }
 
-    await Promise.allSettled(promises);
+            console.error(`Retry queue: ${id} failed permanently after ${newAttempts} attempts, removed`);
+          }
+        })
+    );
+  }
+
+  await Promise.allSettled(promises);
+}
+
+// ✅ These are now methods of the same class
+async checkUrl(url) {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    return false;
   }
 }
-  
-  // Check if URL is reachable
-  async checkUrl(url) {
-    try {
-      const response = await fetch(url, { method: 'HEAD' });
-      return response.ok;
-    } catch (error) {
-      return false;
-    }
+
+async prefetch(url) {
+  if (!this._isOnline) return false;
+
+  try {
+    const response = await fetch(url);
+    return response.ok;
+  } catch (error) {
+    console.warn('Prefetch failed:', url, error);
+    return false;
   }
-  
-  // Prefetch resource
-  async prefetch(url) {
-    if (!this._isOnline) return false;
-    
-    try {
-      const response = await fetch(url);
-      return response.ok;
-    } catch (error) {
-      console.warn('Prefetch failed:', url, error);
-      return false;
-    }
-  }
+}
   
   // Delay utility
   _delay(ms) {
