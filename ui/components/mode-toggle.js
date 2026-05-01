@@ -72,7 +72,7 @@ class ModeToggle {
       }
     }
     
-    // Cleanup old mode
+    // 1. Cleanup old mode FIRST
     switch (oldMode) {
       case MODES.REGULAR:
         regularMode.cleanup();
@@ -85,7 +85,7 @@ class ModeToggle {
         break;
     }
     
-    // Initialize new mode
+    // 2. Initialize new mode
     switch (newMode) {
       case MODES.REGULAR:
         regularMode.initialize();
@@ -98,21 +98,26 @@ class ModeToggle {
         break;
     }
     
+    // 3. ✅ NEW: Explicit state sync after cleanup/init
+    state.set('currentMode', newMode);
+    
     this.currentMode = newMode;
     this._updateUI();
     
-    // ✅ NEW - Update body data-mode attribute for CSS
+    // ✅ Update body data-mode attribute for CSS
     document.body.setAttribute('data-mode', newMode);
     
     // Show/hide appropriate controls
     this._toggleControlVisibility(newMode);
     
-    // ✅ FIXED: Emit event with BOTH properties for compatibility
+    // ✅ Emit event with BOTH properties for compatibility
     EventBus.emit(EVENTS.MODE_CHANGED, {
-      mode: newMode,      // ✅ For components expecting 'mode'
+      mode: newMode,
       from: oldMode,
-      to: newMode         // ✅ For components expecting 'to'
+      to: newMode
     });
+    
+    console.log(`✅ Mode switch complete: ${oldMode} → ${newMode}, state synced`);
   }
   
   _updateUI() {
