@@ -14,6 +14,15 @@ class ShlokaGrid {
     this._currentMode = MODES.REGULAR;
     this._clearAllBtn = null;
   }
+
+  // Add this method to ShlokaGrid class (after constructor)
+_debounce(fn, delay) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+}
   
   initialize() {
     this._grid = $('#shlokaGrid');
@@ -130,11 +139,11 @@ class ShlokaGrid {
     }
   }
   
-  _handleCheckboxChange(checkbox) {
+ _handleCheckboxChange(checkbox) {
+  // ✅ NEW: Debounced selection update (200ms)
+  const debouncedUpdate = this._debounce(() => {
     const trackNum = parseInt(checkbox.value);
     const isChecked = checkbox.checked;
-    
-    this._isUpdatingFromManager = true;
     
     const label = checkbox.closest('.shloka-item');
     
@@ -158,11 +167,10 @@ class ShlokaGrid {
     }
     
     this._updateSelectionActions();
-    
-    setTimeout(() => {
-      this._isUpdatingFromManager = false;
-    }, 0);
-  }
+  }, 200);
+
+  debouncedUpdate();
+}
   
   _updateVisualStateFromManager() {
     const selectedTracks = selectionManager.getSelection();
