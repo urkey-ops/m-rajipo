@@ -8,143 +8,106 @@ class NetworkService {
     this._isOnline = navigator.onLine;
     this._listeners = new Set();
     this._retryQueues = new Map();
-    this._retryAttempts = new Map(); // ✅ NEW: Track retry attempts per operation
-    this._maxRetryAttempts = 3;      // ✅ NEW: Maximum retry attempts before giving up
-    
+    this._retryAttempts = new Map();
+    this._maxRetryAttempts = 3;
+
     this._setupListeners();
   }
-  
+
+  _notifyListeners(payload) {
+    for (const callback of this._listeners) {
+      try {
+        callback(payload);
+      } catch (error) {
+        console.error('Network status listener failed:', error);
+      }
+    }
+  }
+
   _setupListeners() {
     window.addEventListener('online', () => {
       this._isOnline = true;
       console.log('Network: Online');
       EventBus.emit(EVENTS.NETWORK_ONLINE);
-      this._processRetryQueue();
+      this._notifyListeners({ isOnline: true });
+      this._processRetryQueue().catch(error => {
+        console.error('Failed to process retry queue:', error);
+      });
     });
-    
+
     window.addEventListener('offline', () => {
       this._isOnline = false;
       console.log('Network: Offline');
       EventBus.emit(EVENTS.NETWORK_OFFLINE);
+      this._notifyListeners({ isOnline: false });
     });
   }
-  
-  isOnline() {
-    return this._isOnline;
-  }
-  
-  // Subscribe to status changes
+
   onStatusChange(callback) {
     this._listeners.add(callback);
-    
-    // Return unsubscribe function
     return () => {
       this._listeners.delete(callback);
     };
   }
-  
-  // Retry with exponential backoff
-  async retryWithBackoff(fn, options = {}) {
-    const {
-      maxRetries = TIMING.MAX_RETRIES,
-      baseDelay = TIMING.RETRY_DELAY_MS,
-      onRetry = null
-    } = options;
-    
-    let lastError;
-    
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        // Check if online before attempting
-        if (!this._isOnline && attempt > 0) {
-          throw new Error('Network offline');
-        }
-        
-        const result = await fn(attempt);
-        return result;
-        
-      } catch (error) {
-        lastError = error;
-        
-        // If this was the last attempt, throw
-        if (attempt === maxRetries) {
-          break;
-        }
-        
-        // Calculate delay with exponential backoff
-        const delay = baseDelay * Math.pow(2, attempt);
-        
-        console.log(`Retry attempt ${attempt + 1}/${maxRetries} in ${delay}ms`);
-        
-        // Call retry callback if provided
-        if (onRetry) {
-          onRetry(attempt + 1, maxRetries, delay);
-        }
-        
-        // Wait before retry
-        await this._delay(delay);
-      }
-    }
-    
-    // All retries failed
-    throw lastError;
-  }
-  
-  // Add to retry queue (for offline scenarios)
-  addToRetryQueue(id, fn) {
-    this._retryQueues.set(id, fn);
-  }
-  
-  // Remove from retry queue
-  removeFromRetryQueue(id) {
-    this._retryQueues.delete(id);
-    this._retryAttempts.delete(id); // ✅ Also clean up attempt counter
-  }
-  
-  // Process retry queue when back online
+
   async _processRetryQueue() {
     if (this._retryQueues.size === 0) return;
-    
+
     console.log(`Processing ${this._retryQueues.size} queued operations...`);
-    
+
     const promises = [];
     for (const [id, fn] of this._retryQueues.entries()) {
-      // ✅ FIXED: Check retry attempts to prevent infinite retries
       const attempts = this._retryAttempts.get(id) || 0;
-      
+
       if (attempts >= this._maxRetryAttempts) {
         console.warn(`Retry queue: ${id} exceeded max attempts (${this._maxRetryAttempts}), removing`);
         this._retryQueues.delete(id);
         this._retryAttempts.delete(id);
+
+        EventBus.emit(EVENTS.TOAST_SHOW, {
+          message: `Operation "${id}" failed after ${this._maxRetryAttempts} attempts.`,
+          type: 'error'
+        });
+
         continue;
       }
-      
+
       promises.push(
-        fn()
+        Promise.resolve()
+          .then(() => fn())
           .then(() => {
             this._retryQueues.delete(id);
-            this._retryAttempts.delete(id); // ✅ Clean up attempt counter
+            this._retryAttempts.delete(id);
             console.log(`Retry queue: ${id} completed`);
           })
           .catch(error => {
             console.error(`Retry queue: ${id} failed:`, error);
-            
-            // ✅ FIXED: Increment attempt counter
+
             const newAttempts = attempts + 1;
             this._retryAttempts.set(id, newAttempts);
-            
-            // ✅ FIXED: Remove from queue if max attempts reached
+
             if (newAttempts >= this._maxRetryAttempts) {
               this._retryQueues.delete(id);
               this._retryAttempts.delete(id);
+
+              EventBus.emit(EVENTS.TOAST_SHOW, {
+                message: `Operation "${id}" failed permanently after ${newAttempts} attempts.`,
+                type: 'error'
+              });
+
+              if (errorHandler?.handle) {
+                errorHandler.handle(error);
+              }
+
               console.error(`Retry queue: ${id} failed permanently after ${newAttempts} attempts, removed`);
             }
           })
       );
     }
-    
+
     await Promise.allSettled(promises);
   }
+}
   
   // Check if URL is reachable
   async checkUrl(url) {
