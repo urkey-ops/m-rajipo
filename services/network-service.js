@@ -159,6 +159,11 @@ class NetworkService {
            info.effectiveType === '2g' ||
            info.saveData === true;
   }
+
+  // Check if network is online (fixes: isOnline is not a function)
+  isOnline() {
+    return this._isOnline;
+  }
 }
 
 // Export singleton
