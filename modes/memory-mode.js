@@ -384,26 +384,53 @@ class MemoryMode {
     console.log(`🔄 Reset to full track: 0s → ${this._settings.endTime}s`);
   }
 
-  reset() {
-    console.log('🔄 Resetting memory loop');
+    reset() {
+    console.log('🔄 Full memory mode reset');
+
+    // 1. Stop all activity first
     this.stop();
 
+    // 2. Reset all internal state to defaults
+    this._currentTrack = null;
+    this._isLooping = false;
+    this._isInGap = false;
+    this._hasReachedEnd = false;
+    this._isCustomSegment = false;
+    this._loopCount = 0;
+    this._trackDuration = 0;
+    this._gapStartedAt = null;
+    this._gapRemaining = null;
+
+    // 3. Reset settings to defaults (preserve user preferences from storage)
     const savedSettings = storageService.load('memorySettings') || {};
     this._settings.startTime = savedSettings.startTime ?? DEFAULT_SETTINGS.MEMORY_START_TIME;
     this._settings.endTime = savedSettings.endTime ?? DEFAULT_SETTINGS.MEMORY_END_TIME;
-    this._isCustomSegment = savedSettings.isCustomSegment || false;
+    this._settings.gapDuration = savedSettings.gapDuration ?? DEFAULT_SETTINGS.MEMORY_GAP;
+    this._settings.speed = savedSettings.speed ?? DEFAULT_SETTINGS.SPEED;
 
+    // 4. ✅ Comprehensive state sync
     state.update({
       'memoryMode.startTime': this._settings.startTime,
-      'memoryMode.endTime': this._settings.endTime
+      'memoryMode.endTime': this._settings.endTime,
+      'memoryMode.gapDuration': this._settings.gapDuration,
+      'memoryMode.speed': this._settings.speed,
+      'memoryMode.currentTrack': null,
+      'memoryMode.isLooping': false,
+      'memoryMode.loopCount': 0,
+      'memoryMode.trackDuration': 0,
+      'memoryMode.isCustomSegment': false
     });
 
-    this._loopCount = 0;
-    state.set('memoryMode.loopCount', 0);
+    // 5. Reset audio service
+    audioService.reset();
 
-    if (this._currentTrack) {
-      this.startLoop().catch(console.error);
-    }
+    // 6. Save updated settings
+    this._saveSettings();
+
+    // 7. Emit reset event
+    EventBus.emit(EVENTS.MEMORY_MODE_RESET);
+
+    console.log('✅ Memory mode fully reset');
   }
 
   updateSegment(startTime, endTime) {
