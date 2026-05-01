@@ -1,4 +1,4 @@
-// audio-service.js - CLEANED UP VERSION
+// audio-service.js - UPDATED VERSION (with 503 retryable flag)
 import { EVENTS, AUDIO_BASE_URL } from '../core/constants.js';
 import { EventBus } from '../core/events.js';
 
@@ -119,6 +119,20 @@ class AudioService {
     const url = this._getTrackUrl(trackNum);
     console.log(`🎵 Loading track ${trackNum}:`, url);
 
+    // NEW: detect 503 / network error early
+    let isRetryableNetworkError = false;
+    try {
+      const res = await fetch(url, { method: 'HEAD', mode: 'cors' });
+      if (!res.ok) {
+        if (res.status === 503) {
+          isRetryableNetworkError = true;
+        }
+      }
+    } catch (err) {
+      // Network failure; treat as retryable anyway
+      isRetryableNetworkError = true;
+    }
+
     if (!this.audio.paused) {
       this.audio.pause();
     }
@@ -141,8 +155,20 @@ class AudioService {
       const onError = (e) => {
         cleanup();
         console.error(`❌ Failed to load track ${trackNum}:`, e);
-        const errorMsg = this.audio.error?.message || 'Failed to load track';
-        reject(new Error(`${errorMsg} (Track ${trackNum})`));
+        const code = this.audio?.error?.code ?? 0;
+        const type = this._getErrorType(code);
+        const errorMsg = this.audio?.error?.message || 'Failed to load track';
+
+        const errorData = {
+          trackNum,
+          url,
+          code,
+          type,
+          message: errorMsg,
+          retryable: isRetryableNetworkError
+        };
+
+        reject(errorData);
       };
 
       const cleanup = () => {
