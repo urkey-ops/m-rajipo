@@ -1,4 +1,4 @@
-// main.js - CLEANED UP VERSION
+// main.js - UPDATED VERSION (with preventDefault on unhandledrejection, B2 fixed)
 import { EventBus } from './core/events.js';
 import { state } from './core/state.js';
 import { EVENTS, MODES } from './core/constants.js';
@@ -73,7 +73,7 @@ class Application {
 
     if (!storageService.isAvailable()) {
       console.warn('Storage not available - playlists and history disabled');
-      toast.info('Storage unavailable - playlists and history won\'t be saved.');
+      toast.info('Storage unavailable - playlists and history won\\'t be saved.');
     }
 
     console.log('Network status:', networkService.isOnline() ? 'Online' : 'Offline');
@@ -109,8 +109,10 @@ class Application {
       console.error('Global error:', event.error);
     });
 
+    // ✅ B2 fixed: handle + suppress unhandled rejections
     window.addEventListener('unhandledrejection', (event) => {
       console.error('Unhandled promise rejection:', event.reason);
+      event.preventDefault();
     });
 
     window.addEventListener('beforeunload', () => {
