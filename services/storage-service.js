@@ -24,9 +24,25 @@ class StorageService {
     return this.available;
   }
 
-  save(key, value) {
+   save(key, value) {
     if (!this.available) {
       return { success: false, error: 'Storage not available' };
+    }
+
+    // ✅ NEW: Pre-write quota check
+    const estimatedSize = JSON.stringify(value).length + key.length;
+    const currentSize = this.getStorageSize();
+    const totalEstimated = currentSize + estimatedSize;
+    
+    const quotaWarning = 5 * 1024 * 1024; // 5MB warning threshold
+    const estimatedQuota = quotaWarning * 0.9; // 90% threshold for proactive check
+    
+    if (totalEstimated > estimatedQuota) {
+      EventBus.emit(EVENTS.TOAST_SHOW, {
+        message: `Storage nearly full (${(totalEstimated/1024/1024).toFixed(1)}MB). Clear playlists first.`,
+        type: 'warning'
+      });
+      return { success: false, error: 'Storage quota warning - clear space first' };
     }
 
     try {
@@ -37,7 +53,7 @@ class StorageService {
       console.error('Storage save error:', error);
       if (error.name === 'QuotaExceededError') {
         EventBus.emit(EVENTS.TOAST_SHOW, {
-          message: 'Storage full. Please delete some playlists.',
+          message: 'Storage quota exceeded. Please delete playlists.',
           type: 'error'
         });
       }
