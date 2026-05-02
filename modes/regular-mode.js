@@ -7,6 +7,7 @@ import { selectionManager } from '../managers/selection-manager.js';
 import { storageService } from '../services/storage-service.js';
 import { validateSpeed, validateRepeatCount } from '../utils/validation.js';
 import { audioService } from '../services/audio-service.js';
+import { networkService } from '../services/network-service.js';
 
 class RegularMode {
   constructor() {
