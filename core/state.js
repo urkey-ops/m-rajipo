@@ -3,6 +3,30 @@ import { EVENTS, MODES, DEFAULT_SETTINGS } from './constants.js';
 
 const VALID_MODES = new Set(Object.values(MODES));
 
+// ✅ FIXED B1: Path allowlist prevents arbitrary deep writes
+const ALLOWLIST = new Set([
+  // Audio state
+  'audio.currentTrack', 'audio.isPlaying', 'audio.speed',
+  // Playlist state  
+  'playlist.tracks', 'playlist.currentIndex', 'playlist.repeatEach',
+  'playlist.repeatCounter', 'playlist.repeatPlaylist', 'playlist.shuffled',
+  'playlist.isInGap', 'playlist.gapDuration',
+  // Mode flags
+  'currentMode', 'isQuizMode', 'isMemoryMode',
+  // Quiz mode
+  'quizMode.quizTime', 'quizMode.quizDelay', 'quizMode.autoPlay',
+  'quizMode.autoPlayFull', 'quizMode.currentTrack', 'quizMode.isPaused',
+  // Memory mode
+  'memoryMode.currentTrack', 'memoryMode.startTime', 'memoryMode.endTime',
+  'memoryMode.gapDuration', 'memoryMode.speed', 'memoryMode.isLooping',
+  'memoryMode.loopCount', 'memoryMode.trackDuration', 'memoryMode.isCustomSegment',
+  // Regular mode
+  'regularMode.speed', 'regularMode.repeatCount', 'regularMode.shuffle',
+  'regularMode.repeatPlaylist', 'regularMode.gapDuration',
+  // Selection
+  'selectedTracks'
+]);
+
 class State {
   constructor() {
     this._state = {
@@ -52,7 +76,13 @@ class State {
     return this._state[key];
   }
 
+  // ✅ FIXED B1: Block unauthorized paths
   set(key, value) {
+    if (!ALLOWLIST.has(key)) {
+      console.warn(`[State] Blocked unauthorized write to "${key}"`);
+      return;
+    }
+
     if (key.includes('.')) {
       const keys = key.split('.');
       let obj = this._state;
