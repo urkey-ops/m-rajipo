@@ -22,6 +22,9 @@ class Controls {
     this._autoPlayToggle = null;
 
     this._isQuizMode = false;
+    
+    // ✅ FIXED B3: Store EventBus handlers for cleanup
+    this._eventHandlers = [];
   }
 
   initialize() {
@@ -43,6 +46,13 @@ class Controls {
     this._loadRegularModeSettings();
 
     console.log('✅ Controls initialized');
+  }
+
+  // ✅ FIXED B3: Cleanup EventBus handlers
+  cleanup() {
+    console.log('🧹 Cleaning up Controls EventBus handlers');
+    this._eventHandlers.forEach(handler => handler());
+    this._eventHandlers = [];
   }
 
   _loadRegularModeSettings() {
@@ -151,23 +161,27 @@ class Controls {
       });
     }
 
-    EventBus.on(EVENTS.MODE_CHANGED, () => {
+    // ✅ FIXED B3: Store handlers for cleanup
+    const modeChangedHandler = EventBus.on(EVENTS.MODE_CHANGED, () => {
       this._updateControlsForMode();
     });
+    this._eventHandlers.push(modeChangedHandler);
 
-    EventBus.on(EVENTS.REGULAR_MODE_GAP_CHANGED, (gap) => {
+    const gapChangedHandler = EventBus.on(EVENTS.REGULAR_MODE_GAP_CHANGED, (gap) => {
       if (this._gapSlider && this._gapDisplay) {
         this._gapSlider.value = gap;
         this._gapDisplay.textContent = `${gap}s`;
       }
     });
+    this._eventHandlers.push(gapChangedHandler);
 
-    EventBus.on(EVENTS.REGULAR_MODE_SPEED_CHANGED, (speed) => {
+    const speedChangedHandler = EventBus.on(EVENTS.REGULAR_MODE_SPEED_CHANGED, (speed) => {
       if (this._speedSlider && this._speedDisplay) {
         this._speedSlider.value = speed;
         this._speedDisplay.textContent = `${speed.toFixed(1)}×`;
       }
     });
+    this._eventHandlers.push(speedChangedHandler);
   }
 
   _updateControlsForMode() {
